@@ -1,4 +1,5 @@
 import { t } from "@rbxts/t";
+import { OreId } from "shared/config/ores";
 
 /**
  * Bump this ONLY for changes that old saves cannot survive on their own
@@ -24,6 +25,15 @@ export interface ProfileData {
 	schemaVersion: number;
 	money: number;
 	stats: ProfileStats;
+	/** Ore the player carries. Missing id = 0. */
+	bag: Partial<Record<OreId, number>>;
+	/** Gear levels, 1-based (level 1 = starter gear). */
+	levels: GearLevels;
+}
+
+export interface GearLevels {
+	pickaxe: number;
+	bag: number;
 }
 
 export function createDefaultProfileData(): ProfileData {
@@ -31,6 +41,8 @@ export function createDefaultProfileData(): ProfileData {
 		schemaVersion: CURRENT_SCHEMA_VERSION,
 		money: 0,
 		stats: { totalEarned: 0, oresMined: 0 },
+		bag: {},
+		levels: { pickaxe: 1, bag: 1 },
 	};
 }
 
@@ -40,6 +52,8 @@ const profileDataShape = t.interface({
 	schemaVersion: t.integer,
 	money: t.integer,
 	stats: t.interface({ totalEarned: t.integer, oresMined: t.integer }),
+	bag: t.map(t.string, t.number),
+	levels: t.interface({ pickaxe: t.integer, bag: t.integer }),
 });
 
 export function isProfileData(value: unknown): value is ProfileData {
