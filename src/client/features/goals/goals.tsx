@@ -3,8 +3,10 @@
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
 import { BAGS } from "shared/config/bags";
+import { MACHINE_IDS } from "shared/config/machines";
 import { ORES, ORE_IDS } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
+import { SHOES } from "shared/config/shoes";
 import { bagCapacity, bagTotal } from "shared/features/bag";
 import { GoalCandidate, pickGoal } from "shared/features/goals";
 import { PlayerView } from "shared/features/profile";
@@ -31,6 +33,13 @@ function gearGoals(view: PlayerView): GoalCandidate[] {
 	const nextBag = BAGS[view.levels.bag];
 	if (nextBag !== undefined) {
 		goals.push({ label: nextBag.name, price: nextBag.price, priority: 1 });
+	}
+	// Shoes only shorten trips, so they are hinted after the first machine. Earlier, the cheapest-goal rule would make
+	// the $120 shoes the first target of a new player instead of the bag and the first pickaxe.
+	const nextShoes = SHOES[view.levels.shoes];
+	const ownsMachine = MACHINE_IDS.some((id) => view.machines[id] !== undefined);
+	if (nextShoes !== undefined && ownsMachine) {
+		goals.push({ label: nextShoes.name, price: nextShoes.price, priority: 2 });
 	}
 	return goals;
 }
