@@ -76,3 +76,11 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   item uids must be `i<digits>`; the Robux policy flag is a Player attribute with retries; ProcessReceipt decisions are unit tested.
 - **Why:** the review found that a teleport exploit could open every layer within seconds and mine deep ore, and that a
   save written by a newer server could lock a player out. A full server-side movement check is still on the roadmap.
+
+## 011. Dev shortcuts exist only in Studio
+
+- **Date:** 2026-11-24
+- **Decision:** play-test shortcuts (money presets, max gear, all layers) are a feature whose server service returns at once
+  unless `RunService.IsStudio()`. No admin list, no chat commands. Money amounts are fixed presets.
+- **Why:** an "admin" check on live servers is a permanent backdoor and a target. Not registering the remote at all means
+  there is nothing to attack. If real admin tools are ever needed (moderation), they get their own design and security review.

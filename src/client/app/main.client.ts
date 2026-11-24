@@ -2,6 +2,7 @@
 // The HUD starts first so other features can register their lines before the first data arrives;
 // profile starts last so the first update reaches every registered listener.
 import { startChestsController } from "client/features/chests";
+import { startDevtoolsController } from "client/features/devtools";
 import { startDrillController } from "client/features/drill";
 import { startEquipmentController } from "client/features/equipment";
 import { startFactoryController } from "client/features/factory";
@@ -21,5 +22,6 @@ startFactoryController();
 startDrillController();
 startChestsController();
 startEquipmentController();
+startDevtoolsController();
 
 startProfileController();
