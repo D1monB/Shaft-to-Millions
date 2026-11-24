@@ -4,6 +4,7 @@ import { BAGS } from "shared/config/bags";
 import { TAGS } from "shared/config/map-contract";
 import { ORES, ORE_IDS } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
+import { SHOES } from "shared/config/shoes";
 import {
 	BUY_UPGRADE_REMOTE,
 	UPGRADE_TRACKS,
@@ -20,14 +21,8 @@ import { THEME, makeButton, makeCard, makeLabel, openPanel } from "client/lib/ui
 const TRACK_TITLES: { [K in UpgradeTrack]: string } = {
 	pickaxe: "⛏ Кирка",
 	bag: "🎒 Сумка",
+	shoes: "👟 Взуття",
 };
-
-const extraDescribers = new Map<string, (level: number) => string>();
-
-/** Lets later tracks (e.g. shoes) describe their levels in the shop. */
-export function registerTrackDescriber(track: string, describe: (level: number) => string): void {
-	extraDescribers.set(track, describe);
-}
 
 function describe(track: UpgradeTrack, level: number): string {
 	if (track === "pickaxe") {
@@ -37,7 +32,7 @@ function describe(track: UpgradeTrack, level: number): string {
 	if (track === "bag") {
 		return `Місткість ${BAGS[level - 1].capacity} шт.`;
 	}
-	return extraDescribers.get(track)?.(level) ?? "";
+	return `Швидкість ${SHOES[level - 1].walkSpeed} (стандарт 16)`;
 }
 
 /** Ores the NEXT pickaxe unlocks: the clearest reason to buy it. */

@@ -1,10 +1,11 @@
-// Pure rules for buying the next level of a gear track (pickaxe, bag, ...). Levels are bought in order.
+// Pure rules for buying the next level of a gear track (pickaxe, bag, shoes). Levels are bought in order.
 import { BAGS } from "shared/config/bags";
 import { PICKAXES } from "shared/config/pickaxes";
+import { SHOES } from "shared/config/shoes";
 
-export type UpgradeTrack = "pickaxe" | "bag";
+export type UpgradeTrack = "pickaxe" | "bag" | "shoes";
 
-export const UPGRADE_TRACK_IDS: ReadonlyArray<UpgradeTrack> = ["pickaxe", "bag"];
+export const UPGRADE_TRACK_IDS: ReadonlyArray<UpgradeTrack> = ["pickaxe", "bag", "shoes"];
 
 interface LevelDef {
 	readonly name: string;
@@ -14,6 +15,7 @@ interface LevelDef {
 export const UPGRADE_TRACKS: { readonly [K in UpgradeTrack]: ReadonlyArray<LevelDef> } = {
 	pickaxe: PICKAXES,
 	bag: BAGS,
+	shoes: SHOES,
 };
 
 export type UpgradeLevels = { [K in UpgradeTrack]: number };

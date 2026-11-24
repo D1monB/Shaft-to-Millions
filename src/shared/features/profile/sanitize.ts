@@ -1,7 +1,10 @@
 import { BAGS } from "shared/config/bags";
 import { MACHINES, MACHINE_IDS, RECIPES, isRecipeId } from "shared/config/machines";
-import { ORE_IDS } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
+import { SHOES } from "shared/config/shoes";
+import { DRILLS, drillKey } from "shared/config/drills";
+import { LAYER_COUNT } from "shared/config/layers";
+import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
 import { RESOURCE_IDS } from "shared/config/resources";
 import { MAX_COUNTER, repairCountMap, repairInteger, repairNumber, repairTable } from "shared/lib/repair";
 import { PlainTable } from "shared/lib/tables";
@@ -27,6 +30,9 @@ export function sanitize(data: PlainTable): string[] {
 	const levels = repairTable(data, "levels", "levels", repairs);
 	repairInteger(levels, "pickaxe", 1, PICKAXES.size(), 1, "levels.pickaxe", repairs);
 	repairInteger(levels, "bag", 1, BAGS.size(), 1, "levels.bag", repairs);
+	repairInteger(levels, "shoes", 1, SHOES.size(), 1, "levels.shoes", repairs);
+	repairInteger(data, "deepestLayer", 1, LAYER_COUNT, 1, "deepestLayer", repairs);
+	repairDrills(data, repairs);
 
 	repairCountMap(data, "warehouse", RESOURCE_IDS, "warehouse", repairs);
 	repairMachines(data, repairs);
@@ -69,5 +75,30 @@ function repairMachines(data: PlainTable, repairs: string[]): void {
 		machine.queue = cleanQueue;
 		repairNumber(machine, "startedAt", 0, MAX_TIMESTAMP, 0, `${path}.startedAt`, repairs);
 		repairCountMap(machine, "ready", RESOURCE_IDS, `${path}.ready`, repairs);
+	}
+}
+
+/**
+ * Each owned drill: a known ore of THAT layer, sane timestamps and a buffer within capacity.
+ * A drill with an ore from another layer is reset to the layer's first ore instead of being deleted.
+ */
+function repairDrills(data: PlainTable, repairs: string[]): void {
+	const drills = repairTable(data, "drills", "drills", repairs);
+	for (let layer = 1; layer <= LAYER_COUNT; layer++) {
+		const key = drillKey(layer);
+		const def = DRILLS[layer];
+		if (drills[key] === undefined || def === undefined) {
+			continue;
+		}
+		const path = "drills." + key;
+		const drill = repairTable(drills, key, path, repairs);
+		const oreId = drill.oreId;
+		if (!isOreId(oreId) || ORES[oreId].layer !== layer) {
+			drill.oreId = ORE_IDS.find((id) => ORES[id].layer === layer) ?? "coal";
+			repairs.push(path + ".oreId");
+		}
+		repairNumber(drill, "lastTick", 0, MAX_TIMESTAMP, 0, path + ".lastTick", repairs);
+		repairNumber(drill, "progress", 0, 1e6, 0, path + ".progress", repairs);
+		repairInteger(drill, "buffer", 0, def.bufferCapacity, 0, path + ".buffer", repairs);
 	}
 }

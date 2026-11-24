@@ -1,6 +1,7 @@
 import { t } from "@rbxts/t";
 import { MachineId } from "shared/config/machines";
 import { OreId } from "shared/config/ores";
+import type { DrillState } from "shared/features/drill";
 import type { Counts, MachineState } from "shared/features/factory";
 
 /**
@@ -35,11 +36,16 @@ export interface ProfileData {
 	warehouse: Counts;
 	/** Owned machines. A machine is owned when its entry exists. */
 	machines: Partial<Record<MachineId, MachineState>>;
+	/** Deepest layer whose camp the player reached. Drives drill unlocks and the depth leaderboard later. */
+	deepestLayer: number;
+	/** Owned auto drills by drillKey(layer). */
+	drills: { [key: string]: DrillState | undefined };
 }
 
 export interface GearLevels {
 	pickaxe: number;
 	bag: number;
+	shoes: number;
 }
 
 export function createDefaultProfileData(): ProfileData {
@@ -48,7 +54,9 @@ export function createDefaultProfileData(): ProfileData {
 		money: 0,
 		stats: { totalEarned: 0, oresMined: 0 },
 		bag: {},
-		levels: { pickaxe: 1, bag: 1 },
+		levels: { pickaxe: 1, bag: 1, shoes: 1 },
+		deepestLayer: 1,
+		drills: {},
 		warehouse: {},
 		machines: {},
 	};
@@ -61,7 +69,12 @@ const profileDataShape = t.interface({
 	money: t.integer,
 	stats: t.interface({ totalEarned: t.integer, oresMined: t.integer }),
 	bag: t.map(t.string, t.number),
-	levels: t.interface({ pickaxe: t.integer, bag: t.integer }),
+	levels: t.interface({ pickaxe: t.integer, bag: t.integer, shoes: t.integer }),
+	deepestLayer: t.integer,
+	drills: t.map(
+		t.string,
+		t.interface({ oreId: t.string, lastTick: t.number, progress: t.number, buffer: t.integer }),
+	),
 	warehouse: t.map(t.string, t.number),
 	machines: t.map(
 		t.string,

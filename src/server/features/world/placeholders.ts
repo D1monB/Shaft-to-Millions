@@ -171,3 +171,63 @@ export function buildFactoryPlaceholders(): void {
 		});
 	}
 }
+
+function makeCamp(layer: number, position: Vector3): void {
+	const camp = new Instance("SpawnLocation");
+	camp.Name = `Camp_${layer}`;
+	camp.Anchored = true;
+	camp.Neutral = true;
+	camp.Duration = 0; // no spawn force field: the mine is not a PvP zone
+	camp.Size = new Vector3(8, 1, 8);
+	camp.Position = position;
+	camp.Color = Color3.fromRGB(80, 160, 255);
+	camp.SetAttribute(ATTRIBUTES.LayerId, layer);
+	makeLabel(camp, `Табір шару ${layer}`);
+	camp.Parent = getFolder();
+	CollectionService.AddTag(camp, TAGS.CampSpawn);
+}
+
+/**
+ * Test layers 2 and 3 next to layer 1 (in the real map they are deeper, here they are just further away),
+ * with a camp per layer and a drill site per layer. Walk to camp 2, then camp 3, to open the layers.
+ */
+export function buildLayerPlaceholders(): void {
+	if (needsPlaceholders(TAGS.CampSpawn)) {
+		makePlaceholder({
+			name: "DeepFloor",
+			size: new Vector3(160, 1, 80),
+			position: new Vector3(40, -0.5, 100),
+			color: Color3.fromRGB(70, 55, 50),
+			material: Enum.Material.Basalt,
+		});
+		makeCamp(1, new Vector3(0, 0.5, 40));
+		makeCamp(2, new Vector3(0, 0.5, 80));
+		makeCamp(3, new Vector3(0, 0.5, 120));
+		buildOreRow(new Vector3(10, 0, 80), [
+			["silver", 3],
+			["gold", 2],
+		]);
+		buildOreRow(new Vector3(10, 0, 120), [
+			["obsidian", 3],
+			["cobalt", 2],
+		]);
+	}
+	if (needsPlaceholders(TAGS.DrillSite)) {
+		for (const [layer, z] of [
+			[1, 40],
+			[2, 80],
+			[3, 120],
+		] as const) {
+			makePlaceholder({
+				name: `DrillSite_${layer}`,
+				size: new Vector3(5, 7, 5),
+				position: new Vector3(-12, 3.5, z),
+				color: Color3.fromRGB(230, 200, 60),
+				material: Enum.Material.DiamondPlate,
+				tag: TAGS.DrillSite,
+				attributes: { [ATTRIBUTES.LayerId]: layer },
+				label: `Автобур ${layer}`,
+			});
+		}
+	}
+}
