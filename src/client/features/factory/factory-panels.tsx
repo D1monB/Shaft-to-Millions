@@ -404,9 +404,15 @@ export function startFactoryController(): void {
 
 	registerGoalSource((view) => {
 		const nextMachine = MACHINE_IDS.find((id) => view.machines[id] === undefined);
-		return nextMachine === undefined
-			? []
-			: [{ label: MACHINES[nextMachine].name, price: MACHINES[nextMachine].price, priority: 1 }];
+		if (nextMachine === undefined) {
+			return [];
+		}
+		// The first machine is a target of the first 10 minutes (pickaxe, sell, first furnace), so it ranks as high as
+		// a pickaxe that unlocks ore. Later machines are ordinary purchases.
+		const ownsNothing = MACHINE_IDS.every((id) => view.machines[id] === undefined);
+		return [
+			{ label: MACHINES[nextMachine].name, price: MACHINES[nextMachine].price, priority: ownsNothing ? 0 : 1 },
+		];
 	});
 
 	registerSellPanelExtra((view) => <SellExtra view={view} />);
