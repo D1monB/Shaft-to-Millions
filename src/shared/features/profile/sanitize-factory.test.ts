@@ -1,5 +1,6 @@
 import { Assert, Test } from "@rbxts/lunit";
-import { MACHINES } from "shared/config/machines";
+import { MACHINE_UPGRADES } from "shared/config/machines";
+import { queueLimitOf } from "shared/features/factory";
 import { PlainTable } from "shared/lib/tables";
 import { loadProfileData } from "./load-profile-data";
 import { createDefaultProfileData } from "./schema";
@@ -25,7 +26,15 @@ class SanitizeFactoryTests {
 	@Test
 	public keepsAValidMachine() {
 		const result = load((raw) => {
-			raw.machines = { furnace: { queue: ["smelt_copper"], startedAt: 1700000000, ready: { copper_ingot: 2 } } };
+			raw.machines = {
+				furnace: {
+					queue: ["smelt_copper"],
+					startedAt: 1700000000,
+					ready: { copper_ingot: 2 },
+					speedLevel: 1,
+					queueLevel: 1,
+				},
+			};
 		});
 		const furnace = result.data.machines.furnace;
 		Assert.notUndefined(furnace);
@@ -54,7 +63,7 @@ class SanitizeFactoryTests {
 			}
 			raw.machines = { furnace: { queue, startedAt: 0, ready: {} } };
 		});
-		Assert.equal(result.data.machines.furnace?.queue.size(), MACHINES.furnace.queueLimit);
+		Assert.equal(result.data.machines.furnace?.queue.size(), queueLimitOf("furnace", 1));
 	}
 
 	@Test
@@ -75,6 +84,56 @@ class SanitizeFactoryTests {
 		});
 		Assert.equal(result.data.warehouse.coal, 0);
 		Assert.equal(result.data.warehouse.gold_circuit, 2);
+	}
+
+	@Test
+	public higherQueueLevelAllowsALongerQueue() {
+		const top = MACHINE_UPGRADES.furnace.queue.size();
+		const result = load((raw) => {
+			const queue: string[] = [];
+			for (let i = 0; i < 500; i++) {
+				queue.push("smelt_copper");
+			}
+			raw.machines = { furnace: { queue, startedAt: 0, ready: {}, speedLevel: 1, queueLevel: top } };
+		});
+		Assert.equal(result.data.machines.furnace?.queue.size(), queueLimitOf("furnace", top));
+		Assert.true((result.data.machines.furnace?.queue.size() ?? 0) > queueLimitOf("furnace", 1));
+	}
+
+	@Test
+	public brokenUpgradeLevelsAreRepaired() {
+		const top = MACHINE_UPGRADES.furnace.speed.size();
+		const result = load((raw) => {
+			raw.machines = {
+				furnace: { queue: [], startedAt: 0, ready: {}, speedLevel: 999, queueLevel: 0 / 0 },
+				workbench: { queue: [], startedAt: 0, ready: {}, speedLevel: -3, queueLevel: "high" },
+			};
+		});
+		Assert.equal(result.data.machines.furnace?.speedLevel, top);
+		Assert.equal(result.data.machines.furnace?.queueLevel, 1);
+		Assert.equal(result.data.machines.workbench?.speedLevel, 1);
+		Assert.equal(result.data.machines.workbench?.queueLevel, 1);
+	}
+
+	@Test
+	public brokenWarehouseLevelIsRepaired() {
+		const high = load((raw) => {
+			(raw.levels as PlainTable).warehouse = 999;
+		});
+		Assert.true(high.data.levels.warehouse >= 1 && high.data.levels.warehouse <= 4);
+		const low = load((raw) => {
+			(raw.levels as PlainTable).warehouse = 0 / 0;
+		});
+		Assert.equal(low.data.levels.warehouse, 1);
+	}
+
+	@Test
+	public missingMachineLevelsDefaultToBase() {
+		const result = load((raw) => {
+			raw.machines = { furnace: { queue: [], startedAt: 0, ready: {} } };
+		});
+		Assert.equal(result.data.machines.furnace?.speedLevel, 1);
+		Assert.equal(result.data.machines.furnace?.queueLevel, 1);
 	}
 }
 

@@ -80,6 +80,8 @@ class LoadProfileDataTests {
 	public migratesThroughAChain() {
 		const chain: ReadonlyArray<Migration> = [{ from: 1, apply: (data) => (data.money = data.coins) }];
 		const raw = validRaw();
+		// The chain starts from version 1, so the save has to look like a version 1 save.
+		raw.schemaVersion = 1;
 		raw.money = undefined;
 		raw.coins = 40;
 		const result = loadProfileData(raw, chain, 2);

@@ -3,7 +3,6 @@
 import React from "@rbxts/react";
 import { DRILLS, drillKey } from "shared/config/drills";
 import { LAYERS, LAYER_COUNT, oresOfLayer } from "shared/config/layers";
-import { WAREHOUSE_CAPACITY } from "shared/config/machines";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES } from "shared/config/ores";
 import {
@@ -14,7 +13,7 @@ import {
 	isDrillUnlocked,
 	secondsPerPiece,
 } from "shared/features/drill";
-import { storageTotal } from "shared/features/factory";
+import { storageTotal, warehouseCapacity } from "shared/features/factory";
 import { getPickaxe, hitsRequired } from "shared/features/mining";
 import { walkSpeedFor } from "shared/features/movement";
 import { PlayerView } from "shared/features/profile";
@@ -109,7 +108,7 @@ function DrillPanel(props: { layer: number }) {
 	const ore = ORES[state.oreId];
 	const perPiece = secondsPerPiece(layer, state.oreId);
 	const manual = hitsRequired(ore.hardness, pickaxe.power) * pickaxe.swingSeconds;
-	const warehouseFull = storageTotal(view.warehouse) >= WAREHOUSE_CAPACITY;
+	const warehouseFull = storageTotal(view.warehouse) >= warehouseCapacity(view.levels.warehouse);
 
 	return (
 		<>

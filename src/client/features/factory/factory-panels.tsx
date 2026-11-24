@@ -6,11 +6,11 @@ import { Workspace } from "@rbxts/services";
 import {
 	MACHINES,
 	MACHINE_IDS,
+	MACHINE_UPGRADES,
 	MachineId,
 	RECIPES,
 	RecipeId,
 	ResourceAmounts,
-	WAREHOUSE_CAPACITY,
 	isMachineId,
 	recipesOf,
 } from "shared/config/machines";
@@ -26,11 +26,18 @@ import {
 	ENQUEUE_REMOTE,
 	MachineState,
 	SELL_WAREHOUSE_REMOTE,
+	UPGRADE_MACHINE_REMOTE,
+	UPGRADE_WAREHOUSE_REMOTE,
 	advance,
+	craftSeconds,
 	machineProgress,
 	maxCrafts,
+	nextMachineUpgrade,
+	nextWarehouseUpgrade,
+	queueLimitOf,
 	simulateProcessing,
 	storageTotal,
+	warehouseCapacity,
 } from "shared/features/factory";
 import { PlayerView } from "shared/features/profile";
 import { previewSale } from "shared/features/selling";
@@ -101,6 +108,12 @@ function ownedRecipes(view: PlayerView): RecipeId[] {
 	return result;
 }
 
+/** Seconds of one craft with the machine's current speed upgrade, the same as the server uses. */
+function secondsAtUpgrades(view: PlayerView, recipeId: RecipeId): number {
+	const machine = view.machines[RECIPES[recipeId].machine];
+	return craftSeconds(recipeId, machine?.speedLevel ?? 1);
+}
+
 // ---------------------------------------------------------------- warehouse panel
 
 function WarehousePanel() {
@@ -109,10 +122,15 @@ function WarehousePanel() {
 		return <Label text="Завантаження..." tone="muted" />;
 	}
 	const used = storageTotal(view.warehouse);
-	const full = used >= WAREHOUSE_CAPACITY;
+	const capacity = warehouseCapacity(view.levels.warehouse);
+	const full = used >= capacity;
 	const inBag = bagTotal(view.bag);
+	const warehouseUpgrade = nextWarehouseUpgrade(view.levels.warehouse);
 	const preview = previewSale(view.warehouse, RESOURCE_IDS, RESOURCES, multiplierOf(view));
-	const estimate = preview.itemCount > 0 ? simulateProcessing(view.warehouse, ownedRecipes(view)) : undefined;
+	const estimate =
+		preview.itemCount > 0
+			? simulateProcessing(view.warehouse, ownedRecipes(view), (recipeId) => secondsAtUpgrades(view, recipeId))
+			: undefined;
 
 	const lines: React.Element[] = [];
 	RESOURCE_IDS.forEach((id, index) => {
@@ -127,9 +145,9 @@ function WarehousePanel() {
 			<Card order={1}>
 				<Label text="📦 Зайнято" display={true} order={1} />
 				<ProgressBar
-					progress={used / WAREHOUSE_CAPACITY}
+					progress={used / capacity}
 					color={full ? COLORS.canyon : COLORS.gold}
-					text={formatCount(used, WAREHOUSE_CAPACITY)}
+					text={formatCount(used, capacity)}
 					height={20}
 					order={2}
 				/>
@@ -154,6 +172,15 @@ function WarehousePanel() {
 					variant="success"
 					onClick={() => sendToServer(SELL_WAREHOUSE_REMOTE)}
 					order={4}
+				/>
+			)}
+			{warehouseUpgrade !== undefined && (
+				<BuyButton
+					price={warehouseUpgrade.price}
+					money={view.money}
+					verb={`Склад до ${warehouseUpgrade.value} місць`}
+					onClick={() => sendToServer(UPGRADE_WAREHOUSE_REMOTE)}
+					order={5}
 				/>
 			)}
 		</>
@@ -191,11 +218,52 @@ function MachineShop(props: { machineId: MachineId; view: PlayerView }) {
 	);
 }
 
+function UpgradeCard(props: { machineId: MachineId; state: MachineState; view: PlayerView; order: number }) {
+	const tracks = MACHINE_UPGRADES[props.machineId];
+	const speed = nextMachineUpgrade(props.machineId, props.state, "speed");
+	const queue = nextMachineUpgrade(props.machineId, props.state, "queue");
+	const speedNow = tracks.speed[props.state.speedLevel - 1]?.value ?? 1;
+	const queueNow = queueLimitOf(props.machineId, props.state.queueLevel);
+	return (
+		<Card order={props.order} accent={COLORS.gold}>
+			<Label text="⚙ Покращення" display={true} order={1} />
+			<Label
+				text={`Швидкість: ×${speedNow} (рівень ${props.state.speedLevel}/${tracks.speed.size()})`}
+				order={2}
+			/>
+			{speed !== undefined ? (
+				<BuyButton
+					price={speed.price}
+					money={props.view.money}
+					verb={`Швидкість ×${speed.value}`}
+					onClick={() => sendToServer(UPGRADE_MACHINE_REMOTE, props.machineId, "speed")}
+					order={3}
+				/>
+			) : (
+				<Label text="Швидкість на максимумі" tone="muted" order={3} />
+			)}
+			<Label text={`Черга: ${queueNow} (рівень ${props.state.queueLevel}/${tracks.queue.size()})`} order={4} />
+			{queue !== undefined ? (
+				<BuyButton
+					price={queue.price}
+					money={props.view.money}
+					verb={`Черга до ${queue.value}`}
+					onClick={() => sendToServer(UPGRADE_MACHINE_REMOTE, props.machineId, "queue")}
+					order={5}
+				/>
+			) : (
+				<Label text="Черга на максимумі" tone="muted" order={5} />
+			)}
+		</Card>
+	);
+}
+
 function RecipeCard(props: {
 	machineId: MachineId;
 	recipeId: RecipeId;
 	view: PlayerView;
 	room: number;
+	speedLevel: number;
 	order: number;
 }) {
 	const recipe = RECIPES[props.recipeId];
@@ -210,7 +278,7 @@ function RecipeCard(props: {
 			<Label text={`${amountsText(recipe.inputs)} → ${amountsText(recipe.outputs)}`} display={true} order={1} />
 			<Label text={`На складі: ${have.join(", ")}`} tone="muted" order={2} />
 			<Label
-				text={`⏱ ${recipe.seconds} с · ${formatMoney(amountsValue(recipe.inputs))} → ${formatMoney(amountsValue(recipe.outputs))}`}
+				text={`⏱ ${string.format("%.1f", craftSeconds(props.recipeId, props.speedLevel))} с · ${formatMoney(amountsValue(recipe.inputs))} → ${formatMoney(amountsValue(recipe.outputs))}`}
 				tone="success"
 				order={3}
 			/>
@@ -241,7 +309,6 @@ function MachinePanel(props: { machineId: MachineId }) {
 		return <Label text="Завантаження..." tone="muted" />;
 	}
 	const machineId = props.machineId;
-	const def = MACHINES[machineId];
 	const saved = view.machines[machineId];
 	if (saved === undefined) {
 		return <MachineShop machineId={machineId} view={view} />;
@@ -250,12 +317,13 @@ function MachinePanel(props: { machineId: MachineId }) {
 	const state = liveState(saved, now);
 	const progress = machineProgress(state, now);
 	const readyTotal = storageTotal(state.ready);
-	const room = def.queueLimit - state.queue.size();
+	const queueLimit = queueLimitOf(machineId, state.queueLevel);
+	const room = queueLimit - state.queue.size();
 
 	return (
 		<>
 			<Card order={1}>
-				<Label text={`Черга: ${formatCount(state.queue.size(), def.queueLimit)}`} display={true} order={1} />
+				<Label text={`Черга: ${formatCount(state.queue.size(), queueLimit)}`} display={true} order={1} />
 				{progress.current !== undefined ? (
 					<>
 						<Label text={`Зараз: ${amountsText(RECIPES[progress.current].outputs)}`} order={2} />
@@ -299,6 +367,7 @@ function MachinePanel(props: { machineId: MachineId }) {
 					/>
 				</Card>
 			)}
+			<UpgradeCard machineId={machineId} state={state} view={view} order={5} />
 			{recipesOf(machineId).map((recipeId, index) => (
 				<RecipeCard
 					key={recipeId}
@@ -306,6 +375,7 @@ function MachinePanel(props: { machineId: MachineId }) {
 					recipeId={recipeId}
 					view={view}
 					room={room}
+					speedLevel={state.speedLevel}
 					order={10 + index}
 				/>
 			))}
@@ -344,7 +414,9 @@ function factorySummary(view: PlayerView, now: number) {
 function SellExtra(props: { view: PlayerView }) {
 	const owned = ownedRecipes(props.view);
 	const recipes = owned.size() > 0 ? owned : recipesOf("furnace");
-	const estimate = simulateProcessing(props.view.bag as Counts, recipes);
+	const estimate = simulateProcessing(props.view.bag as Counts, recipes, (recipeId) =>
+		secondsAtUpgrades(props.view, recipeId),
+	);
 	if (estimate.crafts === 0) {
 		return undefined;
 	}
@@ -383,10 +455,11 @@ export function startFactoryController(): void {
 
 	registerHudStat(30, (view) => {
 		const used = storageTotal(view.warehouse);
+		const capacity = warehouseCapacity(view.levels.warehouse);
 		return {
 			icon: "📦",
-			text: formatCount(used, WAREHOUSE_CAPACITY),
-			tone: used >= WAREHOUSE_CAPACITY ? "danger" : "normal",
+			text: formatCount(used, capacity),
+			tone: used >= capacity ? "danger" : "normal",
 		};
 	});
 	// The HUD re-renders on server updates (every collect, enqueue, sale), which is often enough here.

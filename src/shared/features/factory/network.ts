@@ -13,6 +13,11 @@ export const COLLECT_REMOTE = "CollectOutput";
 /** (machineId) Cancel the last queued craft. At the machine. */
 export const CANCEL_REMOTE = "CancelCraft";
 
+/** (machineId, track) Buy the next level of a machine track: "speed" or "queue". At the machine. */
+export const UPGRADE_MACHINE_REMOTE = "UpgradeMachine";
+/** () Buy the next warehouse capacity level. At a Warehouse. */
+export const UPGRADE_WAREHOUSE_REMOTE = "UpgradeWarehouse";
+
 /** How close (studs) the player must be to the warehouse or a machine. */
 export const FACTORY_DISTANCE = 18;
 
