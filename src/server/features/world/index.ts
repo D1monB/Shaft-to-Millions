@@ -3,6 +3,7 @@
 export {
 	buildBasePlaceholders,
 	buildFactoryPlaceholders,
+	buildLayerPlaceholders,
 	buildOreRow,
 	makePlaceholder,
 	needsPlaceholders,
