@@ -3,6 +3,7 @@ import { MachineId } from "shared/config/machines";
 import { OreId } from "shared/config/ores";
 import type { OwnedItem } from "shared/features/chests";
 import type { DrillState } from "shared/features/drill";
+import type { Equipped } from "shared/features/equipment";
 import type { Counts, MachineState } from "shared/features/factory";
 
 /**
@@ -47,6 +48,8 @@ export interface ProfileData {
 	nextUid: number;
 	/** Granted Robux receipts (PurchaseId). Private: never sent to the client. */
 	purchaseIds: string[];
+	/** Equipped item uids (from `inventory`). */
+	equipped: Equipped;
 }
 
 export interface GearLevels {
@@ -67,6 +70,7 @@ export function createDefaultProfileData(): ProfileData {
 		inventory: [],
 		nextUid: 1,
 		purchaseIds: [],
+		equipped: { pets: [] },
 		warehouse: {},
 		machines: {},
 	};
@@ -93,6 +97,11 @@ const profileDataShape = t.interface({
 	inventory: t.array(t.interface({ uid: t.string, item: t.string })),
 	nextUid: t.integer,
 	purchaseIds: t.array(t.string),
+	equipped: t.interface({
+		speedAura: t.optional(t.string),
+		pickaxeAura: t.optional(t.string),
+		pets: t.array(t.string),
+	}),
 });
 
 export function isProfileData(value: unknown): value is ProfileData {

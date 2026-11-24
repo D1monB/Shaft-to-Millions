@@ -4,6 +4,7 @@
 // 3. profile last, so every listener is in place before the first player's data loads.
 import { startChestsService } from "server/features/chests";
 import { startDrillService } from "server/features/drill";
+import { startEquipmentService } from "server/features/equipment";
 import { startFactoryService } from "server/features/factory";
 import { startLayersService } from "server/features/layers";
 import { startMiningService } from "server/features/mining";
@@ -31,5 +32,6 @@ startLayersService();
 startMovementService();
 startDrillService();
 startChestsService();
+startEquipmentService();
 
 startProfileService();
