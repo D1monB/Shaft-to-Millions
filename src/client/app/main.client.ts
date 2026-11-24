@@ -1,6 +1,7 @@
 // Client bootstrap. Starts feature controllers (input, UI, effects only).
 // The HUD starts first so other features can register their lines before the first data arrives;
 // profile starts last so the first update reaches every registered listener.
+import { startChestsController } from "client/features/chests";
 import { startDrillController } from "client/features/drill";
 import { startFactoryController } from "client/features/factory";
 import { startGoalsController } from "client/features/goals";
@@ -17,5 +18,6 @@ startSellController();
 startGoalsController();
 startFactoryController();
 startDrillController();
+startChestsController();
 
 startProfileController();

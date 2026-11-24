@@ -114,6 +114,11 @@ export class ProfileSessions {
 	 * The player's live data, or undefined while loading, after leaving, or if loading failed.
 	 * Server code changes this table directly: it is the table that gets saved.
 	 */
+	public saveNow(userId: number, timeoutSeconds: number): boolean {
+		const entry = this.active.get(userId);
+		return entry !== undefined && entry.session.saveAndWait(timeoutSeconds);
+	}
+
 	public getData(userId: number): ProfileData | undefined {
 		return this.active.get(userId)?.data;
 	}

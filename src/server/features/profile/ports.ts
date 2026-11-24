@@ -13,6 +13,11 @@ export interface ProfileSession {
 	readonly replaceData: (data: ProfileData) => void;
 	/** Saves one last time and releases the profile so another server can load it. */
 	readonly end: () => void;
+	/**
+	 * Saves now and yields until the save is confirmed or `timeoutSeconds` pass. True if it was saved.
+	 * Used before acknowledging a Robux purchase, so a granted item is never lost to a crash.
+	 */
+	readonly saveAndWait: (timeoutSeconds: number) => boolean;
 	/** Called when this server loses ownership (e.g. the player joined another server). */
 	readonly onSessionEnd: (callback: () => void) => void;
 }

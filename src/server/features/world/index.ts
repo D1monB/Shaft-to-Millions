@@ -2,6 +2,7 @@
 // Public API of this feature. Other code imports only from this file.
 export {
 	buildBasePlaceholders,
+	buildChestPlaceholders,
 	buildFactoryPlaceholders,
 	buildLayerPlaceholders,
 	buildOreRow,

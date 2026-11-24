@@ -24,6 +24,11 @@ class FakeSession implements ProfileSession {
 		// Like ProfileStore, ending our own session also fires OnSessionEnd.
 		this.fireSessionEnd();
 	};
+	public saves = 0;
+	public readonly saveAndWait = () => {
+		this.saves += 1;
+		return this.active;
+	};
 	public readonly onSessionEnd = (callback: () => void) => {
 		this.endListeners.push(callback);
 	};
@@ -262,6 +267,17 @@ class ProfileSessionsTests {
 		h.started[0].fireSessionEnd();
 		h.started[0].fireSessionEnd();
 		Assert.equal(h.kicks.size(), 1);
+	}
+
+	@Test
+	public saveNowOnlyWorksForALoadedPlayer() {
+		const h = new Harness();
+		Assert.false(h.sessions.saveNow(USER, 1));
+		h.sessions.playerAdded(USER);
+		Assert.true(h.sessions.saveNow(USER, 1));
+		Assert.equal(h.started[0].saves, 1);
+		h.sessions.playerRemoving(USER);
+		Assert.false(h.sessions.saveNow(USER, 1));
 	}
 
 	@Test

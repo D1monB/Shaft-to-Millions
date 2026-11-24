@@ -1,6 +1,7 @@
 import { t } from "@rbxts/t";
 import { MachineId } from "shared/config/machines";
 import { OreId } from "shared/config/ores";
+import type { OwnedItem } from "shared/features/chests";
 import type { DrillState } from "shared/features/drill";
 import type { Counts, MachineState } from "shared/features/factory";
 
@@ -40,6 +41,12 @@ export interface ProfileData {
 	deepestLayer: number;
 	/** Owned auto drills by drillKey(layer). */
 	drills: { [key: string]: DrillState | undefined };
+	/** Items from chests (pets, auras). */
+	inventory: OwnedItem[];
+	/** Next item uid number. Only grows, so a uid is never reused. */
+	nextUid: number;
+	/** Granted Robux receipts (PurchaseId). Private: never sent to the client. */
+	purchaseIds: string[];
 }
 
 export interface GearLevels {
@@ -57,6 +64,9 @@ export function createDefaultProfileData(): ProfileData {
 		levels: { pickaxe: 1, bag: 1, shoes: 1 },
 		deepestLayer: 1,
 		drills: {},
+		inventory: [],
+		nextUid: 1,
+		purchaseIds: [],
 		warehouse: {},
 		machines: {},
 	};
@@ -80,6 +90,9 @@ const profileDataShape = t.interface({
 		t.string,
 		t.interface({ queue: t.array(t.string), startedAt: t.number, ready: t.map(t.string, t.number) }),
 	),
+	inventory: t.array(t.interface({ uid: t.string, item: t.string })),
+	nextUid: t.integer,
+	purchaseIds: t.array(t.string),
 });
 
 export function isProfileData(value: unknown): value is ProfileData {
