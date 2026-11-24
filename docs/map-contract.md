@@ -16,6 +16,7 @@
 | Склад на поверхні    | `Warehouse` | немає                      | Part або Model                                | ProximityPrompt «Склад»                             |
 | Машина фабрики       | `Machine`   | `MachineId` (string)       | Part або Model                                | ProximityPrompt з назвою машини                     |
 | Табір шару           | `CampSpawn` | `LayerId` (number)         | Part або SpawnLocation (код вимикає `Enabled`) | дотик відкриває шар і ставить точку відродження     |
+| Точка на поверхні (подорож) | `SurfaceSpawn` | немає                | Part (одна)                                    | сюди телепортує швидка подорож «Поверхня»           |
 | Майданчик автобура   | `DrillSite` | `LayerId` (number)         | Part або Model                                | ProximityPrompt «Автобур»                           |
 | Стійка скрині        | `Chest`     | `ChestId` (string)         | Part або Model                                | ProximityPrompt з назвою скрині                     |
 
