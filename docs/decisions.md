@@ -84,3 +84,20 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   unless `RunService.IsStudio()`. No admin list, no chat commands. Money amounts are fixed presets.
 - **Why:** an "admin" check on live servers is a permanent backdoor and a target. Not registering the remote at all means
   there is nothing to attack. If real admin tools are ever needed (moderation), they get their own design and security review.
+
+## 012. Player plots around a shared pit
+
+- **Date:** 2026-11-24
+- **Decision:** up to 6 players per server. Each player gets a free plot (1–6) with its own colour on join; the factory,
+  storage and the conveyor from the central pit stand on that plot. The plot is released on leave. Progress stays in the
+  profile, not in the plot, so any plot works for any player.
+- **Why:** matches the agreed map concept (shared open pit in the middle, factories on the rim). Needs a new map contract.
+
+## 013. Client UI on React
+
+- **Date:** 2026-11-24
+- **Decision:** all client UI is rebuilt with `@rbxts/react` + `@rbxts/react-roblox` (hooks: `@rbxts/pretty-react-hooks`,
+  springs: `@rbxts/ripple`). The old instance-based `client/lib/ui.ts` is removed panel by panel. Fonts are Roblox built-in.
+- **Why:** React is the most used UI library in roblox-ts, the developer already knows it, and components make a
+  consistent themed UI (wood, gold, player colour) much cheaper than hand-built instances.
+- **Order:** UI first, then the Studio play-test of gameplay, then plots.

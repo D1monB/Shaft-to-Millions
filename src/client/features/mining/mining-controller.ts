@@ -1,10 +1,10 @@
 // Mining effects only. The server decides every hit; this file shows what happened and labels each node
 // with what the player needs to know: ore name, price, hits needed, or which pickaxe unlocks it.
-import { CollectionService } from "@rbxts/services";
+// World labels stay plain Instances (not React): there can be hundreds of nodes and they rarely change.
+import { CollectionService, TweenService } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, isOreId } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
-import { bagCapacity, bagTotal } from "shared/features/bag";
 import {
 	MINE_PROGRESS_REMOTE,
 	NODE_BROKEN_REMOTE,
@@ -14,10 +14,10 @@ import {
 } from "shared/features/mining";
 import { PlayerView } from "shared/features/profile";
 import { formatMoney } from "shared/lib/format";
+import { registerHudStat } from "client/features/hud";
 import { getView, onViewChanged } from "client/features/profile";
-import { registerHudLine } from "client/features/hud";
 import { onServerMessage } from "client/lib/remotes";
-import { THEME } from "client/lib/ui";
+import { COLORS, FONTS } from "client/lib/ui-kit";
 
 function anchorPart(node: Instance): BasePart | undefined {
 	if (node.IsA("BasePart")) {
@@ -42,6 +42,19 @@ function partsOf(node: Instance): BasePart[] {
 	return parts;
 }
 
+function addOutline(label: TextLabel, thickness: number): void {
+	const stroke = new Instance("UIStroke");
+	stroke.Color = COLORS.outline;
+	stroke.Thickness = thickness;
+	stroke.Parent = label;
+}
+
+function round(frame: Frame): void {
+	const corner = new Instance("UICorner");
+	corner.CornerRadius = new UDim(1, 0);
+	corner.Parent = frame;
+}
+
 // ---------------------------------------------------------------- node labels
 
 const labels = new Map<Instance, TextLabel>();
@@ -57,16 +70,16 @@ function getNodeLabel(node: Instance): TextLabel | undefined {
 	}
 	const billboard = new Instance("BillboardGui");
 	billboard.Name = "OreLabel";
-	billboard.Size = new UDim2(0, 160, 0, 44);
+	billboard.Size = new UDim2(0, 170, 0, 46);
 	billboard.StudsOffset = new Vector3(0, part.Size.Y / 2 + 1.8, 0);
 	billboard.MaxDistance = 40;
 	billboard.AlwaysOnTop = true;
 	const label = new Instance("TextLabel");
 	label.Size = new UDim2(1, 0, 1, 0);
 	label.BackgroundTransparency = 1;
-	label.Font = Enum.Font.GothamBold;
+	label.Font = FONTS.display;
 	label.TextScaled = true;
-	label.TextStrokeTransparency = 0.4;
+	addOutline(label, 2);
 	label.Parent = billboard;
 	billboard.Adornee = part;
 	billboard.Parent = part;
@@ -88,11 +101,11 @@ function refreshNodeLabel(node: Instance, view: PlayerView): void {
 	if (canMineTier(ore, pickaxe)) {
 		const hits = hitsRequired(ore.hardness, pickaxe.power);
 		label.Text = `${ore.name} · ${formatMoney(ore.price)}\n${hits} ${hits === 1 ? "удар" : "ударів"}`;
-		label.TextColor3 = THEME.text;
+		label.TextColor3 = COLORS.text;
 	} else {
 		const needed = PICKAXES.find((p) => p.tier >= ore.requiredTier)?.name ?? "краща кирка";
 		label.Text = `🔒 ${ore.name} · ${formatMoney(ore.price)}\nПотрібна: ${needed}`;
-		label.TextColor3 = THEME.danger;
+		label.TextColor3 = COLORS.danger;
 	}
 }
 
@@ -104,6 +117,8 @@ function refreshAllLabels(view: PlayerView): void {
 
 // ---------------------------------------------------------------- hit progress and break effects
 
+const HIT_TWEEN = new TweenInfo(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+
 const bars = new Map<Instance, { gui: BillboardGui; fill: Frame; hideAt: number }>();
 
 function showProgress(node: Instance, damage: number, hardness: number): void {
@@ -114,16 +129,24 @@ function showProgress(node: Instance, damage: number, hardness: number): void {
 	let bar = bars.get(node);
 	if (bar === undefined) {
 		const gui = new Instance("BillboardGui");
-		gui.Size = new UDim2(0, 120, 0, 12);
+		gui.Size = new UDim2(0, 120, 0, 14);
 		gui.StudsOffset = new Vector3(0, part.Size.Y / 2 + 0.6, 0);
 		gui.AlwaysOnTop = true;
 		const back = new Instance("Frame");
 		back.Size = new UDim2(1, 0, 1, 0);
-		back.BackgroundColor3 = THEME.background;
+		back.BackgroundColor3 = COLORS.woodDark;
+		back.BorderSizePixel = 0;
+		round(back);
+		const stroke = new Instance("UIStroke");
+		stroke.Color = COLORS.outline;
+		stroke.Thickness = 2;
+		stroke.Parent = back;
 		back.Parent = gui;
 		const fill = new Instance("Frame");
-		fill.BackgroundColor3 = THEME.accent;
+		fill.BackgroundColor3 = COLORS.gold;
 		fill.BorderSizePixel = 0;
+		fill.Size = new UDim2(0, 0, 1, 0);
+		round(fill);
 		fill.Parent = back;
 		gui.Adornee = part;
 		gui.Parent = part;
@@ -131,7 +154,8 @@ function showProgress(node: Instance, damage: number, hardness: number): void {
 		bars.set(node, bar);
 	}
 	const progress = hardness > 0 ? math.clamp(damage / hardness, 0, 1) : 0;
-	bar.fill.Size = new UDim2(progress, 0, 1, 0);
+	// A short tween makes each hit feel like it bites into the block.
+	TweenService.Create(bar.fill, HIT_TWEEN, { Size: new UDim2(progress, 0, 1, 0) }).Play();
 	bar.gui.Enabled = true;
 	const entry = bar;
 	entry.hideAt = os.clock() + 2;
@@ -142,38 +166,46 @@ function showProgress(node: Instance, damage: number, hardness: number): void {
 	});
 }
 
+const POPUP_SECONDS = 1.1;
+const POPUP_SIZE = new UDim2(0, 170, 0, 40);
+const POPUP_SIZE_SMALL = new UDim2(0, 90, 0, 22);
+const POPUP_POP = new TweenInfo(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out);
+const POPUP_RISE = new TweenInfo(POPUP_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+const POPUP_FADE = new TweenInfo(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.In, 0, false, POPUP_SECONDS - 0.4);
+
 // Floating "+1 Coal" texts are reused instead of created and destroyed for every break (object pool).
-const popupPool: BillboardGui[] = [];
+const popupPool: Array<{ gui: BillboardGui; label: TextLabel }> = [];
 
 function showPopup(part: BasePart, text: string): void {
-	let gui = popupPool.pop();
-	if (gui === undefined) {
-		gui = new Instance("BillboardGui");
-		gui.Size = new UDim2(0, 160, 0, 36);
+	let popup = popupPool.pop();
+	if (popup === undefined) {
+		const gui = new Instance("BillboardGui");
 		gui.AlwaysOnTop = true;
 		const label = new Instance("TextLabel");
-		label.Name = "Text";
 		label.Size = new UDim2(1, 0, 1, 0);
 		label.BackgroundTransparency = 1;
-		label.Font = Enum.Font.GothamBlack;
+		label.Font = FONTS.display;
 		label.TextScaled = true;
-		label.TextColor3 = THEME.success;
-		label.TextStrokeTransparency = 0.2;
+		label.TextColor3 = COLORS.gold;
+		addOutline(label, 2.5);
 		label.Parent = gui;
+		popup = { gui, label };
 	}
-	const label = gui.FindFirstChild("Text") as TextLabel;
-	label.Text = text;
-	gui.Adornee = part;
-	gui.StudsOffset = new Vector3(0, part.Size.Y / 2 + 1, 0);
-	gui.Parent = part;
-	const popup = gui;
-	// Rise for one second, then return to the pool.
-	for (let step = 1; step <= 10; step++) {
-		task.delay(step * 0.08, () => (popup.StudsOffset = popup.StudsOffset.add(new Vector3(0, 0.25, 0))));
-	}
-	task.delay(1, () => {
-		popup.Parent = undefined;
-		popupPool.push(popup);
+	const start = new Vector3(0, part.Size.Y / 2 + 1, 0);
+	popup.label.Text = text;
+	popup.label.TextTransparency = 0;
+	popup.gui.Size = POPUP_SIZE_SMALL;
+	popup.gui.StudsOffset = start;
+	popup.gui.Adornee = part;
+	popup.gui.Parent = part;
+	// Pop bigger, rise and fade out, then return to the pool.
+	TweenService.Create(popup.gui, POPUP_POP, { Size: POPUP_SIZE }).Play();
+	TweenService.Create(popup.gui, POPUP_RISE, { StudsOffset: start.add(new Vector3(0, 3, 0)) }).Play();
+	TweenService.Create(popup.label, POPUP_FADE, { TextTransparency: 1 }).Play();
+	const used = popup;
+	task.delay(POPUP_SECONDS, () => {
+		used.gui.Parent = undefined;
+		popupPool.push(used);
 	});
 }
 
@@ -200,12 +232,8 @@ function hideNode(node: Instance, seconds: number): void {
 }
 
 export function startMiningController(): void {
-	registerHudLine(10, (view) => {
-		const capacity = bagCapacity(view.levels.bag);
-		const total = bagTotal(view.bag);
-		return `🎒 ${total}/${capacity}${total >= capacity ? "  (повна!)" : ""}`;
-	});
-	registerHudLine(20, (view) => `⛏ ${getPickaxe(view.levels.pickaxe).name}`);
+	// The bag is shown in the HUD top bar; only the pickaxe goes to the stat column.
+	registerHudStat(20, (view) => ({ icon: "⛏", text: getPickaxe(view.levels.pickaxe).name }));
 
 	onViewChanged(refreshAllLabels);
 	CollectionService.GetInstanceAddedSignal(TAGS.OreNode).Connect((node) => {

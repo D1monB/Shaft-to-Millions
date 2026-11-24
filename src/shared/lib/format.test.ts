@@ -1,5 +1,5 @@
 import { Assert, Test } from "@rbxts/lunit";
-import { formatCompact, formatDuration, formatMoney, formatPercent } from "./format";
+import { clampFraction, formatCompact, formatCount, formatDuration, formatMoney, formatPercent } from "./format";
 
 class FormatTests {
 	@Test
@@ -42,6 +42,24 @@ class FormatTests {
 		Assert.equal(formatPercent(0.125), "12.5%");
 		Assert.equal(formatPercent(0.0001), "0%");
 		Assert.equal(formatPercent(0 / 0), "0%");
+	}
+
+	@Test
+	public fractionsAreClamped() {
+		Assert.equal(clampFraction(0.25), 0.25);
+		Assert.equal(clampFraction(-1), 0);
+		Assert.equal(clampFraction(7), 1);
+		Assert.equal(clampFraction(0 / 0), 0);
+		Assert.equal(clampFraction(math.huge), 0);
+		Assert.equal(clampFraction(-math.huge), 0);
+	}
+
+	@Test
+	public counts() {
+		Assert.equal(formatCount(12, 25), "12/25");
+		Assert.equal(formatCount(12.7, 25), "12/25");
+		Assert.equal(formatCount(0 / 0, 25), "0/25");
+		Assert.equal(formatCount(5, math.huge), "5/0");
 	}
 }
 

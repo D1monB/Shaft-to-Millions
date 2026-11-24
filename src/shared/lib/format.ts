@@ -48,3 +48,18 @@ export function formatPercent(fraction: number): string {
 	const rounded = math.floor(value * 10 + 0.5) / 10;
 	return rounded === math.floor(rounded) ? `${rounded}%` : string.format("%.1f%%", rounded);
 }
+
+/** A fraction for progress bars: always 0..1. NaN and infinities become 0 (a broken value shows an empty bar). */
+export function clampFraction(value: number): number {
+	if (value !== value || value === math.huge || value === -math.huge) {
+		return 0;
+	}
+	return math.clamp(value, 0, 1);
+}
+
+/** "12/25" style counter; bad numbers show as 0 so the HUD never prints "nan". */
+export function formatCount(used: number, capacity: number): string {
+	const safeUsed = used === used && math.abs(used) !== math.huge ? math.floor(used) : 0;
+	const safeCapacity = capacity === capacity && math.abs(capacity) !== math.huge ? math.floor(capacity) : 0;
+	return `${safeUsed}/${safeCapacity}`;
+}

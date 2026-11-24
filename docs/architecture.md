@@ -10,8 +10,8 @@ src/shared/lib/         загальні помічники: rate limiter, ва�
 src/shared/features/    ЧИСТА ЛОГІКА кожної фічі (без Roblox API) + *.test.ts поруч
 src/server/features/    сервіси: remote-обробники, перевірки, збереження, тіки
 src/server/lib/         remote-обгортка (rate limit, pcall, лог зловживань), перевірки «гравець поруч», notify
-src/client/features/    контролери: панелі, HUD, ефекти
-src/client/lib/         UI-набір (HUD, панель, картки, прогрес-бар, сповіщення), ProximityPrompt-маршрутизатор
+src/client/features/    React-панелі, внески в HUD, ефекти у світі
+src/client/lib/         ui-kit (React-компоненти й тема), сховища стану (панель, тости), хуки, ProximityPrompt-маршрутизатор
 src/*/app/              лише запуск сервісів і контролерів у фіксованому порядку
 ```
 
@@ -48,12 +48,34 @@ src/*/app/              лише запуск сервісів і контрол
                                                                      │ markDirty(player)
                                                                      ▼
 клієнт ◄──────────── StateUpdate (копія профілю без приватних полів) ─┘
-   └─► HUD і відкрита панель перемальовуються з нових даних
+   └─► useView() у React-компонентах: HUD і відкрита панель перемальовуються самі
 ```
 
 Клієнт ніколи не надсилає чисел, які щось вирішують: лише id (рецепт, машина, предмет) і очікуваний рівень для
 захисту від подвійного кліку. Таймери (фабрика, бур) рахуються від `Workspace.GetServerTimeNow()`, тому працюють
 між серверами й офлайн.
+
+## Клієнтський UI (React)
+
+Бібліотека: `@rbxts/react` + `@rbxts/react-roblox`, анімації через `@rbxts/pretty-react-hooks` (`useMotion`, пружини
+`@rbxts/ripple`). Рішення: [decisions.md](decisions.md), пункт 013.
+
+- **Корінь:** [client/app/ui-root.tsx](../src/client/app/ui-root.tsx) монтує `<App/>` після старту всіх контролерів.
+  `UIScale` масштабує інтерфейс під висоту екрана (телефони менше, великі монітори трохи більше).
+- **Тема:** [client/lib/ui-kit/theme.ts](../src/client/lib/ui-kit/theme.ts): кольори (деревина, золото, каньйон, кристал),
+  шрифти Roblox (`FredokaOne` для заголовків і чисел, `BuilderSans` для тексту), радіуси, пружини. Кольорів поза темою не пишемо.
+- **ui-kit:** `Panel`, `Button`, `BuyButton`, `Card`, `ButtonRow`, `Label`, `ProgressBar`, `CurrencyLabel`, `StatChip`,
+  `MenuButton`, `PanelHost`, `ToastHost`. Без ігрової логіки.
+- **Дані:** `useView()` (фіча profile) повертає останню копію даних від сервера. Компоненти лише показують її.
+- **Панелі:** `openPanel({ key, title, icon, render })` з [client/lib/panels.ts](../src/client/lib/panels.ts). Одна панель за раз.
+- **HUD:** фічі додають значки `registerHudStat(order, view => ...)` і кнопки меню `registerHudButton(icon, label, onClick)`
+  у своїх start-функціях. Гроші й сумка у верхній плашці, підказка «що далі» внизу (фіча goals).
+- **Світ:** табло над машинами (фіча factory) рендеряться через `createPortal` у `PlayerGui`. Підписи руди лишаються
+  звичайними Instance, бо їх сотні і вони рідко змінюються.
+- **Порядок у списках:** кожному елементу всередині `Card` чи панелі передаємо `order` (= `LayoutOrder`), інакше Roblox
+  не гарантує порядок.
+- **Перевірка вигляду:** у Studio Dev → «🎨 UI showcase» показує всі компоненти.
+- Rojo мапить і `node_modules/@rbxts`, і `node_modules/@rbxts-js` (React тягне пакети з другого простору імен).
 
 ## Remote
 
