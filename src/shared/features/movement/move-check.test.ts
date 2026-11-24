@@ -1,7 +1,7 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { MAX_WALK_SPEED } from "shared/config/shoes";
 import { beginMoveState, checkMove, MoveSample, MoveState } from "./move-check";
-import { ANCHOR_WINDOW, MAX_STRIKES, SLACK_STUDS, SPEED_TOLERANCE, TELEPORT_STUDS } from "./tuning";
+import { ANCHOR_WINDOW, MAX_STRIKES, SLACK_STUDS, SPEED_TOLERANCE, STALL_SPAN, TELEPORT_STUDS } from "./tuning";
 
 const SPEED = 16;
 
@@ -31,8 +31,32 @@ class MoveCheckTests {
 	public standingStillAndFallingAreOk() {
 		const state = start();
 		Assert.equal(checkMove(state, at(0, 0.25), SPEED).verdict, "ok");
-		// Falling 300 studs straight down is legal: only horizontal speed is checked.
-		Assert.equal(checkMove(state, at(0, 0.25, -295), SPEED).verdict, "ok");
+		// Falling 100 studs in a quarter second (400 studs/s) is a normal fall in a deep shaft.
+		Assert.equal(checkMove(state, at(0, 0.25, -95), SPEED).verdict, "ok");
+		// A normal jump (about 7 studs up) is fine too.
+		Assert.equal(checkMove(state, at(0, 0.25, 12), SPEED).verdict, "ok");
+	}
+
+	@Test
+	public verticalTeleportsAreCaughtBothWays() {
+		const state = start();
+		Assert.equal(checkMove(state, at(0, 0.25, -2000), SPEED).verdict, "rubberband");
+		Assert.equal(checkMove(state, at(0, 0.25, 200), SPEED).verdict, "rubberband");
+	}
+
+	@Test
+	public flyingUpIsCaughtEvenThoughFallingIsAllowed() {
+		// 200 studs/s upward is far above any jump; the same speed downward is a legal fall.
+		const up = checkMove(start(), at(0, 1, 205), SPEED);
+		Assert.notEqual(up.verdict, "ok");
+		const down = checkMove(start(), at(0, 1, -195), SPEED);
+		Assert.equal(down.verdict, "ok");
+	}
+
+	@Test
+	public hackCombiningHorizontalAndVerticalIsCaught() {
+		const result = checkMove(start(), { x: 300, y: -1000, z: 300, time: 0.25 }, SPEED);
+		Assert.equal(result.verdict, "rubberband");
 	}
 
 	@Test
@@ -105,9 +129,16 @@ class MoveCheckTests {
 	}
 
 	@Test
-	public growingSpanDoesNotGiveEndlessAllowance() {
-		// A very long gap is capped, so 1000 studs in 100 seconds is still a teleport.
-		const result = checkMove(start(), at(1000, 100), SPEED);
+	public stalledServerStartsOverInsteadOfPullingAnHonestPlayerBack() {
+		const result = checkMove(start(), at(1000, STALL_SPAN + 1), SPEED);
+		Assert.equal(result.verdict, "ok");
+		Assert.equal(result.state.x, 1000);
+		Assert.equal(result.state.strikes, 0);
+	}
+
+	@Test
+	public justUnderTheStallSpanIsStillChecked() {
+		const result = checkMove(start(), at(1000, STALL_SPAN - 0.1), SPEED);
 		Assert.equal(result.verdict, "rubberband");
 	}
 

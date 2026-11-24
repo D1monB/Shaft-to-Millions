@@ -9,7 +9,16 @@
 // the slack (a few studs) would then be granted again for every sample, and a 3x speed hack would hide inside it.
 // Measured over a whole window the slack is spent once, so a sustained speed hack is caught within a second or two.
 import { MAX_WALK_SPEED } from "shared/config/shoes";
-import { ANCHOR_WINDOW, MAX_SPAN, MAX_STRIKES, SLACK_STUDS, SPEED_TOLERANCE, TELEPORT_STUDS } from "./tuning";
+import {
+	ANCHOR_WINDOW,
+	MAX_FALL_SPEED,
+	MAX_RISE_SPEED,
+	MAX_STRIKES,
+	SLACK_STUDS,
+	SPEED_TOLERANCE,
+	STALL_SPAN,
+	TELEPORT_STUDS,
+} from "./tuning";
 
 export interface MoveSample {
 	readonly x: number;
@@ -74,12 +83,23 @@ export function checkMove(state: MoveState, sample: MoveSample, walkSpeed: numbe
 		return { verdict: "ok", state };
 	}
 
+	// The server was stalled (or the player just joined): the old anchor says nothing about now. Normal checks never
+	// reach this span, because strikes pull the player back within about a second.
+	if (span > STALL_SPAN) {
+		return { verdict: "ok", state: { x: sample.x, y: sample.y, z: sample.z, time: sample.time, strikes: 0 } };
+	}
+
 	const dx = sample.x - state.x;
 	const dz = sample.z - state.z;
-	const distance = math.sqrt(dx * dx + dz * dz);
-	const allowance = allowedSpeedOf(walkSpeed) * SPEED_TOLERANCE * math.min(span, MAX_SPAN) + SLACK_STUDS;
+	const dy = sample.y - state.y;
+	const horizontalExcess =
+		math.sqrt(dx * dx + dz * dz) - (allowedSpeedOf(walkSpeed) * SPEED_TOLERANCE * span + SLACK_STUDS);
+	// Up and down have different limits: jumping is slow, falling in a deep shaft is fast and legal.
+	const verticalSpeed = dy >= 0 ? MAX_RISE_SPEED : MAX_FALL_SPEED;
+	const verticalExcess = math.abs(dy) - (verticalSpeed * span + SLACK_STUDS);
+	const excess = math.max(horizontalExcess, verticalExcess);
 
-	if (distance <= allowance) {
+	if (excess <= 0) {
 		const strikes = math.max(0, state.strikes - 1);
 		// Inside the window the anchor stays put, so the next sample is measured over a longer span.
 		if (span < ANCHOR_WINDOW) {
@@ -89,7 +109,7 @@ export function checkMove(state: MoveState, sample: MoveSample, walkSpeed: numbe
 	}
 
 	const strikes = state.strikes + 1;
-	if (distance - allowance > TELEPORT_STUDS || strikes >= MAX_STRIKES) {
+	if (excess > TELEPORT_STUDS || strikes >= MAX_STRIKES) {
 		// Keep the honest position, restart the clock from now so the next check measures from the pull-back.
 		return { verdict: "rubberband", state: { ...state, time: sample.time, strikes: 0 } };
 	}

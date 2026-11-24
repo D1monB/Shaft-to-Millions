@@ -47,17 +47,21 @@ function checkPosition(player: Player): void {
 	const humanoid = character?.FindFirstChildOfClass("Humanoid");
 	const root = character?.FindFirstChild("HumanoidRootPart");
 	const walkSpeed = walkSpeedOf(player);
-	// Dead, seated (vehicles move the character on their own) or not loaded: no honest baseline to compare to.
+	// Character or profile not loaded yet: start over once they are.
 	if (
 		character === undefined ||
 		humanoid === undefined ||
-		humanoid.Health <= 0 ||
-		humanoid.Sit ||
 		root === undefined ||
 		!root.IsA("BasePart") ||
 		walkSpeed === undefined
 	) {
 		states.delete(player);
+		return;
+	}
+	// A dead body is only skipped, the baseline stays: dying must not hand out a free unchecked start.
+	// There is NO exemption for Humanoid.Sit: the client controls its own character, so "I am seated" proves nothing,
+	// and the game has no vehicles. If seats or vehicles come, trust only a server-known Seat (humanoid.SeatPart).
+	if (humanoid.Health <= 0) {
 		return;
 	}
 
@@ -77,8 +81,10 @@ function checkPosition(player: Player): void {
 	if (result.verdict !== "rubberband") {
 		return;
 	}
-	// Move back to the last honest spot and stop any speed the client built up.
-	character.PivotTo(new CFrame(new Vector3(result.state.x, result.state.y, result.state.z)));
+	// Move back to the last honest spot (keeping where the player faces) and stop any speed the client built up.
+	const back = new Vector3(result.state.x, result.state.y, result.state.z);
+	const pivot = character.GetPivot();
+	character.PivotTo(pivot.sub(pivot.Position).add(back));
 	root.AssemblyLinearVelocity = Vector3.zero;
 	if (logLimiter.tryTake(player.UserId, os.clock())) {
 		warn(`[movement] user ${player.UserId} pulled back (moved faster than allowed)`);

@@ -1,4 +1,5 @@
-// Movement check numbers in one place. The check only looks at HORIZONTAL speed: falling is legal and fast.
+// Movement check numbers in one place. Horizontal speed follows the player's walk speed; vertical speed has its own
+// limits for rising and falling.
 
 /** Seconds between two server checks of a character. */
 export const CHECK_INTERVAL = 0.25;
@@ -25,7 +26,17 @@ export const TELEPORT_STUDS = 50;
 export const MAX_STRIKES = 3;
 
 /**
- * Longest time span (seconds) a sample may be measured over.
- * Why: a strike keeps the old position, so the span grows; without a cap a cheater would get a growing allowance.
+ * Beyond this many seconds since the anchor the check starts over from the current position.
+ * Why: only a stalled server gets here (strikes pull a cheater back long before), and measuring an honest player
+ * over a long gap would pull them back by mistake.
  */
-export const MAX_SPAN = 3;
+export const STALL_SPAN = 3;
+
+/** Studs per second a character may rise (jump, climb). Roblox jump speed is about 50. */
+export const MAX_RISE_SPEED = 50;
+
+/**
+ * Studs per second a character may fall. The shaft is deep and falls are fast and legal, so this is generous.
+ * It only stops "teleport 1000 studs down" in one step. TODO: confirm the real fall speed in a Studio play-test.
+ */
+export const MAX_FALL_SPEED = 700;
