@@ -15,7 +15,11 @@
 		"node": ">=24"
 	},
 	"dependencies": {
+		"@rbxts/pretty-react-hooks": "0.6.4",
 		"@rbxts/profile-store": "1.0.3",
+		"@rbxts/react": "17.3.13-ts.1",
+		"@rbxts/react-roblox": "17.3.13-ts.1",
+		"@rbxts/ripple": "0.9.3",
 		"@rbxts/services": "1.6.0",
 		"@rbxts/t": "3.2.1"
 	},
@@ -25,6 +29,7 @@
 		"@rbxts/types": "1.0.963",
 		"eslint": "10.15.0",
 		"eslint-config-prettier": "10.1.8",
+		"eslint-plugin-react-hooks": "7.1.1",
 		"eslint-plugin-roblox-ts": "1.5.0",
 		"prettier": "3.10.1",
 		"roblox-ts": "3.0.0",
