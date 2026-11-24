@@ -15,4 +15,4 @@ Written in TypeScript with roblox-ts, synced to Roblox Studio with Rojo.
 - Terminal 2: `rojo serve`
 - Studio: Rojo plugin, Connect (port 34872).
 
-Project rules: [CLAUDE.md](CLAUDE.md). Decisions: [docs/decisions.md](docs/decisions.md).
+Project rules: [CLAUDE.md](CLAUDE.md). What is in the game and how to play-test it: [docs/README.md](docs/README.md).
