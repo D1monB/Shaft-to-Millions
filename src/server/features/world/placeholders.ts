@@ -140,3 +140,34 @@ export function buildBasePlaceholders(): void {
 		});
 	}
 }
+
+/** Factory area on the surface: warehouse and one spot per machine. */
+export function buildFactoryPlaceholders(): void {
+	if (needsPlaceholders(TAGS.Warehouse)) {
+		makePlaceholder({
+			name: "Warehouse",
+			size: new Vector3(10, 8, 6),
+			position: new Vector3(-30, 4, -20),
+			color: Color3.fromRGB(150, 110, 70),
+			tag: TAGS.Warehouse,
+			label: "Склад",
+		});
+	}
+	if (needsPlaceholders(TAGS.Machine)) {
+		const machines: ReadonlyArray<[string, string, Color3]> = [
+			["furnace", "Горн", Color3.fromRGB(200, 80, 40)],
+			["workbench", "Верстат", Color3.fromRGB(110, 120, 140)],
+		];
+		machines.forEach(([machineId, label, color], index) => {
+			makePlaceholder({
+				name: `Machine_${machineId}`,
+				size: new Vector3(6, 6, 6),
+				position: new Vector3(-30 - index * 12, 3, 0),
+				color,
+				tag: TAGS.Machine,
+				attributes: { [ATTRIBUTES.MachineId]: machineId },
+				label,
+			});
+		});
+	}
+}
