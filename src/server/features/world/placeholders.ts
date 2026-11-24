@@ -128,4 +128,15 @@ export function buildBasePlaceholders(): void {
 			label: "Магазин спорядження",
 		});
 	}
+	if (needsPlaceholders(TAGS.SellZone)) {
+		makePlaceholder({
+			name: "SellZone",
+			size: new Vector3(10, 6, 10),
+			position: new Vector3(-10, 3, 0),
+			color: Color3.fromRGB(90, 200, 120),
+			tag: TAGS.SellZone,
+			label: "Скупка руди",
+			transparent: true,
+		});
+	}
 }
