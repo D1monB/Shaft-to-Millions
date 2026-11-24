@@ -1,7 +1,9 @@
 import { BAGS } from "shared/config/bags";
+import { MACHINES, MACHINE_IDS, RECIPES, isRecipeId } from "shared/config/machines";
 import { ORE_IDS } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
-import { MAX_COUNTER, repairCountMap, repairInteger, repairTable } from "shared/lib/repair";
+import { RESOURCE_IDS } from "shared/config/resources";
+import { MAX_COUNTER, repairCountMap, repairInteger, repairNumber, repairTable } from "shared/lib/repair";
 import { PlainTable } from "shared/lib/tables";
 
 /**
@@ -26,5 +28,46 @@ export function sanitize(data: PlainTable): string[] {
 	repairInteger(levels, "pickaxe", 1, PICKAXES.size(), 1, "levels.pickaxe", repairs);
 	repairInteger(levels, "bag", 1, BAGS.size(), 1, "levels.bag", repairs);
 
+	repairCountMap(data, "warehouse", RESOURCE_IDS, "warehouse", repairs);
+	repairMachines(data, repairs);
+
 	return repairs;
+}
+
+// Latest sane unix time we accept (year ~2100). Anything later is a corrupted timestamp.
+const MAX_TIMESTAMP = 4_102_444_800;
+
+/**
+ * Each owned machine: a queue of known recipes for THAT machine (capped at its limit), a sane start time
+ * and finished output counts. Unknown machine ids are left alone (newer server data).
+ */
+function repairMachines(data: PlainTable, repairs: string[]): void {
+	const machines = repairTable(data, "machines", "machines", repairs);
+	for (const machineId of MACHINE_IDS) {
+		const raw = machines[machineId];
+		if (raw === undefined) {
+			continue;
+		}
+		const path = `machines.${machineId}`;
+		const machine = repairTable(machines, machineId, path, repairs);
+		const queue = machine.queue;
+		const cleanQueue: string[] = [];
+		if (typeIs(queue, "table")) {
+			for (const recipeId of queue as unknown[]) {
+				if (
+					isRecipeId(recipeId) &&
+					RECIPES[recipeId].machine === machineId &&
+					cleanQueue.size() < MACHINES[machineId].queueLimit
+				) {
+					cleanQueue.push(recipeId);
+				}
+			}
+		}
+		if (!typeIs(queue, "table") || cleanQueue.size() !== (queue as unknown[]).size()) {
+			repairs.push(`${path}.queue`);
+		}
+		machine.queue = cleanQueue;
+		repairNumber(machine, "startedAt", 0, MAX_TIMESTAMP, 0, `${path}.startedAt`, repairs);
+		repairCountMap(machine, "ready", RESOURCE_IDS, `${path}.ready`, repairs);
+	}
 }

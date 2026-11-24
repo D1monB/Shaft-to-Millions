@@ -16,6 +16,11 @@ export function setSellMultiplierProvider(provider: (player: Player) => number):
 	sellMultiplierOf = provider;
 }
 
+/** The sell multiplier (pets) for this player. Warehouse sales use the same bonus as the sell zone. */
+export function getSellMultiplier(player: Player): number {
+	return sellMultiplierOf(player);
+}
+
 function handleSell(player: Player, args: Array<unknown>): void {
 	if (args.size() !== 0) {
 		logAbuse(player, "bad SellBag arguments");

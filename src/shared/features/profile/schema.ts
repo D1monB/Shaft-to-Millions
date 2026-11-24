@@ -1,5 +1,7 @@
 import { t } from "@rbxts/t";
+import { MachineId } from "shared/config/machines";
 import { OreId } from "shared/config/ores";
+import type { Counts, MachineState } from "shared/features/factory";
 
 /**
  * Bump this ONLY for changes that old saves cannot survive on their own
@@ -29,6 +31,10 @@ export interface ProfileData {
 	bag: Partial<Record<OreId, number>>;
 	/** Gear levels, 1-based (level 1 = starter gear). */
 	levels: GearLevels;
+	/** Base storage on the surface (ore and products). */
+	warehouse: Counts;
+	/** Owned machines. A machine is owned when its entry exists. */
+	machines: Partial<Record<MachineId, MachineState>>;
 }
 
 export interface GearLevels {
@@ -43,6 +49,8 @@ export function createDefaultProfileData(): ProfileData {
 		stats: { totalEarned: 0, oresMined: 0 },
 		bag: {},
 		levels: { pickaxe: 1, bag: 1 },
+		warehouse: {},
+		machines: {},
 	};
 }
 
@@ -54,6 +62,11 @@ const profileDataShape = t.interface({
 	stats: t.interface({ totalEarned: t.integer, oresMined: t.integer }),
 	bag: t.map(t.string, t.number),
 	levels: t.interface({ pickaxe: t.integer, bag: t.integer }),
+	warehouse: t.map(t.string, t.number),
+	machines: t.map(
+		t.string,
+		t.interface({ queue: t.array(t.string), startedAt: t.number, ready: t.map(t.string, t.number) }),
+	),
 });
 
 export function isProfileData(value: unknown): value is ProfileData {
