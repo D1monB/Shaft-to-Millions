@@ -1,4 +1,5 @@
 import { BAGS } from "shared/config/bags";
+import { INVENTORY_HARD_LIMIT, isItemId } from "shared/config/items";
 import { MACHINES, MACHINE_IDS, RECIPES, isRecipeId } from "shared/config/machines";
 import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
@@ -33,6 +34,8 @@ export function sanitize(data: PlainTable): string[] {
 	repairInteger(levels, "shoes", 1, SHOES.size(), 1, "levels.shoes", repairs);
 	repairInteger(data, "deepestLayer", 1, LAYER_COUNT, 1, "deepestLayer", repairs);
 	repairDrills(data, repairs);
+	repairInventory(data, repairs);
+	repairPurchaseIds(data, repairs);
 
 	repairCountMap(data, "warehouse", RESOURCE_IDS, "warehouse", repairs);
 	repairMachines(data, repairs);
@@ -101,4 +104,60 @@ function repairDrills(data: PlainTable, repairs: string[]): void {
 		repairNumber(drill, "progress", 0, 1e6, 0, path + ".progress", repairs);
 		repairInteger(drill, "buffer", 0, def.bufferCapacity, 0, path + ".buffer", repairs);
 	}
+}
+
+/**
+ * Inventory: only known items, unique uids, at most the hard limit. nextUid is pushed past every uid in use,
+ * so a repaired save can never hand out a uid twice (which would let one pet be equipped as two).
+ */
+function repairInventory(data: PlainTable, repairs: string[]): void {
+	const raw = data.inventory;
+	const clean: Array<{ uid: string; item: string }> = [];
+	const seen = new Set<string>();
+	let highest = 0;
+	if (typeIs(raw, "table")) {
+		for (const entry of raw as unknown[]) {
+			if (!typeIs(entry, "table")) {
+				continue;
+			}
+			const { uid, item } = entry as { uid?: unknown; item?: unknown };
+			if (!typeIs(uid, "string") || uid.size() > 16 || seen.has(uid) || !isItemId(item)) {
+				continue;
+			}
+			if (clean.size() >= INVENTORY_HARD_LIMIT) {
+				break;
+			}
+			seen.add(uid);
+			clean.push({ uid, item });
+			const numeric = tonumber(uid.sub(2));
+			if (numeric !== undefined && numeric > highest) {
+				highest = numeric;
+			}
+		}
+	}
+	if (!typeIs(raw, "table") || clean.size() !== (raw as unknown[]).size()) {
+		repairs.push("inventory");
+	}
+	data.inventory = clean;
+	repairInteger(data, "nextUid", 1, MAX_COUNTER, 1, "nextUid", repairs);
+	if ((data.nextUid as number) <= highest) {
+		data.nextUid = highest + 1;
+		repairs.push("nextUid");
+	}
+}
+
+function repairPurchaseIds(data: PlainTable, repairs: string[]): void {
+	const raw = data.purchaseIds;
+	const clean: string[] = [];
+	if (typeIs(raw, "table")) {
+		for (const id of raw as unknown[]) {
+			if (typeIs(id, "string") && id.size() <= 64 && clean.size() < 100) {
+				clean.push(id);
+			}
+		}
+	}
+	if (!typeIs(raw, "table") || clean.size() !== (raw as unknown[]).size()) {
+		repairs.push("purchaseIds");
+	}
+	data.purchaseIds = clean;
 }

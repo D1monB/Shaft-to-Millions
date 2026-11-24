@@ -231,3 +231,27 @@ export function buildLayerPlaceholders(): void {
 		}
 	}
 }
+
+/** Three chest stands near the shop. */
+export function buildChestPlaceholders(): void {
+	if (!needsPlaceholders(TAGS.Chest)) {
+		return;
+	}
+	const chests: ReadonlyArray<[string, string, Color3]> = [
+		["pet_chest", "Скриня улюбленців", Color3.fromRGB(255, 140, 180)],
+		["speed_chest", "Скриня швидкості", Color3.fromRGB(80, 200, 255)],
+		["pickaxe_chest", "Скриня кирки", Color3.fromRGB(255, 170, 60)],
+	];
+	chests.forEach(([chestId, label, color], index) => {
+		makePlaceholder({
+			name: `Chest_${chestId}`,
+			size: new Vector3(4, 3, 3),
+			position: new Vector3(10 + index * 8, 1.5, -25),
+			color,
+			material: Enum.Material.Wood,
+			tag: TAGS.Chest,
+			attributes: { [ATTRIBUTES.ChestId]: chestId },
+			label,
+		});
+	});
+}

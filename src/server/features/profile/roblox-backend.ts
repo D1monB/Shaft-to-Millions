@@ -31,6 +31,19 @@ export function createRobloxBackend(): ProfileBackend {
 					profile.Data = data;
 				},
 				end: () => profile.EndSession(),
+				saveAndWait: (timeoutSeconds) => {
+					let saved = false;
+					const connection = profile.OnAfterSave.Connect(() => {
+						saved = true;
+					});
+					profile.Save();
+					const deadline = os.clock() + timeoutSeconds;
+					while (!saved && os.clock() < deadline && profile.IsActive()) {
+						task.wait(0.1);
+					}
+					connection.Disconnect();
+					return saved;
+				},
 				onSessionEnd: (callback) => {
 					profile.OnSessionEnd.Connect(callback);
 				},

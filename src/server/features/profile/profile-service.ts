@@ -76,6 +76,14 @@ export function getProfileData(player: Player): ProfileData | undefined {
 	return sessions?.getData(player.UserId);
 }
 
+/**
+ * Saves the player's profile now and yields until it is confirmed (or the timeout passes).
+ * Call it after granting a Robux purchase and before returning PurchaseGranted.
+ */
+export function saveProfileNow(player: Player, timeoutSeconds: number): boolean {
+	return sessions?.saveNow(player.UserId, timeoutSeconds) ?? false;
+}
+
 /** All players whose data is loaded right now. Used by periodic ticks (machines, drills). */
 export function getLoadedPlayers(): Player[] {
 	return Players.GetPlayers().filter((player) => getProfileData(player) !== undefined);
