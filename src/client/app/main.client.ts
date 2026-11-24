@@ -8,6 +8,7 @@ import { startEquipmentController } from "client/features/equipment";
 import { startFactoryController } from "client/features/factory";
 import { startGoalsController } from "client/features/goals";
 import { startMiningController } from "client/features/mining";
+import { startPetsController } from "client/features/pets";
 import { startProfileController } from "client/features/profile";
 import { startSellController } from "client/features/selling";
 import { startShopController } from "client/features/upgrades";
@@ -21,6 +22,7 @@ startFactoryController();
 startDrillController();
 startChestsController();
 startEquipmentController();
+startPetsController();
 startDevtoolsController();
 
 mountUi();

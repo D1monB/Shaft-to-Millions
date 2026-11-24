@@ -1,18 +1,21 @@
 // Equipment: equip/unequip/sell requests, and the bonuses fed into selling, movement and mining.
 // Bonuses are always recomputed from saved data with the shared formula: nothing about them is trusted.
 import { Players } from "@rbxts/services";
-import { ITEMS, RARITY_COLORS } from "shared/config/items";
+import { ITEMS, ItemId, RARITY_COLORS } from "shared/config/items";
 import {
 	EQUIP_BEST_REMOTE,
 	EQUIP_REMOTE,
+	PETS_ATTRIBUTE,
 	SELL_ITEM_REMOTE,
 	UNEQUIP_REMOTE,
 	bestLoadout,
 	computeBonuses,
+	encodePets,
 	equipItem,
 	sellItem,
 	unequipItem,
 } from "shared/features/equipment";
+import { ProfileData } from "shared/features/profile";
 import { formatMoney } from "shared/lib/format";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { isShortString } from "shared/lib/validate";
@@ -90,14 +93,36 @@ function rgb(color: readonly [number, number, number]): Color3 {
 	return Color3.fromRGB(color[0], color[1], color[2]);
 }
 
-/** Small glowing balls next to the character for pets, sparkles for auras. Rebuilt only when the loadout changes. */
+/**
+ * Publishes the equipped pets as a Player attribute. Every client draws and moves the pets itself (see the pets
+ * controller), so the server does no per-frame work and welded parts never fight the camera or network ownership.
+ */
+function publishPets(player: Player, data: ProfileData): void {
+	const ids: ItemId[] = [];
+	for (const uid of data.equipped.pets) {
+		const owned = data.inventory.find((entry) => entry.uid === uid);
+		if (owned !== undefined) {
+			ids.push(owned.item);
+		}
+	}
+	const text = encodePets(ids);
+	if (player.GetAttribute(PETS_ATTRIBUTE) !== text) {
+		player.SetAttribute(PETS_ATTRIBUTE, text);
+	}
+}
+
+/** Sparkles for auras (pets are drawn by clients). Rebuilt only when the loadout changes. */
 function refreshVisuals(player: Player, lastSignature: Map<Player, string>): void {
 	const data = getProfileData(player);
-	const root = player.Character?.FindFirstChild("HumanoidRootPart");
-	if (data === undefined || root === undefined || !root.IsA("BasePart")) {
+	if (data === undefined) {
 		return;
 	}
-	const signature = `${data.equipped.speedAura}|${data.equipped.pickaxeAura}|${data.equipped.pets.join(",")}|${root}`;
+	publishPets(player, data);
+	const root = player.Character?.FindFirstChild("HumanoidRootPart");
+	if (root === undefined || !root.IsA("BasePart")) {
+		return;
+	}
+	const signature = `${data.equipped.speedAura}|${data.equipped.pickaxeAura}|${root}`;
 	if (lastSignature.get(player) === signature && root.FindFirstChild(VISUAL_NAME) !== undefined) {
 		return;
 	}
@@ -105,29 +130,6 @@ function refreshVisuals(player: Player, lastSignature: Map<Player, string>): voi
 	root.FindFirstChild(VISUAL_NAME)?.Destroy();
 	const folder = new Instance("Folder");
 	folder.Name = VISUAL_NAME;
-
-	data.equipped.pets.forEach((uid, index) => {
-		const owned = data.inventory.find((entry) => entry.uid === uid);
-		if (owned === undefined) {
-			return;
-		}
-		const pet = new Instance("Part");
-		pet.Name = ITEMS[owned.item].name;
-		pet.Shape = Enum.PartType.Ball;
-		pet.Size = new Vector3(1.2, 1.2, 1.2);
-		pet.Material = Enum.Material.Neon;
-		pet.Color = rgb(RARITY_COLORS[ITEMS[owned.item].rarity]);
-		pet.CanCollide = false;
-		pet.CanQuery = false;
-		pet.CanTouch = false;
-		pet.Massless = true;
-		pet.CFrame = root.CFrame.mul(new CFrame(-2.5 + index * 2.5, 1.5, 2.5));
-		const weld = new Instance("WeldConstraint");
-		weld.Part0 = root;
-		weld.Part1 = pet;
-		weld.Parent = pet;
-		pet.Parent = folder;
-	});
 
 	for (const uid of [data.equipped.speedAura, data.equipped.pickaxeAura]) {
 		const owned = uid === undefined ? undefined : data.inventory.find((entry) => entry.uid === uid);

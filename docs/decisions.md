@@ -116,3 +116,16 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the first security review showed a teleport exploit. The anchor (not "previous sample") is used because the slack
   would otherwise be granted again for every sample and a 3x speed hack would pass. Known limit: a hack of about 1.7x or less
   is not caught; that is the price of not punishing lag.
+
+## 017. Pets are drawn by every client
+
+- **Date:** 2026-11-25
+- **Decision:** the server no longer welds pet balls to characters. It publishes the equipped pet item ids as a Player
+  attribute (`EquippedPets`). Each client draws the pets of all players from an object pool and moves them with frame-rate
+  independent smoothing and a small bob, fanned out behind the owner. Players farther than 120 studs from the camera get no
+  pets drawn. Pets jump to their target after a teleport instead of flying across the map.
+- **Why:** smooth movement needs per-frame updates, which welds cannot give without network ownership problems, and the
+  server should do no per-frame work (CLAUDE.md: effects on the client with object pools). The attribute is read
+  defensively (`decodePets` keeps only known pet ids, at most 3).
+- **Not included:** real pet models. The friend's Blender models can replace the balls later; only `acquirePart` and
+  `style` in `client/features/pets/pets-controller.ts` need to change.
