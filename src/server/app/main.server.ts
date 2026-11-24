@@ -3,6 +3,7 @@
 // 2. feature services (they register remotes and "profile loaded" listeners),
 // 3. profile last, so every listener is in place before the first player's data loads.
 import { startChestsService } from "server/features/chests";
+import { startDevtoolsService } from "server/features/devtools";
 import { startDrillService } from "server/features/drill";
 import { startEquipmentService } from "server/features/equipment";
 import { startFactoryService } from "server/features/factory";
@@ -33,5 +34,6 @@ startMovementService();
 startDrillService();
 startChestsService();
 startEquipmentService();
+startDevtoolsService();
 
 startProfileService();
