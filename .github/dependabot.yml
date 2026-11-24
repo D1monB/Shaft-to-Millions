@@ -1,0 +1,19 @@
+version: 2
+updates:
+    - package-ecosystem: npm
+      directory: /
+      target-branch: develop
+      # roblox-ts pins TypeScript to exactly 5.5.3, so TypeScript is updated only together with roblox-ts.
+      ignore:
+          - dependency-name: "typescript"
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 5
+      groups:
+          lint-tooling:
+              patterns: ["eslint*", "@typescript-eslint/*", "typescript-eslint", "prettier"]
+    - package-ecosystem: github-actions
+      directory: /
+      target-branch: develop
+      schedule:
+          interval: weekly

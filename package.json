@@ -1,0 +1,40 @@
+{
+	"name": "shaft-to-millions",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Deep mining and factory game for Roblox (roblox-ts + Rojo)",
+	"scripts": {
+		"build": "rbxtsc",
+		"watch": "rbxtsc -w",
+		"lint": "eslint . && prettier --check .",
+		"format": "prettier --write . && eslint . --fix",
+		"test": "rbxtsc && lune run scripts/run-tests.luau",
+		"audit": "npm audit --audit-level=moderate"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"dependencies": {
+		"@rbxts/profile-store": "1.0.3",
+		"@rbxts/services": "1.6.0",
+		"@rbxts/t": "3.2.1"
+	},
+	"devDependencies": {
+		"@rbxts/compiler-types": "3.0.0-types.0",
+		"@rbxts/lunit": "4.0.2",
+		"@rbxts/types": "1.0.963",
+		"eslint": "10.15.0",
+		"eslint-config-prettier": "10.1.8",
+		"eslint-plugin-roblox-ts": "1.5.0",
+		"prettier": "3.10.1",
+		"roblox-ts": "3.0.0",
+		"typescript": "5.5.3",
+		"typescript-eslint": "8.73.0"
+	},
+	"overrides": {
+		"eslint-plugin-roblox-ts": {
+			"@typescript-eslint/utils": "8.73.0",
+			"@typescript-eslint/type-utils": "8.73.0"
+		}
+	}
+}

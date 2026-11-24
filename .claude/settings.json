@@ -1,0 +1,104 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
+	"model": "sonnet",
+	"permissions": {
+		"defaultMode": "default",
+		"allow": [
+			"Bash(npm run build)",
+			"Bash(npm run lint)",
+			"Bash(npm run format)",
+			"Bash(npm run test)",
+			"Bash(npm run test *)",
+			"Bash(npm test)",
+			"Bash(npm test *)",
+			"Bash(npm audit)",
+			"Bash(npx rbxtsc *)",
+			"Bash(npx eslint *)",
+			"Bash(npx prettier *)",
+			"Bash(git status)",
+			"Bash(git diff *)",
+			"Bash(git log *)",
+			"Bash(git branch *)",
+			"Bash(git show *)"
+		],
+		"ask": [
+			"Bash(npm install *)",
+			"Bash(npm uninstall *)",
+			"Bash(npm update *)",
+			"Bash(npm audit fix *)",
+			"Bash(npx *)",
+			"Bash(rojo *)",
+			"Bash(git add *)",
+			"Bash(git commit *)",
+			"Bash(git push *)",
+			"Bash(git merge *)",
+			"Bash(git rebase *)",
+			"Bash(git checkout *)",
+			"Bash(gh *)",
+			"Edit(./.github/**)",
+			"Write(./.github/**)",
+			"Edit(./.claude/**)",
+			"Write(./.claude/**)",
+			"Edit(./package.json)",
+			"Edit(./CLAUDE.md)",
+			"mcp__roblox-studio__start_stop_play"
+		],
+		"deny": [
+			"Read(./.env)",
+			"Read(./.env.*)",
+			"Read(./secrets/**)",
+			"Read(**/*.pem)",
+			"Read(**/*.key)",
+			"Read(**/.ssh/**)",
+			"Read(**/.aws/**)",
+			"Read(./node_modules/**)",
+			"Read(./out/**)",
+			"Read(./include/**)",
+			"Read(./package-lock.json)",
+			"Edit(./.env)",
+			"Edit(./.env.*)",
+			"Write(./.env)",
+			"Write(./.env.*)",
+			"Bash(curl *)",
+			"Bash(wget *)",
+			"Bash(rm -rf *)",
+			"Bash(git push --force *)",
+			"Bash(git push -f *)",
+			"Bash(git reset --hard *)",
+			"Bash(git clean *)",
+			"mcp__roblox-studio__execute_luau",
+			"mcp__roblox-studio__multi_edit",
+			"mcp__roblox-studio__insert_asset",
+			"mcp__roblox-studio__generate_mesh",
+			"mcp__roblox-studio__generate_material",
+			"mcp__roblox-studio__generate_procedural_model",
+			"mcp__roblox-studio__generate_texture",
+			"mcp__roblox-studio__generate_scene",
+			"mcp__roblox-studio__generate_avatar",
+			"mcp__roblox-studio__generate_animation",
+			"mcp__roblox-studio__auto_setup_avatar",
+			"mcp__roblox-studio__segment_mesh",
+			"mcp__roblox-studio__upload_image",
+			"mcp__roblox-studio__character_navigation",
+			"mcp__roblox-studio__user_keyboard_input",
+			"mcp__roblox-studio__user_mouse_input",
+			"mcp__roblox-studio__subagent",
+			"mcp__roblox-studio__open_cloud_invoke",
+			"mcp__roblox-studio__create_skill",
+			"mcp__roblox-studio__edit_skill"
+		]
+	},
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node .claude/hooks/format.mjs"
+					}
+				]
+			}
+		]
+	}
+}

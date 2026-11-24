@@ -1,0 +1,36 @@
+# Dependencies and generated output (roblox-ts / Rojo)
+node_modules/
+out/
+include/
+*.tsbuildinfo
+
+# Secrets: never commit. Use .env locally, GitHub Actions secrets in CI.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Roblox place/model files: the map is owned in Studio, not in this repo
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+# Personal editor settings stay personal; only the recommended extensions list is shared.
+.vscode/*
+!.vscode/extensions.json
+
+# Claude Code local (per-user) settings
+.claude/settings.local.json

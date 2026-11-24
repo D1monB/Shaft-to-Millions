@@ -1,0 +1,43 @@
+{
+	"name": "shaft-to-millions",
+	"globIgnorePaths": ["**/*.test.luau", "**/*.spec.luau", "node_modules/@rbxts/lunit/**"],
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"rbxts_include": {
+				"$path": "include",
+				"node_modules": {
+					"$className": "Folder",
+					"@rbxts": {
+						"$path": "node_modules/@rbxts"
+					}
+				}
+			},
+			"TS": {
+				"$path": "out/shared"
+			}
+		},
+		"ServerScriptService": {
+			"TS": {
+				"$path": "out/server"
+			}
+		},
+		"StarterPlayer": {
+			"StarterPlayerScripts": {
+				"TS": {
+					"$path": "out/client"
+				}
+			}
+		},
+		"Workspace": {
+			"$properties": {
+				"FilteringEnabled": true
+			}
+		},
+		"HttpService": {
+			"$properties": {
+				"HttpEnabled": false
+			}
+		}
+	}
+}
