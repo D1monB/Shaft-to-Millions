@@ -78,22 +78,18 @@ export function createDefaultProfileData(): ProfileData {
 
 // Structure check only. Value ranges are enforced by sanitize.ts before this runs.
 // `interface` (not strictInterface) allows extra keys, so data from a newer feature is not rejected.
+// Id-keyed maps (bag, warehouse, drills, machines) are only checked to be tables: sanitize.ts repairs every KNOWN
+// key, and an unknown key from a newer server must never make the whole save unloadable.
 const profileDataShape = t.interface({
 	schemaVersion: t.integer,
 	money: t.integer,
 	stats: t.interface({ totalEarned: t.integer, oresMined: t.integer }),
-	bag: t.map(t.string, t.number),
+	bag: t.table,
 	levels: t.interface({ pickaxe: t.integer, bag: t.integer, shoes: t.integer }),
 	deepestLayer: t.integer,
-	drills: t.map(
-		t.string,
-		t.interface({ oreId: t.string, lastTick: t.number, progress: t.number, buffer: t.integer }),
-	),
-	warehouse: t.map(t.string, t.number),
-	machines: t.map(
-		t.string,
-		t.interface({ queue: t.array(t.string), startedAt: t.number, ready: t.map(t.string, t.number) }),
-	),
+	drills: t.table,
+	warehouse: t.table,
+	machines: t.table,
 	inventory: t.array(t.interface({ uid: t.string, item: t.string })),
 	nextUid: t.integer,
 	purchaseIds: t.array(t.string),

@@ -3,7 +3,12 @@ import { MarketplaceService, Players } from "@rbxts/services";
 import { CHESTS, ChestId, isChestId } from "shared/config/chests";
 import { INVENTORY_LIMIT, ITEMS, KIND_NAMES, RARITY_COLORS, RARITY_NAMES, isItemId } from "shared/config/items";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
-import { CHEST_POLICY_REMOTE, CHEST_RESULT_REMOTE, OPEN_CHEST_REMOTE, chestOdds } from "shared/features/chests";
+import {
+	CHEST_RESULT_REMOTE,
+	OPEN_CHEST_REMOTE,
+	ROBUX_CHESTS_ALLOWED_ATTRIBUTE,
+	chestOdds,
+} from "shared/features/chests";
 import { formatMoney, formatPercent } from "shared/lib/format";
 import { registerHudLine } from "client/features/hud";
 import { getView } from "client/features/profile";
@@ -11,8 +16,10 @@ import { onPromptForTag } from "client/lib/prompts";
 import { onServerMessage, sendToServer } from "client/lib/remotes";
 import { THEME, makeButton, makeCard, makeLabel, openPanel, toast } from "client/lib/ui";
 
-// Until the server says otherwise, Robux is not offered (fail closed, same as the server).
-let robuxAllowed = false;
+/** Robux is offered only when the server says so (fail closed, same as the server). */
+function robuxAllowed(): boolean {
+	return Players.LocalPlayer.GetAttribute(ROBUX_CHESTS_ALLOWED_ATTRIBUTE) === true;
+}
 
 function rarityColor(item: keyof typeof ITEMS): Color3 {
 	const [r, g, b] = RARITY_COLORS[ITEMS[item].rarity];
@@ -70,7 +77,7 @@ function renderChest(chestId: ChestId): (content: ScrollingFrame) => void {
 		const productId = chest.robuxProductId;
 		if (productId === undefined) {
 			makeLabel(content, "Відкриття за Robux ще не налаштоване.", { color: THEME.muted, size: 13 });
-		} else if (!robuxAllowed) {
+		} else if (!robuxAllowed()) {
 			makeLabel(content, "Відкриття за Robux недоступне для твого акаунта.", { color: THEME.muted, size: 13 });
 		} else {
 			makeButton(
@@ -102,9 +109,6 @@ export function startChestsController(): void {
 		if (isChestId(chestId)) {
 			openPanel(`chest_${chestId}`, CHESTS[chestId].name, renderChest(chestId));
 		}
-	});
-	onServerMessage(CHEST_POLICY_REMOTE, (allowed) => {
-		robuxAllowed = allowed === true;
 	});
 	onServerMessage(CHEST_RESULT_REMOTE, (item, chestId) => {
 		if (isItemId(item) && isChestId(chestId)) {

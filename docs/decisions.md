@@ -67,3 +67,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Date:** 2026-11-24
 - **Decision:** respawn at the last reached camp, nothing is lost.
 - **Status:** temporary until play tests; the real penalty is still an open question.
+
+## 010. Fixes after the first security review
+
+- **Date:** 2026-11-24
+- **Decision:** ore can only be mined on opened layers; at least 45 s between layer unlocks; camps are not Roblox spawn
+  points (the server moves the character to the last opened camp); unknown keys in id maps never make a save unloadable;
+  item uids must be `i<digits>`; the Robux policy flag is a Player attribute with retries; ProcessReceipt decisions are unit tested.
+- **Why:** the review found that a teleport exploit could open every layer within seconds and mine deep ore, and that a
+  save written by a newer server could lock a player out. A full server-side movement check is still on the roadmap.
