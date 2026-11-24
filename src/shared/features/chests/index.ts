@@ -11,4 +11,4 @@ export {
 	wasGranted,
 } from "./chests";
 export type { DollarOpenCheck, OddsLine, OwnedItem } from "./chests";
-export { CHEST_DISTANCE, CHEST_POLICY_REMOTE, CHEST_RESULT_REMOTE, OPEN_CHEST_REMOTE } from "./network";
+export { CHEST_DISTANCE, ROBUX_CHESTS_ALLOWED_ATTRIBUTE, CHEST_RESULT_REMOTE, OPEN_CHEST_REMOTE } from "./network";

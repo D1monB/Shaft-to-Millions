@@ -12,6 +12,7 @@ import {
 	getPickaxe,
 	rollYield,
 } from "shared/features/mining";
+import { isLayerOpen } from "shared/features/layers";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
@@ -57,6 +58,12 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	}
 	if (target.sub(root).Magnitude > MAX_MINING_DISTANCE) {
 		logAbuse(player, "mining from too far away");
+		return;
+	}
+
+	if (!isLayerOpen(ORES[oreId].layer, data.deepestLayer)) {
+		// Reaching a layer's ore without opening its camp means skipping the descent (teleport).
+		logAbuse(player, "mining on a layer that is not opened");
 		return;
 	}
 

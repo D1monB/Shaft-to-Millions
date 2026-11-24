@@ -107,6 +107,11 @@ function repairDrills(data: PlainTable, repairs: string[]): void {
 	}
 }
 
+/** "i" followed by 1-12 digits: always parseable and always below MAX_COUNTER. */
+function isValidUid(uid: unknown): uid is string {
+	return typeIs(uid, "string") && string.match(uid, "^i%d%d?%d?%d?%d?%d?%d?%d?%d?%d?%d?%d?$")[0] !== undefined;
+}
+
 /**
  * Inventory: only known items, unique uids, at most the hard limit. nextUid is pushed past every uid in use,
  * so a repaired save can never hand out a uid twice (which would let one pet be equipped as two).
@@ -122,7 +127,7 @@ function repairInventory(data: PlainTable, repairs: string[]): void {
 				continue;
 			}
 			const { uid, item } = entry as { uid?: unknown; item?: unknown };
-			if (!typeIs(uid, "string") || uid.size() > 16 || seen.has(uid) || !isItemId(item)) {
+			if (!isValidUid(uid) || seen.has(uid) || !isItemId(item)) {
 				continue;
 			}
 			if (clean.size() >= INVENTORY_HARD_LIMIT) {
@@ -130,10 +135,7 @@ function repairInventory(data: PlainTable, repairs: string[]): void {
 			}
 			seen.add(uid);
 			clean.push({ uid, item });
-			const numeric = tonumber(uid.sub(2));
-			if (numeric !== undefined && numeric > highest) {
-				highest = numeric;
-			}
+			highest = math.max(highest, tonumber(uid.sub(2)) ?? 0);
 		}
 	}
 	if (!typeIs(raw, "table") || clean.size() !== (raw as unknown[]).size()) {

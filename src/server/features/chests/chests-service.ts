@@ -6,14 +6,12 @@ import { ItemId } from "shared/config/items";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import {
 	CHEST_DISTANCE,
-	CHEST_POLICY_REMOTE,
 	CHEST_RESULT_REMOTE,
+	ROBUX_CHESTS_ALLOWED_ATTRIBUTE,
 	OPEN_CHEST_REMOTE,
 	addItem,
 	canOpenWithDollars,
-	rememberPurchase,
 	rollChest,
-	wasGranted,
 } from "shared/features/chests";
 import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
@@ -21,6 +19,7 @@ import { getProfileData, markDirty, onProfileLoaded, saveProfileNow } from "serv
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
 import { fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
+import { decideReceipt } from "./receipt";
 
 const random = new Random();
 
@@ -29,18 +28,30 @@ const random = new Random();
 /** true = this player may open chests with Robux. Missing = not checked yet = not allowed. */
 const robuxAllowed = new Map<Player, boolean>();
 
+const POLICY_ATTEMPTS = 3;
+
 /**
- * Asks PolicyService whether paid random items are allowed for this player. If the call fails we treat the
- * player as restricted (fail closed): wrongly hiding a button is harmless, wrongly showing it breaks policy.
+ * Asks PolicyService whether paid random items are allowed for this player, with a few retries because the
+ * call can fail transiently. If it still fails, the player is treated as restricted (fail closed): wrongly
+ * hiding a button is harmless, wrongly showing it breaks policy.
+ * The result is published as a Player attribute: it replicates to the client whenever the client is ready,
+ * so there is no race with the client's UI starting up. Clients cannot change a server-set attribute.
  */
 function checkPolicy(player: Player): void {
-	const [ok, info] = pcall(() => PolicyService.GetPolicyInfoForPlayerAsync(player));
-	const restricted =
-		!ok ||
-		!typeIs(info, "table") ||
-		(info as { ArePaidRandomItemsRestricted?: unknown }).ArePaidRandomItemsRestricted !== false;
-	robuxAllowed.set(player, !restricted);
-	fireClient(CHEST_POLICY_REMOTE, player, !restricted);
+	let allowed = false;
+	for (let attempt = 1; attempt <= POLICY_ATTEMPTS; attempt++) {
+		const [ok, info] = pcall(() => PolicyService.GetPolicyInfoForPlayerAsync(player));
+		if (ok && typeIs(info, "table")) {
+			allowed = (info as { ArePaidRandomItemsRestricted?: unknown }).ArePaidRandomItemsRestricted === false;
+			break;
+		}
+		task.wait(2 * attempt);
+	}
+	if (player.Parent === undefined) {
+		return;
+	}
+	robuxAllowed.set(player, allowed);
+	player.SetAttribute(ROBUX_CHESTS_ALLOWED_ATTRIBUTE, allowed);
 }
 
 // ---------------------------------------------------------------- granting
@@ -100,33 +111,22 @@ const SAVE_TIMEOUT_SECONDS = 15;
  * Roblox calls this for every Developer Product purchase, possibly more than once for the same receipt.
  * Rules: grant exactly once per PurchaseId, save before saying "granted", and never grant a random item to a
  * player whose policy forbids it (we leave the receipt unprocessed instead; see docs/chests.md).
+ * The decision itself lives in receipt.ts and is unit tested.
  */
 function processReceipt(receipt: ReceiptInfo): Enum.ProductPurchaseDecision {
 	const player = Players.GetPlayerByUserId(receipt.PlayerId);
-	const data = player === undefined ? undefined : getProfileData(player);
 	const chestId = chestForProduct(receipt.ProductId);
-	if (player === undefined || data === undefined || chestId === undefined) {
+	if (player === undefined || chestId === undefined) {
 		return Enum.ProductPurchaseDecision.NotProcessedYet;
 	}
-	if (wasGranted(data.purchaseIds, receipt.PurchaseId)) {
-		// Granted earlier; only the confirmation was lost. Make sure it is saved, then confirm.
-		return saveProfileNow(player, SAVE_TIMEOUT_SECONDS)
-			? Enum.ProductPurchaseDecision.PurchaseGranted
-			: Enum.ProductPurchaseDecision.NotProcessedYet;
-	}
-	if (robuxAllowed.get(player) !== true) {
-		notify(player, "Відкриття скринь за Robux недоступне для твого акаунта.", "error");
-		return Enum.ProductPurchaseDecision.NotProcessedYet;
-	}
-	// The receipt id is recorded together with the item, in the same frame: a retry sees it and grants nothing.
-	rememberPurchase(data.purchaseIds, receipt.PurchaseId);
-	const item = grantRoll(player, data, chestId);
-	if (item === undefined) {
-		notify(player, "Інвентар переповнений. Звільни місце: покупку буде видано пізніше.", "error");
-		data.purchaseIds.remove(data.purchaseIds.indexOf(receipt.PurchaseId));
-		return Enum.ProductPurchaseDecision.NotProcessedYet;
-	}
-	return saveProfileNow(player, SAVE_TIMEOUT_SECONDS)
+	const decision = decideReceipt(receipt.PurchaseId, {
+		getData: () => getProfileData(player),
+		robuxAllowed: () => robuxAllowed.get(player) === true,
+		grant: (data) => grantRoll(player, data, chestId) !== undefined,
+		save: () => saveProfileNow(player, SAVE_TIMEOUT_SECONDS),
+		notify: (text) => notify(player, text, "error"),
+	});
+	return decision === "granted"
 		? Enum.ProductPurchaseDecision.PurchaseGranted
 		: Enum.ProductPurchaseDecision.NotProcessedYet;
 }
