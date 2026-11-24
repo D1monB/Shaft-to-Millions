@@ -45,6 +45,23 @@ export function craftSeconds(recipeId: RecipeId, speedLevel: number): number {
 	return recipe.seconds / levelOf(MACHINE_UPGRADES[recipe.machine].speed, speedLevel).value;
 }
 
+/**
+ * Sets the speed level and keeps the craft in progress at the same share done (half done stays half done).
+ * Why: otherwise `startedAt` stays and a craft 20 s into 30 s would finish at once after a x2 upgrade.
+ * Call `advance` first so finished crafts are credited at the old speed.
+ */
+export function setSpeedLevel(state: MachineState, level: number, now: number): void {
+	const head = state.queue[0];
+	if (head !== undefined) {
+		const oldSeconds = craftSeconds(head, state.speedLevel);
+		const done = math.clamp((now - state.startedAt) / oldSeconds, 0, 1);
+		state.speedLevel = level;
+		state.startedAt = now - done * craftSeconds(head, level);
+		return;
+	}
+	state.speedLevel = level;
+}
+
 /** Max crafts waiting in the machine's queue (including the one in progress). */
 export function queueLimitOf(machineId: MachineId, queueLevel: number): number {
 	return levelOf(MACHINE_UPGRADES[machineId].queue, queueLevel).value;

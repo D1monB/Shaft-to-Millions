@@ -15,6 +15,7 @@ import {
 	nextMachineUpgrade,
 	nextWarehouseUpgrade,
 	queueLimitOf,
+	setSpeedLevel,
 	simulateProcessing,
 	storageTotal,
 	warehouseCapacity,
@@ -371,6 +372,51 @@ class FactoryTests {
 		Assert.equal(base.crafts, fast.crafts);
 		Assert.equal(fast.seconds, fast.crafts);
 		Assert.true(fast.seconds < base.seconds);
+	}
+
+	@Test
+	public speedUpgradeKeepsTheShareOfTheCraftInProgress() {
+		const state = newMachineState();
+		enqueue(state, { copper: 6 }, "smelt_copper", 2, 0, 10);
+		const base = craftSeconds("smelt_copper", 1);
+		advance(state, base / 2);
+		setSpeedLevel(state, MACHINE_UPGRADES.furnace.speed.size(), base / 2);
+		const fast = craftSeconds("smelt_copper", state.speedLevel);
+		// Half done stays half done: the rest takes half of the NEW craft time, not nothing.
+		const progress = machineProgress(state, base / 2);
+		Assert.true(math.abs(progress.fraction - 0.5) < 0.0001);
+		Assert.true(math.abs(progress.secondsLeft - fast / 2) < 0.0001);
+		Assert.equal(advance(state, base / 2 + fast / 2 - 0.01), 0);
+		Assert.equal(advance(state, base / 2 + fast / 2 + 0.01), 1);
+	}
+
+	@Test
+	public speedUpgradeNeverChangesTheTotalOutput() {
+		const upgraded = newMachineState();
+		const plain = newMachineState();
+		enqueue(upgraded, { copper: 9 }, "smelt_copper", 3, 0, 10);
+		enqueue(plain, { copper: 9 }, "smelt_copper", 3, 0, 10);
+		advance(upgraded, 4);
+		setSpeedLevel(upgraded, 3, 4);
+		advance(plain, 4);
+		advance(upgraded, 1000);
+		advance(plain, 1000);
+		Assert.equal(upgraded.queue.size(), 0);
+		Assert.equal(upgraded.ready.copper_ingot, plain.ready.copper_ingot);
+	}
+
+	@Test
+	public speedUpgradeOnAnIdleOrBrokenMachineIsSafe() {
+		const idle = newMachineState();
+		setSpeedLevel(idle, 2, 100);
+		Assert.equal(idle.speedLevel, 2);
+		const broken = newMachineState();
+		enqueue(broken, { copper: 3 }, "smelt_copper", 1, 0, 10);
+		// A start time in the future (bad save): the share is clamped, never negative or above 1.
+		broken.startedAt = 5000;
+		setSpeedLevel(broken, 2, 10);
+		Assert.true(broken.startedAt <= 10);
+		Assert.true(broken.startedAt === broken.startedAt);
 	}
 
 	@Test

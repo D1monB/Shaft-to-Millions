@@ -31,6 +31,7 @@ import {
 	nextMachineUpgrade,
 	nextWarehouseUpgrade,
 	queueLimitOf,
+	setSpeedLevel,
 	storageTotal,
 	warehouseCapacity,
 } from "shared/features/factory";
@@ -254,7 +255,7 @@ function handleUpgradeMachine(player: Player, args: Array<unknown>): void {
 	// Same frame, no yields: the money goes and the level rises together.
 	data.money -= step.price;
 	if (track === "speed") {
-		state.speedLevel = step.level;
+		setSpeedLevel(state, step.level, now());
 	} else {
 		state.queueLevel = step.level;
 	}

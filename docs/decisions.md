@@ -127,5 +127,6 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Schema:** version 2 with a migration that adds the new fields (an older server must refuse a v2 save instead of cutting
   the longer queue and deleting crafts). The queue cut in `sanitize` uses the machine's own queue level.
 - **Why:** the balance analysis showed the factory stops mattering after about tier 3. Upgrades give a reason to invest in it.
+- **Upgrade mid-craft:** a speed upgrade keeps the share of the craft in progress (`setSpeedLevel`), so it never finishes at once.
 - **Open:** prices and multipliers need a play-test (see docs/balance-tuning.md). The sell-vs-process estimate already uses
   the upgraded speed.

@@ -13,6 +13,7 @@ export {
 	nextMachineUpgrade,
 	nextWarehouseUpgrade,
 	queueLimitOf,
+	setSpeedLevel,
 	simulateProcessing,
 	storageFree,
 	storageTotal,
