@@ -101,3 +101,18 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** React is the most used UI library in roblox-ts, the developer already knows it, and components make a
   consistent themed UI (wood, gold, player colour) much cheaper than hand-built instances.
 - **Order:** UI first, then the Studio play-test of gameplay, then plots.
+
+## 014. Server-side movement check
+
+- **Date:** 2026-11-24
+- **Decision:** every 0.25 s the server compares the character's horizontal position with an honest "anchor" (moved forward
+  once per second). Allowed distance is the server's own walk speed (shoes + aura) x 1.5 x time + 4 studs. Small excess is a
+  strike (3 in a row pull the player back), a jump of 50+ studs beyond the allowance is pulled back at once. Vertical
+  movement has its own limits (rise 50 studs/s, fall 700 studs/s, because falls in the shaft are fast and legal).
+  Dead characters are skipped without losing the baseline. `Humanoid.Sit` is NOT trusted (the client controls it).
+  After a server stall longer than 3 s the check starts over. Numbers live in `shared/features/movement/tuning.ts`.
+- **Server moves are marked:** code that moves a character itself (camp respawn now; elevator and fast travel later) must
+  call `resetMovementBaseline(player)` afterwards, or the honest player is pulled back.
+- **Why:** the first security review showed a teleport exploit. The anchor (not "previous sample") is used because the slack
+  would otherwise be granted again for every sample and a 3x speed hack would pass. Known limit: a hack of about 1.7x or less
+  is not caught; that is the price of not punishing lag.
