@@ -1,5 +1,5 @@
 import { BAGS } from "shared/config/bags";
-import { INVENTORY_HARD_LIMIT, isItemId } from "shared/config/items";
+import { INVENTORY_HARD_LIMIT, ITEMS, ItemKind, isItemId } from "shared/config/items";
 import { MACHINES, MACHINE_IDS, RECIPES, isRecipeId } from "shared/config/machines";
 import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
@@ -35,6 +35,7 @@ export function sanitize(data: PlainTable): string[] {
 	repairInteger(data, "deepestLayer", 1, LAYER_COUNT, 1, "deepestLayer", repairs);
 	repairDrills(data, repairs);
 	repairInventory(data, repairs);
+	repairEquipped(data, repairs);
 	repairPurchaseIds(data, repairs);
 
 	repairCountMap(data, "warehouse", RESOURCE_IDS, "warehouse", repairs);
@@ -160,4 +161,46 @@ function repairPurchaseIds(data: PlainTable, repairs: string[]): void {
 		repairs.push("purchaseIds");
 	}
 	data.purchaseIds = clean;
+}
+
+const MAX_EQUIPPED_PETS = 3;
+
+/**
+ * Equipped slots may only point at owned items of the right kind; pets are unique and at most three.
+ * Runs after repairInventory, so the inventory is already clean.
+ */
+function repairEquipped(data: PlainTable, repairs: string[]): void {
+	const kindOf = new Map<string, ItemKind>();
+	for (const entry of data.inventory as Array<{ uid: string; item: keyof typeof ITEMS }>) {
+		kindOf.set(entry.uid, ITEMS[entry.item].kind);
+	}
+	const equipped = repairTable(data, "equipped", "equipped", repairs);
+	for (const [slot, kind] of [
+		["speedAura", "speedAura"],
+		["pickaxeAura", "pickaxeAura"],
+	] as const) {
+		const uid = equipped[slot];
+		if (uid !== undefined && (!typeIs(uid, "string") || kindOf.get(uid) !== kind)) {
+			equipped[slot] = undefined;
+			repairs.push(`equipped.${slot}`);
+		}
+	}
+	const raw = equipped.pets;
+	const pets: string[] = [];
+	if (typeIs(raw, "table")) {
+		for (const uid of raw as unknown[]) {
+			if (
+				typeIs(uid, "string") &&
+				kindOf.get(uid) === "pet" &&
+				!pets.includes(uid) &&
+				pets.size() < MAX_EQUIPPED_PETS
+			) {
+				pets.push(uid);
+			}
+		}
+	}
+	if (!typeIs(raw, "table") || pets.size() !== (raw as unknown[]).size()) {
+		repairs.push("equipped.pets");
+	}
+	equipped.pets = pets;
 }
