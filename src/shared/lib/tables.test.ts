@@ -33,9 +33,9 @@ class TablesTests {
 
 	@Test
 	public fillMissingRecursesIntoObjects() {
-		const target: PlainTable = { stats: { mind: 3 } };
-		fillMissing(target, { stats: { mind: 0, strength: 0 } });
-		Assert.deepEqual(target.stats, { mind: 3, strength: 0 });
+		const target: PlainTable = { bag: { copper: 3 } };
+		fillMissing(target, { bag: { copper: 0, iron: 0 } });
+		Assert.deepEqual(target.bag, { copper: 3, iron: 0 });
 	}
 
 	@Test
@@ -48,11 +48,11 @@ class TablesTests {
 
 	@Test
 	public fillMissingCopiesDefaultsInsteadOfSharingThem() {
-		const defaults: PlainTable = { stats: { mind: 0 } };
+		const defaults: PlainTable = { bag: { copper: 0 } };
 		const target: PlainTable = {};
 		fillMissing(target, defaults);
-		(target.stats as PlainTable).mind = 10;
-		Assert.equal((defaults.stats as PlainTable).mind, 0);
+		(target.bag as PlainTable).copper = 10;
+		Assert.equal((defaults.bag as PlainTable).copper, 0);
 	}
 
 	@Test

@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 
 // CLAUDE.md rule 1: a feature exposes only its index.ts.
-// Matches e.g. "shared/features/stats/formulas" but allows "shared/features/stats".
+// Matches e.g. "shared/features/mining/formulas" but allows "shared/features/mining".
 const featureInternals = {
 	regex: "features/[^/]+/(?!index$).+",
 	message: "Import a feature only through its index.ts (public API), not its internal files.",
