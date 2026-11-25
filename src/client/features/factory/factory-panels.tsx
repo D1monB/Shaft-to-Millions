@@ -3,7 +3,7 @@
 // buttons only send intents.
 import React from "@rbxts/react";
 import { Workspace } from "@rbxts/services";
-import { MACHINES, MACHINE_IDS, isMachineId, recipesOf } from "shared/config/machines";
+import { MACHINES, MACHINE_IDS, MachineId, isMachineId, recipesOf } from "shared/config/machines";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { RESOURCES, RESOURCE_IDS } from "shared/config/resources";
 import { bagTotal } from "shared/features/bag";
@@ -22,8 +22,9 @@ import { previewSale } from "shared/features/selling";
 import { formatCompact, formatCount, formatDuration, formatMoney } from "shared/lib/format";
 import { registerGoalSource } from "client/features/goals";
 import { registerHudStat } from "client/features/hud";
-import { useView } from "client/features/profile";
+import { getView, useView } from "client/features/profile";
 import { registerSellPanelExtra } from "client/features/selling";
+import { playSound } from "client/lib/sounds";
 import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
@@ -160,7 +161,39 @@ function SellExtra(props: { view: PlayerView }) {
 	);
 }
 
+/**
+ * Plays a sound when any machine finishes an item. Production runs on timestamps, so the server sends nothing at that
+ * moment: the client checks once a second whether the ready count of a machine grew.
+ */
+function watchMachinesForDone(): void {
+	const lastReady = new Map<MachineId, number>();
+	task.spawn(() => {
+		for (;;) {
+			task.wait(1);
+			const view = getView();
+			if (view === undefined) {
+				continue;
+			}
+			let finished = false;
+			for (const id of MACHINE_IDS) {
+				const saved = view.machines[id];
+				const ready =
+					saved === undefined ? 0 : storageTotal(liveState(saved, Workspace.GetServerTimeNow()).ready);
+				const before = lastReady.get(id);
+				if (before !== undefined && ready > before) {
+					finished = true;
+				}
+				lastReady.set(id, ready);
+			}
+			if (finished) {
+				playSound("machineDone");
+			}
+		}
+	});
+}
+
 export function startFactoryController(): void {
+	watchMachinesForDone();
 	onPromptForTag(TAGS.Warehouse, () =>
 		openPanel({ key: "warehouse", title: "Склад", icon: "📦", render: () => <WarehousePanel /> }),
 	);

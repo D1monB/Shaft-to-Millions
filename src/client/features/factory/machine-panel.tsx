@@ -26,6 +26,7 @@ import { useView } from "client/features/profile";
 import { useServerClock } from "client/lib/hooks";
 import { openPanel } from "client/lib/panels";
 import { sendToServer } from "client/lib/remotes";
+import { playSound } from "client/lib/sounds";
 import { DrawnArrow, ResourceTile } from "client/lib/resource-tile";
 import {
 	BuyButton,
@@ -103,7 +104,11 @@ function RecipeCard(props: {
 	const recipe = RECIPES[props.recipeId];
 	const possible = math.min(maxCrafts(props.view.warehouse as Counts, props.recipeId), props.room);
 	const most = math.min(possible, MAX_ENQUEUE_PER_REQUEST);
-	const enqueue = (count: number) => sendToServer(ENQUEUE_REMOTE, props.machineId, props.recipeId, count);
+	const enqueue = (count: number) => {
+		sendToServer(ENQUEUE_REMOTE, props.machineId, props.recipeId, count);
+		// Feedback for the press only; the server still decides whether anything is queued.
+		playSound("machineStart");
+	};
 	const seconds = craftSeconds(props.recipeId, props.speedLevel);
 	return (
 		<Card order={props.order} accent={possible > 0 ? COLORS.gold : undefined}>
@@ -262,7 +267,10 @@ function ReadyCard(props: { machineId: MachineId; state: MachineState; order: nu
 				text="Забрати на склад"
 				variant="success"
 				shine={true}
-				onClick={() => sendToServer(COLLECT_REMOTE, props.machineId)}
+				onClick={() => {
+					sendToServer(COLLECT_REMOTE, props.machineId);
+					playSound("machineCollect");
+				}}
 				order={3}
 			/>
 		</Card>

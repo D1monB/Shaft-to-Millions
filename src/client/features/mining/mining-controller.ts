@@ -17,7 +17,7 @@ import { formatMoney } from "shared/lib/format";
 import { registerHudStat } from "client/features/hud";
 import { getView, onViewChanged } from "client/features/profile";
 import { onServerMessage } from "client/lib/remotes";
-import { playSound } from "client/lib/sounds";
+import { playOreBreak, playSound } from "client/lib/sounds";
 import { COLORS, FONTS } from "client/lib/ui-kit";
 
 function anchorPart(node: Instance): BasePart | undefined {
@@ -266,7 +266,7 @@ export function startMiningController(): void {
 		if (part !== undefined && typeIs(amount, "number") && amount > 0) {
 			showPopup(part, `+${amount} ${ORES[oreId].name}`);
 		}
-		playSound("oreBreak");
+		playOreBreak(oreId);
 		bars.get(node)?.gui.Destroy();
 		bars.delete(node);
 		hideNode(node, respawnSeconds);

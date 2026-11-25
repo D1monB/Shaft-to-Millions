@@ -20,6 +20,7 @@ import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText, rarityColor } from 
 import { closePanel, openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { onServerMessage, sendToServer } from "client/lib/remotes";
+import { playSound } from "client/lib/sounds";
 import { toast } from "client/lib/toasts";
 import {
 	BuyButton,
@@ -259,7 +260,13 @@ export function startChestsController(): void {
 	});
 	onServerMessage(CHEST_RESULT_REMOTE, (item, chestId) => {
 		if (isItemId(item) && isChestId(chestId)) {
-			toast(`Випало: ${ITEMS[item].name}!`, "success", 4);
+			playSound("chestOpen");
+			const rarity = ITEMS[item].rarity;
+			if (rarity === "rare" || rarity === "epic" || rarity === "legendary") {
+				playSound("chestRare");
+			}
+			// "info", not "success": the chest has its own sound, a third one on top would be noise.
+			toast(`Випало: ${ITEMS[item].name}!`, "info", 4);
 			openPanel({
 				key: `chest_result_${item}_${os.clock()}`,
 				title: "Новий предмет!",
