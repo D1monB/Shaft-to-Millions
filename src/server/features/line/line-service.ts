@@ -100,10 +100,26 @@ function makeAnchor(parent: Instance, name: string, cframe: CFrame): BasePart {
 	return part;
 }
 
-function makePrompt(parent: Instance, action: string, object: string, onTriggered: (player: Player) => void): void {
+/**
+ * The intake and the next machine's slot stand at the same place while no machine is bought, so they use different
+ * keys and are always both shown (with one key, only the nearest prompt would react).
+ */
+const DROP_KEYS = { keyboard: Enum.KeyCode.E, gamepad: Enum.KeyCode.ButtonX };
+const BUY_KEYS = { keyboard: Enum.KeyCode.F, gamepad: Enum.KeyCode.ButtonY };
+
+function makePrompt(
+	parent: Instance,
+	action: string,
+	object: string,
+	keys: { keyboard: Enum.KeyCode; gamepad: Enum.KeyCode },
+	onTriggered: (player: Player) => void,
+): void {
 	const prompt = new Instance("ProximityPrompt");
 	prompt.ActionText = action;
 	prompt.ObjectText = object;
+	prompt.KeyboardKeyCode = keys.keyboard;
+	prompt.GamepadKeyCode = keys.gamepad;
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow;
 	prompt.RequiresLineOfSight = false;
 	prompt.HoldDuration = 0;
 	prompt.MaxActivationDistance = LINE_DISTANCE - 4;
@@ -128,7 +144,7 @@ function refreshBuySlot(plot: Plot, owned: number): void {
 		return;
 	}
 	const slot = makeAnchor(plot.built, "BuySlot", cframe);
-	makePrompt(slot, `Купити за ${formatMoney(def.price)}`, def.name, (player) => buyNext(player, plot));
+	makePrompt(slot, `Купити за ${formatMoney(def.price)}`, def.name, BUY_KEYS, (player) => buyNext(player, plot));
 }
 
 /** Builds the plot for its owner: belt and SellStation, every bought machine, the intake and the next slot. */
@@ -146,7 +162,7 @@ function buildFor(plot: Plot, data: ProfileData): void {
 	const intakeAt = slotCFrame(plot, 1);
 	if (intakeAt !== undefined) {
 		const intake = makeAnchor(built, "Intake", intakeAt);
-		makePrompt(intake, "Скинути руду із сумки", "Початок стрічки", (player) => dropOre(player, plot));
+		makePrompt(intake, "Скинути руду із сумки", "Початок стрічки", DROP_KEYS, (player) => dropOre(player, plot));
 	}
 	refreshBuySlot(plot, data.line.machines.size());
 }
