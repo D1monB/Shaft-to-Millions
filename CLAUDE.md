@@ -95,6 +95,9 @@
   (agree on the Workspace path / names with the map author and record them in `docs/`).
 - Roblox Studio MCP (if registered) is READ-ONLY for Claude: inspect the game tree, scripts and Output.
   Tools that change the place or the account are denied in `.claude/settings.json`.
+  Exception, chosen by the developer: `user_mouse_input`, `user_keyboard_input` and `character_navigation` need
+  confirmation (`ask`), so Claude can click through the game UI in Play mode to test it. Use them only in Play mode, on
+  the game's own UI, never on Studio's own windows, publish or settings dialogs.
 
 ## Stack
 
