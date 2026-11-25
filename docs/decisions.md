@@ -253,3 +253,23 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   yet buy.
 - **Left unchanged on purpose:** bags above 150, shoes Riveted/Silver, the light pickaxe. Tune them only after a timed
   Play-test measures the real trip time and seconds per node (the model is not a measurement).
+
+## 025. Leaderboard: two boards on OrderedDataStore (draft, check)
+
+- **Date:** 2026-11-25 (draft, check)
+- **Decision:** two boards, depth (`deepestLayer * 100000 + deepestMeters`) and wealth (`stats.totalEarned`). Stored in
+  OrderedDataStore `Leaderboard_Depth_v1` and `Leaderboard_Wealth_v1`, written with `UpdateAsync` that keeps the higher
+  score. Sync every 60 s, plus a write on profile release and in `BindToClose`; the top 10 goes server -> client
+  through `LeaderboardUpdate`. In Studio a memory store is used instead. The profile gets a field `deepestMeters`
+  (no schema bump, default 0, sanitized on load).
+- **Depth rules:** recorded only from movement samples with verdict ok AND a server raycast down onto anchored map
+  geometry; capped by the camp of the first locked layer (no record if that camp is missing; the last layer is capped
+  at `MAX_DEPTH_METERS` 99 999). Meters = studs below the highest `SurfaceSpawn` * 0.5.
+- **Why OrderedDataStore, not profile stats:** a profile is locked to its owner's session, so other players' scores
+  cannot be read or ranked from it; an ordered store gives a global top without loading profiles.
+- **Why `totalEarned`:** it only grows, so the board does not drop after spending money on gear.
+- **Why a raycast, not `FloorMaterial`:** `FloorMaterial` is computed on the client (which owns its character) and
+  can be faked; a server raycast onto anchored geometry cannot.
+- **Why a memory store in Studio:** Studio test sessions must not write test scores to the live ordered stores.
+- **Open:** a ban list (cheaters stay on the board until removed by hand); bumping the store version (`_v2`) to reset
+  the boards.
