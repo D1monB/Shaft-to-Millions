@@ -1,7 +1,16 @@
 // Pure factory rules: warehouse storage, machine queues and the "what if I process it" estimate.
 // Time is always passed in (`now`, unix seconds), so queues keep running while the player is offline:
 // on the next load we simply advance to the current time.
-import { RECIPES, RecipeId, ResourceAmounts } from "shared/config/machines";
+import {
+	MACHINE_UPGRADES,
+	MachineId,
+	RECIPES,
+	RecipeId,
+	ResourceAmounts,
+	UpgradeLevel,
+	UpgradeTrack,
+	WAREHOUSE_LEVELS,
+} from "shared/config/machines";
 import { RESOURCES, RESOURCE_IDS, ResourceId } from "shared/config/resources";
 
 /** Resource counts by id. Missing id = 0. */
@@ -13,10 +22,83 @@ export interface MachineState {
 	startedAt: number;
 	/** Finished output waiting to be collected into the warehouse. */
 	ready: Counts;
+	/** Upgrade levels, 1-based (level 1 = base machine). */
+	speedLevel: number;
+	queueLevel: number;
 }
 
 export function newMachineState(): MachineState {
-	return { queue: [], startedAt: 0, ready: {} };
+	return { queue: [], startedAt: 0, ready: {}, speedLevel: 1, queueLevel: 1 };
+}
+
+// ---------------------------------------------------------------- upgrades
+
+/** A level from a track, clamped to the real range, so a broken level number can never index outside the table. */
+function levelOf(levels: ReadonlyArray<UpgradeLevel>, level: number): UpgradeLevel {
+	const safe = level === level ? math.clamp(math.floor(level), 1, levels.size()) : 1;
+	return levels[safe - 1];
+}
+
+/** Seconds one craft takes on this machine at this speed level. */
+export function craftSeconds(recipeId: RecipeId, speedLevel: number): number {
+	const recipe = RECIPES[recipeId];
+	return recipe.seconds / levelOf(MACHINE_UPGRADES[recipe.machine].speed, speedLevel).value;
+}
+
+/**
+ * Sets the speed level and keeps the craft in progress at the same share done (half done stays half done).
+ * Why: otherwise `startedAt` stays and a craft 20 s into 30 s would finish at once after a x2 upgrade.
+ * Call `advance` first so finished crafts are credited at the old speed.
+ */
+export function setSpeedLevel(state: MachineState, level: number, now: number): void {
+	const head = state.queue[0];
+	if (head !== undefined) {
+		const oldSeconds = craftSeconds(head, state.speedLevel);
+		const done = math.clamp((now - state.startedAt) / oldSeconds, 0, 1);
+		state.speedLevel = level;
+		state.startedAt = now - done * craftSeconds(head, level);
+		return;
+	}
+	state.speedLevel = level;
+}
+
+/** Max crafts waiting in the machine's queue (including the one in progress). */
+export function queueLimitOf(machineId: MachineId, queueLevel: number): number {
+	return levelOf(MACHINE_UPGRADES[machineId].queue, queueLevel).value;
+}
+
+/** Warehouse capacity (all resources together) at a warehouse level. */
+export function warehouseCapacity(warehouseLevel: number): number {
+	return levelOf(WAREHOUSE_LEVELS, warehouseLevel).value;
+}
+
+export interface NextUpgrade {
+	/** The level the player would have after buying. */
+	readonly level: number;
+	readonly price: number;
+	/** The value of that level (speed multiplier, queue size or capacity). */
+	readonly value: number;
+}
+
+function nextOf(levels: ReadonlyArray<UpgradeLevel>, current: number): NextUpgrade | undefined {
+	const safe = current === current ? math.clamp(math.floor(current), 1, levels.size()) : 1;
+	const step = levels[safe];
+	return step === undefined ? undefined : { level: safe + 1, price: step.price, value: step.value };
+}
+
+/** The next step of a machine track, or undefined at the top level. */
+export function nextMachineUpgrade(
+	machineId: MachineId,
+	state: MachineState,
+	track: UpgradeTrack,
+): NextUpgrade | undefined {
+	const current = track === "speed" ? state.speedLevel : state.queueLevel;
+	return nextOf(MACHINE_UPGRADES[machineId][track], current);
+}
+
+/** The next warehouse level, or undefined at the top level. */
+export function nextWarehouseUpgrade(warehouseLevel: number): NextUpgrade | undefined {
+	return nextOf(WAREHOUSE_LEVELS, warehouseLevel);
 }
 
 // ---------------------------------------------------------------- storage
@@ -101,11 +183,12 @@ export function advance(state: MachineState, now: number): number {
 	let finished = 0;
 	while (state.queue.size() > 0) {
 		const recipe = RECIPES[state.queue[0]];
-		if (state.startedAt > now + recipe.seconds) {
+		const seconds = craftSeconds(state.queue[0], state.speedLevel);
+		if (state.startedAt > now + seconds) {
 			// Impossible future start (bad save or a server with a wrong clock): restart from now.
 			state.startedAt = now;
 		}
-		const endsAt = state.startedAt + recipe.seconds;
+		const endsAt = state.startedAt + seconds;
 		if (now < endsAt) {
 			break;
 		}
@@ -191,11 +274,11 @@ export function machineProgress(state: MachineState, now: number): MachineProgre
 	if (current === undefined) {
 		return { current: undefined, fraction: 0, secondsLeft: 0, totalSecondsLeft: 0 };
 	}
-	const seconds = RECIPES[current].seconds;
+	const seconds = craftSeconds(current, state.speedLevel);
 	const elapsed = math.clamp(now - state.startedAt, 0, seconds);
 	let rest = 0;
 	for (let i = 1; i < state.queue.size(); i++) {
-		rest += RECIPES[state.queue[i]].seconds;
+		rest += craftSeconds(state.queue[i], state.speedLevel);
 	}
 	return {
 		current,
@@ -228,7 +311,12 @@ const MAX_SIMULATED_CRAFTS = 2_000;
  * Greedy estimate: repeatedly craft the recipe with the biggest gain that is possible with what is left.
  * Shown before selling, so the player can compare "sell now" with "process first".
  */
-export function simulateProcessing(counts: Counts, recipeIds: ReadonlyArray<RecipeId>): ProcessingEstimate {
+export function simulateProcessing(
+	counts: Counts,
+	recipeIds: ReadonlyArray<RecipeId>,
+	/** Seconds of one craft for the player's machine upgrades; defaults to the base recipe time. */
+	secondsOf: (recipeId: RecipeId) => number = (recipeId) => RECIPES[recipeId].seconds,
+): ProcessingEstimate {
 	const pool: Counts = {};
 	let valueBefore = 0;
 	for (const id of RESOURCE_IDS) {
@@ -254,7 +342,7 @@ export function simulateProcessing(counts: Counts, recipeIds: ReadonlyArray<Reci
 		take(pool, RECIPES[entry.id].inputs, 1);
 		give(pool, RECIPES[entry.id].outputs, 1);
 		crafts += 1;
-		seconds += RECIPES[entry.id].seconds;
+		seconds += secondsOf(entry.id);
 		valueAfter += entry.gain;
 	}
 	return { crafts, seconds, valueBefore, valueAfter };

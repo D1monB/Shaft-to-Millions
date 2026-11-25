@@ -1,7 +1,6 @@
 import { CollectionService, Workspace } from "@rbxts/services";
 import { DRILLS, drillKey } from "shared/config/drills";
 import { LAYER_COUNT, oresOfLayer } from "shared/config/layers";
-import { WAREHOUSE_CAPACITY } from "shared/config/machines";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, isOreId } from "shared/config/ores";
 import {
@@ -15,7 +14,7 @@ import {
 	newDrillState,
 	selectDrillOre,
 } from "shared/features/drill";
-import { storageFree } from "shared/features/factory";
+import { storageFree, warehouseCapacity } from "shared/features/factory";
 import { getPickaxe } from "shared/features/mining";
 import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
@@ -46,7 +45,11 @@ function tickDrills(data: ProfileData): [number, number] {
 		}
 		produced += advanceDrill(state, layer, time);
 		// Conveyor to the warehouse. Whatever does not fit stays in the drill's buffer.
-		delivered += deliverDrill(state, data.warehouse, storageFree(data.warehouse, WAREHOUSE_CAPACITY));
+		delivered += deliverDrill(
+			state,
+			data.warehouse,
+			storageFree(data.warehouse, warehouseCapacity(data.levels.warehouse)),
+		);
 	}
 	return [produced, delivered];
 }

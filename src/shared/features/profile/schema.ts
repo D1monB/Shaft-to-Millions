@@ -13,7 +13,7 @@ import type { Counts, MachineState } from "shared/features/factory";
  * Also bump (with an empty migration) when you RAISE a cap in sanitize.ts, otherwise an older server
  * still running during an update clamps the new value and saves it over the player's data.
  */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /** Lifetime counters. Used for the hint system and later for leaderboards. */
 export interface ProfileStats {
@@ -56,6 +56,8 @@ export interface GearLevels {
 	pickaxe: number;
 	bag: number;
 	shoes: number;
+	/** Warehouse capacity level (see WAREHOUSE_LEVELS). */
+	warehouse: number;
 }
 
 export function createDefaultProfileData(): ProfileData {
@@ -64,7 +66,7 @@ export function createDefaultProfileData(): ProfileData {
 		money: 0,
 		stats: { totalEarned: 0, oresMined: 0 },
 		bag: {},
-		levels: { pickaxe: 1, bag: 1, shoes: 1 },
+		levels: { pickaxe: 1, bag: 1, shoes: 1, warehouse: 1 },
 		deepestLayer: 1,
 		drills: {},
 		inventory: [],
@@ -85,7 +87,7 @@ const profileDataShape = t.interface({
 	money: t.integer,
 	stats: t.interface({ totalEarned: t.integer, oresMined: t.integer }),
 	bag: t.table,
-	levels: t.interface({ pickaxe: t.integer, bag: t.integer, shoes: t.integer }),
+	levels: t.interface({ pickaxe: t.integer, bag: t.integer, shoes: t.integer, warehouse: t.integer }),
 	deepestLayer: t.integer,
 	drills: t.table,
 	warehouse: t.table,

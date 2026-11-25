@@ -1,6 +1,6 @@
 import { BAGS } from "shared/config/bags";
 import { INVENTORY_HARD_LIMIT, ITEMS, ItemKind, isItemId } from "shared/config/items";
-import { MACHINES, MACHINE_IDS, RECIPES, isRecipeId } from "shared/config/machines";
+import { MACHINE_UPGRADES, MACHINE_IDS, RECIPES, WAREHOUSE_LEVELS, isRecipeId } from "shared/config/machines";
 import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
 import { DRILLS, drillKey } from "shared/config/drills";
@@ -32,6 +32,7 @@ export function sanitize(data: PlainTable): string[] {
 	repairInteger(levels, "pickaxe", 1, PICKAXES.size(), 1, "levels.pickaxe", repairs);
 	repairInteger(levels, "bag", 1, BAGS.size(), 1, "levels.bag", repairs);
 	repairInteger(levels, "shoes", 1, SHOES.size(), 1, "levels.shoes", repairs);
+	repairInteger(levels, "warehouse", 1, WAREHOUSE_LEVELS.size(), 1, "levels.warehouse", repairs);
 	repairInteger(data, "deepestLayer", 1, LAYER_COUNT, 1, "deepestLayer", repairs);
 	repairDrills(data, repairs);
 	repairInventory(data, repairs);
@@ -60,15 +61,16 @@ function repairMachines(data: PlainTable, repairs: string[]): void {
 		}
 		const path = `machines.${machineId}`;
 		const machine = repairTable(machines, machineId, path, repairs);
+		// Levels first: the queue is cut to the limit of the machine's own queue level.
+		const upgrades = MACHINE_UPGRADES[machineId];
+		repairInteger(machine, "speedLevel", 1, upgrades.speed.size(), 1, `${path}.speedLevel`, repairs);
+		repairInteger(machine, "queueLevel", 1, upgrades.queue.size(), 1, `${path}.queueLevel`, repairs);
+		const queueLimit = upgrades.queue[(machine.queueLevel as number) - 1].value;
 		const queue = machine.queue;
 		const cleanQueue: string[] = [];
 		if (typeIs(queue, "table")) {
 			for (const recipeId of queue as unknown[]) {
-				if (
-					isRecipeId(recipeId) &&
-					RECIPES[recipeId].machine === machineId &&
-					cleanQueue.size() < MACHINES[machineId].queueLimit
-				) {
+				if (isRecipeId(recipeId) && RECIPES[recipeId].machine === machineId && cleanQueue.size() < queueLimit) {
 					cleanQueue.push(recipeId);
 				}
 			}

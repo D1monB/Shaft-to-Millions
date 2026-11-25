@@ -118,6 +118,48 @@ class MigrationsTests {
 			}
 		}
 	}
+
+	@Test
+	public version2AddsUpgradeLevelsWithoutTouchingTheRest() {
+		const old = {
+			schemaVersion: 1,
+			money: 5,
+			levels: { pickaxe: 2, bag: 1, shoes: 1 },
+			machines: {
+				furnace: { queue: ["smelt_copper"], startedAt: 7, ready: {} },
+				workbench: { queue: [], startedAt: 0, ready: {}, speedLevel: 3 },
+			},
+		} as unknown as PlainTable;
+		const result = migrate(old, MIGRATIONS, 2);
+		if (!result.ok) {
+			Assert.fail(`migration failed: ${result.reason}`);
+			return;
+		}
+		const data = result.data as unknown as {
+			schemaVersion: number;
+			money: number;
+			levels: { pickaxe: number; warehouse: number };
+			machines: {
+				furnace: { speedLevel: number; queueLevel: number; startedAt: number };
+				workbench: { speedLevel: number };
+			};
+		};
+		Assert.equal(data.schemaVersion, 2);
+		Assert.equal(data.money, 5);
+		Assert.equal(data.levels.pickaxe, 2);
+		Assert.equal(data.levels.warehouse, 1);
+		Assert.equal(data.machines.furnace.speedLevel, 1);
+		Assert.equal(data.machines.furnace.queueLevel, 1);
+		Assert.equal(data.machines.furnace.startedAt, 7);
+		// An upgrade that already exists is never reset.
+		Assert.equal(data.machines.workbench.speedLevel, 3);
+	}
+
+	@Test
+	public version2MigrationSurvivesSavesWithoutMachinesOrLevels() {
+		Assert.true(migrate({ schemaVersion: 1 } as PlainTable, MIGRATIONS, 2).ok);
+		Assert.true(migrate({ schemaVersion: 1, levels: "x", machines: 5 } as unknown as PlainTable, MIGRATIONS, 2).ok);
+	}
 }
 
 export = MigrationsTests;
