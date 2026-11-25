@@ -43,7 +43,7 @@ import {
 	TEXT_SIZES,
 	rowItemWidth,
 } from "client/lib/ui-kit";
-import { amountsList, amountsValue, liveState } from "./factory-helpers";
+import { amountsList, amountsValue, isMachineBusy, liveState } from "./factory-helpers";
 
 const RECIPE_TILE = 56;
 const SLOT = 46;
@@ -390,7 +390,8 @@ function MachineShop(props: { machineId: MachineId; view: PlayerView }) {
 
 function MachinePanel(props: { machineId: MachineId }) {
 	const view = useView();
-	const now = useServerClock(0.5);
+	// Ticks once a second and only while the queue is working: an idle or finished machine is not redrawn.
+	const now = useServerClock(1, (time) => isMachineBusy(view?.machines[props.machineId], time));
 	if (view === undefined) {
 		return <Label text="Завантаження..." tone="muted" />;
 	}

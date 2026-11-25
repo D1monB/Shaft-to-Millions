@@ -27,10 +27,12 @@ const TOAST_COLORS: { [K in NotifyKind]: Color3 } = {
 };
 
 function Toast(props: { entry: ToastEntry; order: number }) {
-	const [offset, offsetMotion] = useMotion(-40);
+	// Fades in instead of sliding: a slide moved the label outside its wrapper, so the wrapper was shorter than the
+	// toast for a moment and the next toast was drawn over it (the stack looked overlapped).
+	const [fade, fadeMotion] = useMotion(1);
 	useEffect(() => {
-		offsetMotion.spring(0, SPRINGS.bouncy);
-	}, [offsetMotion]);
+		fadeMotion.spring(0, SPRINGS.bouncy);
+	}, [fadeMotion]);
 	return (
 		<frame
 			BackgroundTransparency={1}
@@ -39,9 +41,10 @@ function Toast(props: { entry: ToastEntry; order: number }) {
 			LayoutOrder={props.order}
 		>
 			<textlabel
-				Position={offset.map((y) => new UDim2(0, 0, 0, y))}
 				Size={new UDim2(1, 0, 0, 0)}
 				AutomaticSize={Enum.AutomaticSize.Y}
+				BackgroundTransparency={fade}
+				TextTransparency={fade}
 				BackgroundColor3={TOAST_COLORS[props.entry.kind]}
 				Font={FONTS.display}
 				Text={props.entry.text}

@@ -12,6 +12,11 @@ export function liveState(state: MachineState, now: number): MachineState {
 	return copy;
 }
 
+/** True while a machine still has work in its queue at `now`: the only time its timers change on screen. */
+export function isMachineBusy(state: MachineState | undefined, now: number): boolean {
+	return state !== undefined && liveState(state, now).queue.size() > 0;
+}
+
 export function amountsText(amounts: ResourceAmounts): string {
 	const parts: string[] = [];
 	for (const id of RESOURCE_IDS) {

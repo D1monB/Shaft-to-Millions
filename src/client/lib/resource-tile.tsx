@@ -17,8 +17,18 @@ const PRODUCT_LOOK: { readonly [K in ProductId]: { readonly metal: OreId; readon
 	gold_circuit: { metal: "gold", icon: "💾" },
 };
 
-// The rock emoji (Unicode 13) is missing from the Roblox emoji font and draws an empty square; the gem is old enough.
-const ORE_ICON = "💎";
+// Each ore has its own glyph, not only its own colour. Only emoji from old Unicode versions: newer ones (e.g. the
+// rock, Unicode 13) are missing from the Roblox emoji font and draw an empty square.
+const ORE_ICONS: { readonly [K in OreId]: string } = {
+	coal: "⚫",
+	copper: "🔶",
+	iron: "🔩",
+	quartz: "🔷",
+	silver: "🔘",
+	gold: "⭐",
+	obsidian: "🌑",
+	cobalt: "💎",
+};
 
 function colorOf(id: ResourceId): Color3 {
 	const ore = isOreId(id) ? id : PRODUCT_LOOK[id as ProductId].metal;
@@ -27,7 +37,7 @@ function colorOf(id: ResourceId): Color3 {
 }
 
 export function resourceIcon(id: ResourceId): string {
-	return isOreId(id) ? ORE_ICON : PRODUCT_LOOK[id as ProductId].icon;
+	return isOreId(id) ? ORE_ICONS[id] : PRODUCT_LOOK[id as ProductId].icon;
 }
 
 export interface ResourceTileProps {
