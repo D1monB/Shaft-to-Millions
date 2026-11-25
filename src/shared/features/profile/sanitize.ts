@@ -1,7 +1,7 @@
 import { INVENTORY_HARD_LIMIT, ITEMS, ItemKind, isItemId } from "shared/config/items";
 import { MACHINE_UPGRADES, MACHINE_IDS, RECIPES, WAREHOUSE_LEVELS, isRecipeId } from "shared/config/machines";
 import { DRILLS, drillKey } from "shared/config/drills";
-import { LAYER_COUNT } from "shared/config/layers";
+import { LAYER_COUNT, MAX_DEPTH_METERS } from "shared/config/layers";
 import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
 import { RESOURCE_IDS } from "shared/config/resources";
 import { GEAR_SLOTS, findGear, starterOf } from "shared/features/upgrades";
@@ -29,6 +29,7 @@ export function sanitize(data: PlainTable): string[] {
 	const levels = repairTable(data, "levels", "levels", repairs);
 	repairInteger(levels, "warehouse", 1, WAREHOUSE_LEVELS.size(), 1, "levels.warehouse", repairs);
 	repairInteger(data, "deepestLayer", 1, LAYER_COUNT, 1, "deepestLayer", repairs);
+	repairInteger(data, "deepestMeters", 0, MAX_DEPTH_METERS, 0, "deepestMeters", repairs);
 	repairGear(data, repairs);
 	repairDrills(data, repairs);
 	repairInventory(data, repairs);

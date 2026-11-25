@@ -43,6 +43,8 @@ export interface ProfileData {
 	machines: Partial<Record<MachineId, MachineState>>;
 	/** Deepest layer whose camp the player reached. Drives drill unlocks and the depth leaderboard later. */
 	deepestLayer: number;
+	/** Deepest point the player stood on, in game meters below the surface. Breaks ties on the depth board. */
+	deepestMeters: number;
 	/** Owned auto drills by drillKey(layer). */
 	drills: { [key: string]: DrillState | undefined };
 	/** Items from chests (pets, auras). */
@@ -69,6 +71,7 @@ export function createDefaultProfileData(): ProfileData {
 		gear: createStarterGear(),
 		levels: { warehouse: 1 },
 		deepestLayer: 1,
+		deepestMeters: 0,
 		drills: {},
 		inventory: [],
 		nextUid: 1,
@@ -94,6 +97,7 @@ const profileDataShape = t.interface({
 	}),
 	levels: t.interface({ warehouse: t.integer }),
 	deepestLayer: t.integer,
+	deepestMeters: t.integer,
 	drills: t.table,
 	warehouse: t.table,
 	machines: t.table,
