@@ -1,7 +1,7 @@
 import { Players } from "@rbxts/services";
 import { ProfileData, toPlayerView } from "shared/features/profile";
-import { STATE_UPDATE_REMOTE } from "shared/lib/remote-names";
-import { fireClient } from "server/lib/remotes";
+import { NOTIFY_REMOTE, STATE_UPDATE_REMOTE } from "shared/lib/remote-names";
+import { declareClientEvent, fireClient } from "server/lib/remotes";
 import { ProfileSessions } from "./profile-sessions";
 import { createRobloxBackend } from "./roblox-backend";
 
@@ -41,6 +41,9 @@ export function startProfileService(): void {
 	if (sessions !== undefined) {
 		return;
 	}
+	// Both are fired only by the server (state updates and notify() from every service).
+	declareClientEvent(STATE_UPDATE_REMOTE);
+	declareClientEvent(NOTIFY_REMOTE);
 	const created = new ProfileSessions(createRobloxBackend(), kickPlayer, (message) => warn(`[profile] ${message}`));
 	sessions = created;
 

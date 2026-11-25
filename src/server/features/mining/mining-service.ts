@@ -17,7 +17,7 @@ import { RateLimiter } from "shared/lib/rate-limiter";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
-import { fireClient, logAbuse } from "server/lib/remotes";
+import { declareClientEvent, fireClient, logAbuse } from "server/lib/remotes";
 
 const sessions = new Map<Player, MiningSession<Instance>>();
 // Refusal messages ("bag is full") at most every couple of seconds, so clicking does not spam the screen.
@@ -118,6 +118,8 @@ function setupNode(node: Instance): void {
 }
 
 export function startMiningService(): void {
+	declareClientEvent(MINE_PROGRESS_REMOTE);
+	declareClientEvent(NODE_BROKEN_REMOTE);
 	for (const node of CollectionService.GetTagged(TAGS.OreNode)) {
 		setupNode(node);
 	}
