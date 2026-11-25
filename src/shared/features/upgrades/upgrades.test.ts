@@ -1,5 +1,7 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { BAGS } from "shared/config/bags";
+import { RECIPES, RECIPE_IDS } from "shared/config/machines";
+import { ORES, isOreId } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
 import { RESOURCES, ResourceId } from "shared/config/resources";
 import { SHOES } from "shared/config/shoes";
@@ -19,6 +21,22 @@ import {
 	tryBuyGear,
 	tryEquipGear,
 } from "./upgrades";
+
+/** The pickaxe tier needed to get a resource: ore needs its own tier, a product needs the best input it is made of. */
+function tierNeeded(id: ResourceId): number {
+	if (isOreId(id)) {
+		return ORES[id].requiredTier;
+	}
+	const recipeId = RECIPE_IDS.find((entry) => RECIPES[entry].outputs[id] !== undefined);
+	if (recipeId === undefined) {
+		return math.huge;
+	}
+	let tier = 1;
+	for (const [input] of pairs(RECIPES[recipeId].inputs)) {
+		tier = math.max(tier, tierNeeded(input as ResourceId));
+	}
+	return tier;
+}
 
 const STONE = PICKAXES[1]; // money only
 const COPPER = PICKAXES[2]; // money + copper ingots
@@ -77,6 +95,37 @@ class UpgradesTests {
 		}
 		for (let i = 1; i < SHOES.size(); i++) {
 			Assert.true(SHOES[i].walkSpeed > SHOES[i - 1].walkSpeed && SHOES[i].price > SHOES[i - 1].price);
+		}
+	}
+
+	@Test
+	public everyPickaxeIsReachableFromTheStarter() {
+		// Regression: the cobalt pickaxe once needed cobalt ore, which only its own tier can mine, so it could never be
+		// bought. Walk the progression: buy any pickaxe whose materials the current tier can get, until nothing is left.
+		let tier = PICKAXES[0].tier;
+		const owned = new Set<string>([PICKAXES[0].id]);
+		let progressed = true;
+		while (progressed) {
+			progressed = false;
+			for (const def of PICKAXES) {
+				if (owned.has(def.id)) {
+					continue;
+				}
+				let reachable = true;
+				for (const entry of materialList(def.materials)) {
+					if (tierNeeded(entry.id) > tier) {
+						reachable = false;
+					}
+				}
+				if (reachable) {
+					owned.add(def.id);
+					tier = math.max(tier, def.tier);
+					progressed = true;
+				}
+			}
+		}
+		for (const def of PICKAXES) {
+			Assert.true(owned.has(def.id), `${def.id} can never be bought: its materials need a higher pickaxe tier`);
 		}
 	}
 

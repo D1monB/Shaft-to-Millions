@@ -231,3 +231,14 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the play-test checklist is long; clicks by path do not break when the layout or window size changes.
   Everything else that changes the place or the account stays denied.
 
+
+## 023. Gear reachability fix and open balance questions
+
+- **Date:** 2026-11-25
+- **Fix:** the cobalt pickaxe needed cobalt ore, which only a tier 4 pickaxe can mine, so it could not be bought before the
+  hand drill (and the drill is stronger). It now needs obsidian and gold ingots (reachable with tier 3). A unit test walks
+  the progression from the starter and fails if any pickaxe's materials need a higher tier than the player can have.
+- **Known and kept on purpose until the play-test (from the balance analysis):** the hammer pickaxe is the first way to tier 3
+  (the gold and obsidian pickaxes need tier 3 ore), the hand drill is the first way to tier 4; the light pickaxe, the copper
+  pickaxe and a few shoe/bag steps give little for their price; the first furnace comes at about 7-9 minutes, tight against
+  the 10-minute rule. Numbers to tune after timing a real run: first stone pickaxe, leather bag, furnace, iron pickaxe.

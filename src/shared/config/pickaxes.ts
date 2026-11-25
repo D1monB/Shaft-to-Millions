@@ -86,7 +86,8 @@ export const PICKAXES: ReadonlyArray<PickaxeDef> = [
 		power: 9,
 		swingSeconds: 0.35,
 		price: 80_000,
-		materials: { cobalt: 25, gold_ingot: 10 },
+		// Not cobalt ore: that needs a tier 4 pickaxe, so the item could never be bought before the drill.
+		materials: { obsidian: 25, gold_ingot: 10 },
 	},
 	{
 		id: "pickaxe_drill",
