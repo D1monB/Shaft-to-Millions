@@ -34,3 +34,9 @@ desktop.ini
 
 # Claude Code local (per-user) settings
 .claude/settings.local.json
+
+# Skill links made by `npx skills install` (absolute paths, machine-specific). The skills live in .agents/skills.
+.claude/skills/find-skills
+.claude/skills/roblox-luau
+.claude/skills/roblox-networking
+.claude/skills/roblox-ui

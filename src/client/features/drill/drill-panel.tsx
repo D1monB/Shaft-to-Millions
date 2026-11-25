@@ -40,7 +40,7 @@ function DrillShop(props: { layer: number; view: PlayerView }) {
 	if (def === undefined) {
 		return undefined;
 	}
-	const tier = getPickaxe(props.view.levels.pickaxe).tier;
+	const tier = getPickaxe(props.view.gear.equipped.pickaxe).tier;
 	return (
 		<>
 			<Label
@@ -102,7 +102,7 @@ function DrillPanel(props: { layer: number }) {
 		return <DrillShop layer={layer} view={view} />;
 	}
 
-	const pickaxe = getPickaxe(view.levels.pickaxe);
+	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
 	const state = deepCopy(saved);
 	advanceDrill(state, layer, now);
 	const ore = ORES[state.oreId];
@@ -113,7 +113,7 @@ function DrillPanel(props: { layer: number }) {
 	return (
 		<>
 			<Card order={1} accent={warehouseFull ? COLORS.canyon : COLORS.gold}>
-				<Label text={`⚙ Добуває: ${ore.name}`} display={true} size={TEXT_SIZES.large} order={1} />
+				<Label text={`⚙️ Добуває: ${ore.name}`} display={true} size={TEXT_SIZES.large} order={1} />
 				<Label text={`Бур: 1 шт. за ${perPiece} с (~${math.floor(3600 / perPiece)} шт./год)`} order={2} />
 				<Label
 					text={`Вручну: ~${string.format("%.1f", manual)} с на шматок, без дороги`}
@@ -139,7 +139,7 @@ function DrillPanel(props: { layer: number }) {
 						key={oreId}
 						text={
 							selected
-								? `✔ ${ORES[oreId].name}`
+								? `✅ ${ORES[oreId].name}`
 								: `${ORES[oreId].name} (${formatMoney(ORES[oreId].price)})`
 						}
 						variant={selected ? "success" : "secondary"}
@@ -164,7 +164,7 @@ export function startDrillController(): void {
 			openPanel({
 				key: `drill_${layer}`,
 				title: `Автобур: ${LAYERS[layer]?.name ?? layer}`,
-				icon: "⚙",
+				icon: "⚙️",
 				render: () => <DrillPanel layer={layer} />,
 			});
 		}
@@ -172,12 +172,13 @@ export function startDrillController(): void {
 
 	registerHudStat(5, (view) => ({
 		icon: "🕳",
-		text: `${LAYERS[view.deepestLayer]?.name ?? view.deepestLayer} (${view.deepestLayer}/${LAYER_COUNT})`,
+		text: `Найглибший шар: ${LAYERS[view.deepestLayer]?.name ?? view.deepestLayer} (${view.deepestLayer}/${LAYER_COUNT})`,
+		short: `${view.deepestLayer}/${LAYER_COUNT}`,
 	}));
-	registerHudStat(25, (view) => ({
-		icon: "👟",
-		text: `${math.floor(walkSpeedFor(view.levels.shoes, speedBonusOf(view)))}`,
-	}));
+	registerHudStat(25, (view) => {
+		const speed = math.floor(walkSpeedFor(view.gear.equipped.shoes, speedBonusOf(view)));
+		return { icon: "👟", text: `Швидкість ходьби: ${speed}`, short: `${speed}` };
+	});
 
 	registerGoalSource((view) => {
 		for (let layer = 1; layer <= LAYER_COUNT; layer++) {

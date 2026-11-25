@@ -17,10 +17,32 @@ import {
 	CurrencyLabel,
 	Label,
 	ProgressBar,
-	StatChip,
+	Stack,
+	StatTile,
 	TEXT_SIZES,
 	rowItemWidth,
 } from "client/lib/ui-kit";
+
+/** Two presses: the first arms the button, the second resets. A reset wipes the whole test profile. */
+function ResetProfileButton(props: { order: number }) {
+	const [armed, setArmed] = useState(false);
+	return (
+		<Button
+			text={armed ? "Точно скинути ВСЕ? Натисни ще раз" : "Скинути профіль (новий гравець)"}
+			variant="danger"
+			onClick={() => {
+				if (!armed) {
+					setArmed(true);
+					task.delay(4, () => setArmed(false));
+					return;
+				}
+				setArmed(false);
+				sendToServer(DEV_COMMAND_REMOTE, "resetProfile");
+			}}
+			order={props.order}
+		/>
+	);
+}
 
 function DevPanel() {
 	return (
@@ -41,11 +63,18 @@ function DevPanel() {
 				order={50}
 			/>
 			<Button
+				text="+30 руди й матеріалів на склад"
+				variant="crystal"
+				onClick={() => sendToServer(DEV_COMMAND_REMOTE, "materials")}
+				order={52}
+			/>
+			<Button
 				text="Відкрити всі шари"
 				variant="crystal"
 				onClick={() => sendToServer(DEV_COMMAND_REMOTE, "openLayers")}
 				order={51}
 			/>
+			<ResetProfileButton order={59} />
 			<Button text="🎨 UI showcase" variant="secondary" onClick={openShowcase} order={60} />
 		</>
 	);
@@ -83,7 +112,7 @@ function Showcase() {
 				<Label text="Шкали прогресу" display={true} order={1} />
 				<ProgressBar progress={progress} order={2} />
 				<ProgressBar progress={progress} color={COLORS.gold} height={20} text="12/25" order={3} />
-				<ProgressBar progress={0 / 0} color={COLORS.canyon} height={20} text="NaN → порожня" order={4} />
+				<ProgressBar progress={0 / 0} color={COLORS.canyon} height={20} text="NaN = порожня" order={4} />
 				<Button
 					text="Випадкове значення"
 					variant="secondary"
@@ -110,9 +139,11 @@ function Showcase() {
 			</Card>
 			<Card order={5}>
 				<Label text="Значки HUD" display={true} order={1} />
-				<StatChip icon="🕳" text="Кам'яний Пояс (1/3)" order={2} />
-				<StatChip icon="📦" text="180/200" tone="danger" order={3} />
-				<StatChip icon="✨" text="×1.25 · руда +10%" tone="success" order={4} />
+				<Stack direction="horizontal" gap={12} order={2}>
+					<StatTile icon="🕳" value="1/3" tooltip="Найглибший шар: Сірі Пласти (1/3)" order={1} />
+					<StatTile icon="📦" value="180/200" tooltip="Склад: 180/200" tone="danger" order={2} />
+					<StatTile icon="✨" value="×1.25" tooltip="Бонуси: продаж ×1.25" tone="success" order={3} />
+				</Stack>
 			</Card>
 		</>
 	);
@@ -131,5 +162,6 @@ export function startDevtoolsController(): void {
 		"Dev",
 		() => openPanel({ key: "devtools", title: "Dev-інструменти", icon: "🛠", render: () => <DevPanel /> }),
 		90,
+		"slate",
 	);
 }

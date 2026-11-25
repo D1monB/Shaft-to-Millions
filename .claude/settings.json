@@ -42,7 +42,10 @@
 			// "Edit(./package.json)",
 			// "Edit(./CLAUDE.md)",
 			// "mcp__roblox-studio__start_stop_play"
-			"mcp__Roblox_Studio__start_stop_play"
+			"mcp__Roblox_Studio__start_stop_play",
+			"mcp__Roblox_Studio__user_mouse_input",
+			"mcp__Roblox_Studio__user_keyboard_input",
+			"mcp__Roblox_Studio__character_navigation"
 		],
 		"deny": [
 			"Read(./.env)",
@@ -100,9 +103,6 @@
 			"mcp__Roblox_Studio__auto_setup_avatar",
 			"mcp__Roblox_Studio__segment_mesh",
 			"mcp__Roblox_Studio__upload_image",
-			"mcp__Roblox_Studio__character_navigation",
-			"mcp__Roblox_Studio__user_keyboard_input",
-			"mcp__Roblox_Studio__user_mouse_input",
 			"mcp__Roblox_Studio__subagent",
 			"mcp__Roblox_Studio__open_cloud_invoke",
 			"mcp__Roblox_Studio__create_skill",

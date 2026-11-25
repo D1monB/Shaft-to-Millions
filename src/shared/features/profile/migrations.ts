@@ -1,6 +1,25 @@
 import { PlainTable, deepCopy } from "shared/lib/tables";
 
 /**
+ * Version 3 replaced gear levels with owned items. Each old level becomes the new item closest to it
+ * (never weaker), so nobody loses progress. Index 0 = level 1. Frozen: never edit these lists.
+ */
+const OLD_GEAR_LEVELS: { readonly [slot: string]: ReadonlyArray<string> } = {
+	pickaxe: ["pickaxe_wood", "pickaxe_iron", "pickaxe_gold", "pickaxe_drill", "pickaxe_plasma"],
+	bag: ["bag_sack", "bag_leather", "bag_miner", "bag_reinforced", "bag_cargo", "bag_gravity"],
+	shoes: ["shoes_old", "shoes_miner", "shoes_light", "shoes_spring", "shoes_jet", "shoes_gravity"],
+};
+
+/** The item for an old saved level; a broken level counts as level 1. */
+function itemForOldLevel(slot: string, level: unknown): string {
+	const items = OLD_GEAR_LEVELS[slot];
+	// Infinity is clamped to the top item (never weaker); NaN, non-numbers and levels below 1 count as level 1.
+	const valid = typeIs(level, "number") && level === level && level >= 1;
+	const index = valid ? math.clamp(math.floor(level) - 1, 0, items.size() - 1) : 0;
+	return items[index];
+}
+
+/**
  * Upgrades saved data from version `from` to `from + 1`.
  * `apply` changes the table it receives (always a copy, never the live save).
  */
@@ -36,6 +55,27 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
 					}
 				}
 			}
+		},
+	},
+	{
+		// Version 3 (gear catalogue): levels.pickaxe/bag/shoes become gear.owned + gear.equipped.
+		from: 2,
+		apply: (data) => {
+			const levels = typeIs(data.levels, "table") ? (data.levels as PlainTable) : {};
+			const owned: string[] = [];
+			const equipped: PlainTable = {};
+			for (const slot of ["pickaxe", "bag", "shoes"]) {
+				const starter = OLD_GEAR_LEVELS[slot][0];
+				const item = itemForOldLevel(slot, levels[slot]);
+				owned.push(starter);
+				if (item !== starter) {
+					owned.push(item);
+				}
+				equipped[slot] = item;
+				levels[slot] = undefined;
+			}
+			data.levels = levels;
+			data.gear = { owned, equipped };
 		},
 	},
 ];

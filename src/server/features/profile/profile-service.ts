@@ -1,7 +1,7 @@
 import { Players } from "@rbxts/services";
 import { ProfileData, toPlayerView } from "shared/features/profile";
-import { STATE_UPDATE_REMOTE } from "shared/lib/remote-names";
-import { fireClient } from "server/lib/remotes";
+import { NOTIFY_REMOTE, STATE_UPDATE_REMOTE } from "shared/lib/remote-names";
+import { declareClientEvent, fireClient } from "server/lib/remotes";
 import { ProfileSessions } from "./profile-sessions";
 import { createRobloxBackend } from "./roblox-backend";
 
@@ -16,6 +16,17 @@ const loadedListeners: Array<(player: Player) => void> = [];
 /** Runs `callback` each time a player's data finishes loading. Register before startProfileService(). */
 export function onProfileLoaded(callback: (player: Player) => void): void {
 	loadedListeners.push(callback);
+}
+
+const releasingListeners: Array<(player: Player) => void> = [];
+
+/**
+ * Runs `callback` when a player leaves, while their data is still readable (just before it is released).
+ * Why: the order of separate PlayerRemoving handlers is not guaranteed, so a feature reading data there
+ * could find it already gone. The callback must not yield.
+ */
+export function onProfileReleasing(callback: (player: Player) => void): void {
+	releasingListeners.push(callback);
 }
 
 // Players whose view must be re-sent. Many changes in one frame produce one network message.
@@ -41,6 +52,9 @@ export function startProfileService(): void {
 	if (sessions !== undefined) {
 		return;
 	}
+	// Both are fired only by the server (state updates and notify() from every service).
+	declareClientEvent(STATE_UPDATE_REMOTE);
+	declareClientEvent(NOTIFY_REMOTE);
 	const created = new ProfileSessions(createRobloxBackend(), kickPlayer, (message) => warn(`[profile] ${message}`));
 	sessions = created;
 
@@ -58,6 +72,12 @@ export function startProfileService(): void {
 	Players.PlayerAdded.Connect((player) => created.playerAdded(player.UserId));
 	Players.PlayerRemoving.Connect((player) => {
 		dirty.delete(player);
+		if (getProfileData(player) !== undefined) {
+			for (const listener of releasingListeners) {
+				// pcall: one feature's bug must never stop the profile from being released and saved.
+				pcall(listener, player);
+			}
+		}
 		created.playerRemoving(player.UserId);
 	});
 

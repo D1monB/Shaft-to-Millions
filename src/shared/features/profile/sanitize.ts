@@ -1,12 +1,10 @@
-import { BAGS } from "shared/config/bags";
 import { INVENTORY_HARD_LIMIT, ITEMS, ItemKind, isItemId } from "shared/config/items";
 import { MACHINE_UPGRADES, MACHINE_IDS, RECIPES, WAREHOUSE_LEVELS, isRecipeId } from "shared/config/machines";
-import { PICKAXES } from "shared/config/pickaxes";
-import { SHOES } from "shared/config/shoes";
 import { DRILLS, drillKey } from "shared/config/drills";
-import { LAYER_COUNT } from "shared/config/layers";
+import { LAYER_COUNT, MAX_DEPTH_METERS } from "shared/config/layers";
 import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
 import { RESOURCE_IDS } from "shared/config/resources";
+import { GEAR_SLOTS, findGear, starterOf } from "shared/features/upgrades";
 import { MAX_COUNTER, repairCountMap, repairInteger, repairNumber, repairTable } from "shared/lib/repair";
 import { PlainTable } from "shared/lib/tables";
 
@@ -29,11 +27,10 @@ export function sanitize(data: PlainTable): string[] {
 	repairCountMap(data, "bag", ORE_IDS, "bag", repairs);
 
 	const levels = repairTable(data, "levels", "levels", repairs);
-	repairInteger(levels, "pickaxe", 1, PICKAXES.size(), 1, "levels.pickaxe", repairs);
-	repairInteger(levels, "bag", 1, BAGS.size(), 1, "levels.bag", repairs);
-	repairInteger(levels, "shoes", 1, SHOES.size(), 1, "levels.shoes", repairs);
 	repairInteger(levels, "warehouse", 1, WAREHOUSE_LEVELS.size(), 1, "levels.warehouse", repairs);
 	repairInteger(data, "deepestLayer", 1, LAYER_COUNT, 1, "deepestLayer", repairs);
+	repairInteger(data, "deepestMeters", 0, MAX_DEPTH_METERS, 0, "deepestMeters", repairs);
+	repairGear(data, repairs);
 	repairDrills(data, repairs);
 	repairInventory(data, repairs);
 	repairEquipped(data, repairs);
@@ -43,6 +40,48 @@ export function sanitize(data: PlainTable): string[] {
 	repairMachines(data, repairs);
 
 	return repairs;
+}
+
+/** Far above the number of gear items in the game; only stops a save from growing without end. */
+const MAX_OWNED_GEAR = 200;
+
+/**
+ * Gear: owned ids are unique strings and always include the starters. Unknown ids are kept (an item from a newer
+ * server must not be taken away). An equipped slot must hold an owned item that is not known to be of another slot;
+ * otherwise it falls back to the starter.
+ */
+function repairGear(data: PlainTable, repairs: string[]): void {
+	const gear = repairTable(data, "gear", "gear", repairs);
+	const raw = gear.owned;
+	const owned: string[] = [];
+	if (typeIs(raw, "table")) {
+		for (const id of raw as unknown[]) {
+			if (typeIs(id, "string") && id.size() <= 64 && !owned.includes(id) && owned.size() < MAX_OWNED_GEAR) {
+				owned.push(id);
+			}
+		}
+	}
+	let changed = !typeIs(raw, "table") || owned.size() !== (raw as unknown[]).size();
+	for (const slot of GEAR_SLOTS) {
+		if (!owned.includes(starterOf(slot))) {
+			owned.push(starterOf(slot));
+			changed = true;
+		}
+	}
+	if (changed) {
+		repairs.push("gear.owned");
+	}
+	gear.owned = owned;
+
+	const equipped = repairTable(gear, "equipped", "gear.equipped", repairs);
+	for (const slot of GEAR_SLOTS) {
+		const id = equipped[slot];
+		const known = findGear(id);
+		if (!typeIs(id, "string") || !owned.includes(id) || (known !== undefined && known.slot !== slot)) {
+			equipped[slot] = starterOf(slot);
+			repairs.push(`gear.equipped.${slot}`);
+		}
+	}
 }
 
 // Latest sane unix time we accept (year ~2100). Anything later is a corrupted timestamp.

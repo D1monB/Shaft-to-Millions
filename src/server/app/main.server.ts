@@ -8,6 +8,7 @@ import { startDrillService } from "server/features/drill";
 import { startEquipmentService } from "server/features/equipment";
 import { startFactoryService } from "server/features/factory";
 import { startLayersService } from "server/features/layers";
+import { startLeaderboardService } from "server/features/leaderboard";
 import { startMiningService } from "server/features/mining";
 import { startMovementService } from "server/features/movement";
 import { startProfileService } from "server/features/profile";
@@ -37,5 +38,6 @@ startDrillService();
 startChestsService();
 startEquipmentService();
 startDevtoolsService();
+startLeaderboardService();
 
 startProfileService();

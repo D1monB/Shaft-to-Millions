@@ -17,7 +17,7 @@ import { RateLimiter } from "shared/lib/rate-limiter";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
-import { fireClient, logAbuse } from "server/lib/remotes";
+import { declareClientEvent, fireClient, logAbuse } from "server/lib/remotes";
 
 const sessions = new Map<Player, MiningSession<Instance>>();
 // Refusal messages ("bag is full") at most every couple of seconds, so clicking does not spam the screen.
@@ -67,7 +67,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		return;
 	}
 
-	const capacity = bagCapacity(data.levels.bag);
+	const capacity = bagCapacity(data.gear.equipped.bag);
 	if (bagFreeSpace(data.bag, capacity) <= 0) {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
 			notify(player, "Сумка повна! Продай руду або віднеси її на склад.", "error");
@@ -76,7 +76,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	}
 
 	const ore = ORES[oreId];
-	const result = getSession(player).hit(node, ore, getPickaxe(data.levels.pickaxe), os.clock());
+	const result = getSession(player).hit(node, ore, getPickaxe(data.gear.equipped.pickaxe), os.clock());
 
 	if (result.kind === "locked") {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
@@ -118,6 +118,8 @@ function setupNode(node: Instance): void {
 }
 
 export function startMiningService(): void {
+	declareClientEvent(MINE_PROGRESS_REMOTE);
+	declareClientEvent(NODE_BROKEN_REMOTE);
 	for (const node of CollectionService.GetTagged(TAGS.OreNode)) {
 		setupNode(node);
 	}

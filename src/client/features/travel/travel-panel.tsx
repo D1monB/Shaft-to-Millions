@@ -14,7 +14,7 @@ function destinationName(destination: number): string {
 	if (destination === SURFACE) {
 		return "🏠 Поверхня";
 	}
-	return `⛏ Табір: ${LAYERS[destination]?.name ?? destination}`;
+	return `⛏️ Табір: ${LAYERS[destination]?.name ?? destination}`;
 }
 
 function TravelList(props: { view: PlayerView }) {
@@ -63,5 +63,6 @@ export function startTravelController(): void {
 		"Подорож",
 		() => openPanel({ key: "travel", title: "Швидка подорож", icon: "🧭", render: () => <TravelPanel /> }),
 		20,
+		"success",
 	);
 }

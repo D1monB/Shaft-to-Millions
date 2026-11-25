@@ -126,7 +126,7 @@ class EquipmentTests {
 		const bonuses = computeBonuses(inventory, bestLoadout(inventory));
 		Assert.true(bonuses.sellMultiplier <= MAX_SELL_MULTIPLIER);
 		Assert.true(bonuses.yieldBonus <= BONUS_CAPS.yield);
-		Assert.true(walkSpeedFor(SHOES.size(), bonuses.speedBonus) <= MAX_WALK_SPEED);
+		Assert.true(walkSpeedFor(SHOES[SHOES.size() - 1].id, bonuses.speedBonus) <= MAX_WALK_SPEED);
 	}
 
 	@Test

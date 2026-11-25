@@ -3,7 +3,7 @@
 import React from "@rbxts/react";
 import { createPortal } from "@rbxts/react-roblox";
 import { Players } from "@rbxts/services";
-import { MACHINES, MachineId, isMachineId } from "shared/config/machines";
+import { MACHINES, MACHINE_IDS, MachineId, isMachineId } from "shared/config/machines";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { machineProgress, storageTotal } from "shared/features/factory";
 import { PlayerView } from "shared/features/profile";
@@ -11,7 +11,7 @@ import { formatDuration, formatMoney } from "shared/lib/format";
 import { useView } from "client/features/profile";
 import { useServerClock, useTagged } from "client/lib/hooks";
 import { COLORS, FONTS, ProgressBar, RADIUS, STROKE, TEXT_SIZES } from "client/lib/ui-kit";
-import { liveState } from "./factory-panels";
+import { isMachineBusy, liveState } from "./factory-helpers";
 
 /** The part a board hangs over, and how high above it. Models use their bounding box. */
 function anchorOf(instance: Instance): [BasePart, number] | undefined {
@@ -111,7 +111,8 @@ function Board(props: { part: BasePart; height: number; info: BoardInfo }) {
 /** Rendered once by the app; finds machines by tag (they stream in and out with StreamingEnabled). */
 export function MachineBoards() {
 	const view = useView();
-	const now = useServerClock(1);
+	// Only ticks while some machine is working: the boards of idle machines show nothing that moves.
+	const now = useServerClock(1, (time) => MACHINE_IDS.some((id) => isMachineBusy(view?.machines[id], time)));
 	const machines = useTagged(TAGS.Machine);
 	if (view === undefined) {
 		return undefined;

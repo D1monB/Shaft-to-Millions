@@ -13,6 +13,16 @@ const states = new Map<Player, MoveState>();
 /** Log at most a few pull-backs per player, so a cheater cannot flood the output. */
 const logLimiter = new RateLimiter(2, 1 / 30);
 
+const honestSampleListeners: Array<(player: Player, position: Vector3) => void> = [];
+
+/**
+ * Called with every position that passed the movement check. Lets the leaderboard record depth without trusting
+ * raw positions: a teleport or speed hack sample never reaches the listeners.
+ */
+export function onHonestSample(listener: (player: Player, position: Vector3) => void): void {
+	honestSampleListeners.push(listener);
+}
+
 /** Lets the equipment feature add a speed-aura bonus without movement depending on it. */
 export function setSpeedBonusProvider(provider: (player: Player) => number): void {
 	speedBonusOf = provider;
@@ -28,7 +38,7 @@ export function resetMovementBaseline(player: Player): void {
 
 function walkSpeedOf(player: Player): number | undefined {
 	const data = getProfileData(player);
-	return data === undefined ? undefined : walkSpeedFor(data.levels.shoes, speedBonusOf(player));
+	return data === undefined ? undefined : walkSpeedFor(data.gear.equipped.shoes, speedBonusOf(player));
 }
 
 function applySpeed(player: Player): void {
@@ -78,6 +88,11 @@ function checkPosition(player: Player): void {
 
 	const result = checkMove(state, sample, walkSpeed);
 	states.set(player, result.state);
+	if (result.verdict === "ok") {
+		for (const listener of honestSampleListeners) {
+			listener(player, position);
+		}
+	}
 	if (result.verdict !== "rubberband") {
 		return;
 	}

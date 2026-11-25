@@ -5,7 +5,7 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
 import { createDefaultProfileData } from "shared/features/profile";
 import { MAX_COUNTER } from "shared/lib/repair";
-import { DEV_MONEY_AMOUNTS, applyDevCommand, parseDevCommand } from "./devtools";
+import { DEV_MATERIAL_AMOUNT, DEV_MONEY_AMOUNTS, applyDevCommand, parseDevCommand } from "./devtools";
 
 class DevtoolsTests {
 	// ---- parsing: the only input that comes from the client ----
@@ -15,6 +15,52 @@ class DevtoolsTests {
 		Assert.equal(parseDevCommand(["money", DEV_MONEY_AMOUNTS[1]])?.kind, "money");
 		Assert.equal(parseDevCommand(["maxGear"])?.kind, "maxGear");
 		Assert.equal(parseDevCommand(["openLayers"])?.kind, "openLayers");
+		Assert.equal(parseDevCommand(["resetProfile"])?.kind, "resetProfile");
+		// No extra arguments are tolerated.
+		Assert.undefined(parseDevCommand(["resetProfile", 1]));
+	}
+
+	@Test
+	public resetBringsBackANewPlayerInPlace() {
+		const data = createDefaultProfileData();
+		const same = data;
+		applyDevCommand(data, { kind: "money", amount: DEV_MONEY_AMOUNTS[2] });
+		applyDevCommand(data, { kind: "maxGear" });
+		applyDevCommand(data, { kind: "materials" });
+		applyDevCommand(data, { kind: "openLayers" });
+		data.stats.totalEarned = 500;
+		data.deepestMeters = 80;
+		data.inventory.push({ uid: "i1", item: "pet_mole" });
+		data.nextUid = 2;
+		applyDevCommand(data, { kind: "resetProfile" });
+		const fresh = createDefaultProfileData();
+		Assert.equal(data, same, "the live table must stay the same object");
+		Assert.equal(data.money, 0);
+		Assert.equal(data.deepestLayer, 1);
+		Assert.equal(data.deepestMeters, 0);
+		Assert.equal(data.stats.totalEarned, 0);
+		Assert.equal(data.inventory.size(), 0);
+		Assert.equal(data.nextUid, 1);
+		Assert.deepEqual(data.gear, fresh.gear);
+		Assert.deepEqual(data.warehouse, {});
+	}
+
+	@Test
+	public resetKeepsTheVersionAndGrantedReceipts() {
+		const data = createDefaultProfileData();
+		data.purchaseIds.push("receipt-1");
+		applyDevCommand(data, { kind: "resetProfile" });
+		// A paid purchase must never be granted twice, so its id survives a test reset.
+		Assert.deepEqual(data.purchaseIds, ["receipt-1"]);
+		Assert.equal(data.schemaVersion, createDefaultProfileData().schemaVersion);
+	}
+
+	@Test
+	public resetGivesIndependentTablesNotSharedOnes() {
+		const data = createDefaultProfileData();
+		applyDevCommand(data, { kind: "resetProfile" });
+		data.bag.coal = 5;
+		Assert.undefined(createDefaultProfileData().bag.coal);
 	}
 
 	@Test
@@ -55,13 +101,34 @@ class DevtoolsTests {
 	}
 
 	@Test
-	public maxGearSetsTheTopLevelOfEveryTrack() {
+	public maxGearOwnsEverythingAndWearsTheBest() {
 		const data = createDefaultProfileData();
 		applyDevCommand(data, { kind: "maxGear" });
-		Assert.equal(data.levels.pickaxe, PICKAXES.size());
-		Assert.equal(data.levels.bag, BAGS.size());
-		Assert.equal(data.levels.shoes, SHOES.size());
+		Assert.equal(data.gear.equipped.pickaxe, PICKAXES[PICKAXES.size() - 1].id);
+		Assert.equal(data.gear.equipped.bag, BAGS[BAGS.size() - 1].id);
+		Assert.equal(data.gear.equipped.shoes, SHOES[SHOES.size() - 1].id);
+		const all = PICKAXES.size() + BAGS.size() + SHOES.size();
+		Assert.equal(data.gear.owned.size(), all);
+		// A second press adds no duplicates.
+		applyDevCommand(data, { kind: "maxGear" });
+		Assert.equal(data.gear.owned.size(), all);
 		Assert.equal(data.money, 0);
+	}
+
+	@Test
+	public materialsAddEveryOreAndProduct() {
+		const data = createDefaultProfileData();
+		Assert.equal(parseDevCommand(["materials"])?.kind, "materials");
+		Assert.undefined(parseDevCommand(["materials", 99]));
+		applyDevCommand(data, { kind: "materials" });
+		Assert.equal(data.warehouse.iron_ingot, DEV_MATERIAL_AMOUNT);
+		Assert.equal(data.warehouse.gold_circuit, DEV_MATERIAL_AMOUNT);
+		// Raw ore too, so the furnace can be tried right away.
+		Assert.equal(data.warehouse.coal, DEV_MATERIAL_AMOUNT);
+		Assert.equal(data.warehouse.copper, DEV_MATERIAL_AMOUNT);
+		// A second press adds again (it is a top-up button), never above the counter cap.
+		applyDevCommand(data, { kind: "materials" });
+		Assert.equal(data.warehouse.coal, DEV_MATERIAL_AMOUNT * 2);
 	}
 
 	@Test

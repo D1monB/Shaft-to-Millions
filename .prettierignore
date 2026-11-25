@@ -3,3 +3,5 @@ include/
 node_modules/
 package-lock.json
 *.md
+skills-lock.json
+.agents/

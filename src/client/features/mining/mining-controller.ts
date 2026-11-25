@@ -17,6 +17,7 @@ import { formatMoney } from "shared/lib/format";
 import { registerHudStat } from "client/features/hud";
 import { getView, onViewChanged } from "client/features/profile";
 import { onServerMessage } from "client/lib/remotes";
+import { playOreBreak, playSound } from "client/lib/sounds";
 import { COLORS, FONTS } from "client/lib/ui-kit";
 
 function anchorPart(node: Instance): BasePart | undefined {
@@ -97,7 +98,7 @@ function refreshNodeLabel(node: Instance, view: PlayerView): void {
 		return;
 	}
 	const ore = ORES[oreId];
-	const pickaxe = getPickaxe(view.levels.pickaxe);
+	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
 	if (canMineTier(ore, pickaxe)) {
 		const hits = hitsRequired(ore.hardness, pickaxe.power);
 		label.Text = `${ore.name} · ${formatMoney(ore.price)}\n${hits} ${hits === 1 ? "удар" : "ударів"}`;
@@ -233,7 +234,11 @@ function hideNode(node: Instance, seconds: number): void {
 
 export function startMiningController(): void {
 	// The bag is shown in the HUD top bar; only the pickaxe goes to the stat column.
-	registerHudStat(20, (view) => ({ icon: "⛏", text: getPickaxe(view.levels.pickaxe).name }));
+	registerHudStat(20, (view) => {
+		const name = getPickaxe(view.gear.equipped.pickaxe).name;
+		// The first word fits on the tile ("Залізна"); the whole name is in the tooltip.
+		return { icon: "⛏️", text: `Кирка: ${name}`, short: name.split(" ")[0] ?? name };
+	});
 
 	onViewChanged(refreshAllLabels);
 	CollectionService.GetInstanceAddedSignal(TAGS.OreNode).Connect((node) => {
@@ -250,6 +255,7 @@ export function startMiningController(): void {
 	onServerMessage(MINE_PROGRESS_REMOTE, (node, damage, hardness) => {
 		if (typeIs(node, "Instance") && typeIs(damage, "number") && typeIs(hardness, "number")) {
 			showProgress(node, damage, hardness);
+			playSound("hit");
 		}
 	});
 	onServerMessage(NODE_BROKEN_REMOTE, (node, respawnSeconds, oreId, amount) => {
@@ -260,6 +266,7 @@ export function startMiningController(): void {
 		if (part !== undefined && typeIs(amount, "number") && amount > 0) {
 			showPopup(part, `+${amount} ${ORES[oreId].name}`);
 		}
+		playOreBreak(oreId);
 		bars.get(node)?.gui.Destroy();
 		bars.delete(node);
 		hideNode(node, respawnSeconds);

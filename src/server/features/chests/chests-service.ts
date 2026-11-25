@@ -18,7 +18,7 @@ import { RateLimiter } from "shared/lib/rate-limiter";
 import { getProfileData, markDirty, onProfileLoaded, saveProfileNow } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
-import { fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
+import { declareClientEvent, fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
 import { decideReceipt } from "./receipt";
 
 const random = new Random();
@@ -134,6 +134,7 @@ function processReceipt(receipt: ReceiptInfo): Enum.ProductPurchaseDecision {
 // ---------------------------------------------------------------- lifecycle
 
 export function startChestsService(): void {
+	declareClientEvent(CHEST_RESULT_REMOTE);
 	onClientRequest(OPEN_CHEST_REMOTE, new RateLimiter(3, 1), handleOpenWithDollars);
 	MarketplaceService.ProcessReceipt = processReceipt;
 

@@ -5,6 +5,7 @@ import type { OwnedItem } from "shared/features/chests";
 import type { DrillState } from "shared/features/drill";
 import type { Equipped } from "shared/features/equipment";
 import type { Counts, MachineState } from "shared/features/factory";
+import { GearState, createStarterGear } from "shared/features/upgrades";
 
 /**
  * Bump this ONLY for changes that old saves cannot survive on their own
@@ -13,7 +14,7 @@ import type { Counts, MachineState } from "shared/features/factory";
  * Also bump (with an empty migration) when you RAISE a cap in sanitize.ts, otherwise an older server
  * still running during an update clamps the new value and saves it over the player's data.
  */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 /** Lifetime counters. Used for the hint system and later for leaderboards. */
 export interface ProfileStats {
@@ -23,7 +24,7 @@ export interface ProfileStats {
 
 /**
  * What we save per player. Derived values (bag capacity, walk speed, sell multiplier) are NOT stored:
- * they are calculated from levels and equipment, so changing a formula never breaks old saves.
+ * they are calculated from gear, levels and equipment, so changing a formula never breaks old saves.
  * Each feature adds its own fields here together with a default and a sanitize rule.
  */
 export interface ProfileData {
@@ -32,14 +33,18 @@ export interface ProfileData {
 	stats: ProfileStats;
 	/** Ore the player carries. Missing id = 0. */
 	bag: Partial<Record<OreId, number>>;
-	/** Gear levels, 1-based (level 1 = starter gear). */
-	levels: GearLevels;
+	/** Shop gear: owned item ids and the equipped one per slot (see config/pickaxes.ts, bags.ts, shoes.ts). */
+	gear: GearState;
+	/** Building levels, 1-based. */
+	levels: ProfileLevels;
 	/** Base storage on the surface (ore and products). */
 	warehouse: Counts;
 	/** Owned machines. A machine is owned when its entry exists. */
 	machines: Partial<Record<MachineId, MachineState>>;
 	/** Deepest layer whose camp the player reached. Drives drill unlocks and the depth leaderboard later. */
 	deepestLayer: number;
+	/** Deepest point the player stood on, in game meters below the surface. Breaks ties on the depth board. */
+	deepestMeters: number;
 	/** Owned auto drills by drillKey(layer). */
 	drills: { [key: string]: DrillState | undefined };
 	/** Items from chests (pets, auras). */
@@ -52,10 +57,7 @@ export interface ProfileData {
 	equipped: Equipped;
 }
 
-export interface GearLevels {
-	pickaxe: number;
-	bag: number;
-	shoes: number;
+export interface ProfileLevels {
 	/** Warehouse capacity level (see WAREHOUSE_LEVELS). */
 	warehouse: number;
 }
@@ -66,8 +68,10 @@ export function createDefaultProfileData(): ProfileData {
 		money: 0,
 		stats: { totalEarned: 0, oresMined: 0 },
 		bag: {},
-		levels: { pickaxe: 1, bag: 1, shoes: 1, warehouse: 1 },
+		gear: createStarterGear(),
+		levels: { warehouse: 1 },
 		deepestLayer: 1,
+		deepestMeters: 0,
 		drills: {},
 		inventory: [],
 		nextUid: 1,
@@ -87,8 +91,13 @@ const profileDataShape = t.interface({
 	money: t.integer,
 	stats: t.interface({ totalEarned: t.integer, oresMined: t.integer }),
 	bag: t.table,
-	levels: t.interface({ pickaxe: t.integer, bag: t.integer, shoes: t.integer, warehouse: t.integer }),
+	gear: t.interface({
+		owned: t.array(t.string),
+		equipped: t.interface({ pickaxe: t.string, bag: t.string, shoes: t.string }),
+	}),
+	levels: t.interface({ warehouse: t.integer }),
 	deepestLayer: t.integer,
+	deepestMeters: t.integer,
 	drills: t.table,
 	warehouse: t.table,
 	machines: t.table,

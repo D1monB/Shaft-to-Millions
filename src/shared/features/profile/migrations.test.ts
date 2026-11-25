@@ -2,6 +2,7 @@ import { Assert, Test } from "@rbxts/lunit";
 import { PlainTable } from "shared/lib/tables";
 import { MIGRATIONS, Migration, isMigrationChainComplete, migrate } from "./migrations";
 import { CURRENT_SCHEMA_VERSION } from "./schema";
+import { findGear } from "shared/features/upgrades";
 
 // Fake two-step history, used only here: v1 had `coins`, v2 renamed it to `gold`, v3 added a `title`.
 const fakeChain: ReadonlyArray<Migration> = [
@@ -159,6 +160,67 @@ class MigrationsTests {
 	public version2MigrationSurvivesSavesWithoutMachinesOrLevels() {
 		Assert.true(migrate({ schemaVersion: 1 } as PlainTable, MIGRATIONS, 2).ok);
 		Assert.true(migrate({ schemaVersion: 1, levels: "x", machines: 5 } as unknown as PlainTable, MIGRATIONS, 2).ok);
+	}
+
+	@Test
+	public version3TurnsGearLevelsIntoOwnedItems() {
+		const old = {
+			schemaVersion: 2,
+			money: 9,
+			levels: { pickaxe: 3, bag: 6, shoes: 1, warehouse: 2 },
+		} as unknown as PlainTable;
+		const result = migrate(old, MIGRATIONS, 3);
+		if (!result.ok) {
+			Assert.fail(`migration failed: ${result.reason}`);
+			return;
+		}
+		const data = result.data as unknown as {
+			money: number;
+			levels: { pickaxe?: number; bag?: number; shoes?: number; warehouse: number };
+			gear: { owned: string[]; equipped: { pickaxe: string; bag: string; shoes: string } };
+		};
+		Assert.equal(data.money, 9);
+		Assert.equal(data.levels.warehouse, 2);
+		Assert.undefined(data.levels.pickaxe);
+		Assert.undefined(data.levels.bag);
+		Assert.undefined(data.levels.shoes);
+		// Old level 3 (ore tier 3) becomes the gold pickaxe: the same ore tier, never weaker.
+		Assert.equal(data.gear.equipped.pickaxe, "pickaxe_gold");
+		Assert.equal(data.gear.equipped.bag, "bag_gravity");
+		Assert.equal(data.gear.equipped.shoes, "shoes_old");
+		Assert.true(data.gear.owned.includes("pickaxe_wood"));
+		Assert.true(data.gear.owned.includes("pickaxe_gold"));
+		Assert.true(data.gear.owned.includes("shoes_old"));
+		Assert.equal(data.gear.owned.size(), 5);
+	}
+
+	@Test
+	public version3MapsEveryOldLevelToAnItemOfTheSameSlot() {
+		for (let level = 1; level <= 6; level++) {
+			const raw = { schemaVersion: 2, levels: { pickaxe: level, bag: level, shoes: level, warehouse: 1 } };
+			const result = migrate(raw as unknown as PlainTable, MIGRATIONS, 3);
+			Assert.true(result.ok);
+			if (result.ok) {
+				const equipped = (result.data.gear as { equipped: { [slot: string]: string } }).equipped;
+				for (const slot of ["pickaxe", "bag", "shoes"]) {
+					Assert.equal(findGear(equipped[slot])?.slot, slot);
+				}
+			}
+		}
+	}
+
+	@Test
+	public version3SurvivesBrokenLevels() {
+		for (const levels of [undefined, "x", { pickaxe: 0 / 0, bag: -3, shoes: math.huge }]) {
+			const result = migrate({ schemaVersion: 2, levels } as unknown as PlainTable, MIGRATIONS, 3);
+			Assert.true(result.ok);
+			if (result.ok) {
+				const equipped = (result.data.gear as { equipped: { [slot: string]: string } }).equipped;
+				Assert.equal(equipped.pickaxe, "pickaxe_wood");
+				Assert.equal(equipped.bag, "bag_sack");
+				Assert.notUndefined(findGear(equipped.shoes));
+			}
+		}
 	}
 }
 

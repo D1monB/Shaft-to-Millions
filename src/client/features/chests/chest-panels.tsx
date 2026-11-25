@@ -1,4 +1,5 @@
-// Chest panel: the full odds table BEFORE any payment (Roblox policy), then a reveal screen for the result.
+// Chest panel: every possible reward as a rarity card with its chance, shown BEFORE any payment (Roblox policy),
+// then a reveal screen for the result. Layout and colours follow the developer's reference design.
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
 import { MarketplaceService, Players } from "@rbxts/services";
@@ -14,57 +15,73 @@ import {
 import { formatCount, formatPercent } from "shared/lib/format";
 import { registerHudStat } from "client/features/hud";
 import { useView } from "client/features/profile";
-import { KIND_ICONS, effectText, rarityColor } from "client/lib/item-display";
-import { openPanel } from "client/lib/panels";
+import { ITEM_CARD_HEIGHT, ItemCard } from "client/lib/item-card";
+import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText, rarityColor } from "client/lib/item-display";
+import { closePanel, openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { onServerMessage, sendToServer } from "client/lib/remotes";
+import { playSound } from "client/lib/sounds";
 import { toast } from "client/lib/toasts";
-import { BuyButton, Button, COLORS, Card, FONTS, Label, RADIUS, STROKE, TEXT_SIZES } from "client/lib/ui-kit";
+import {
+	BuyButton,
+	Button,
+	COLORS,
+	Card,
+	FONTS,
+	Label,
+	ProgressBar,
+	RADIUS,
+	STROKE,
+	Sunburst,
+	TEXT_SIZES,
+	rampSequence,
+} from "client/lib/ui-kit";
 
 /** Robux is offered only when the server says so (fail closed, same as the server). */
 function robuxAllowed(): boolean {
 	return Players.LocalPlayer.GetAttribute(ROBUX_CHESTS_ALLOWED_ATTRIBUTE) === true;
 }
 
-function OddsRow(props: { item: ItemId; chance: number; order: number }) {
-	const def = ITEMS[props.item];
-	const color = rarityColor(props.item);
+/** "🎁 Предметів у сховищі: 14 / 60" with a small bar, centred like in the reference. */
+function StoragePill(props: { count: number; order: number }) {
+	const full = props.count >= INVENTORY_LIMIT;
 	return (
-		<frame
-			BackgroundTransparency={1}
-			Size={new UDim2(1, 0, 0, 0)}
-			AutomaticSize={Enum.AutomaticSize.Y}
-			LayoutOrder={props.order}
-		>
-			<uilistlayout
-				FillDirection={Enum.FillDirection.Horizontal}
-				Padding={new UDim(0, 8)}
-				SortOrder={Enum.SortOrder.LayoutOrder}
-				VerticalAlignment={Enum.VerticalAlignment.Center}
-			/>
-			<textlabel
-				BackgroundColor3={color}
-				Size={new UDim2(0, 64, 0, 26)}
-				Font={FONTS.display}
-				Text={formatPercent(props.chance)}
-				TextSize={TEXT_SIZES.small + 1}
-				TextColor3={COLORS.textDark}
-				LayoutOrder={1}
+		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 40)} LayoutOrder={props.order}>
+			<frame
+				AnchorPoint={new Vector2(0.5, 0.5)}
+				Position={new UDim2(0.5, 0, 0.5, 0)}
+				Size={new UDim2(0, 0, 0, 40)}
+				AutomaticSize={Enum.AutomaticSize.X}
+				BackgroundColor3={COLORS.well}
 			>
-				<uicorner CornerRadius={RADIUS.small} />
-				<uistroke
-					Color={COLORS.outline}
-					Thickness={STROKE.thin}
-					ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
+				<uicorner CornerRadius={RADIUS.round} />
+				<uistroke Color={full ? COLORS.danger : COLORS.outline} Thickness={STROKE.thin} />
+				<uipadding PaddingLeft={new UDim(0, 16)} PaddingRight={new UDim(0, 16)} />
+				<uilistlayout
+					FillDirection={Enum.FillDirection.Horizontal}
+					Padding={new UDim(0, 12)}
+					SortOrder={Enum.SortOrder.LayoutOrder}
+					VerticalAlignment={Enum.VerticalAlignment.Center}
 				/>
-			</textlabel>
-			<Label
-				text={`${KIND_ICONS[def.kind]} ${def.name} · ${RARITY_NAMES[def.rarity]}\n${effectText(def.kind, def.bonus)}`}
-				color={color}
-				size={TEXT_SIZES.small + 1}
-				width={new UDim(1, -72)}
-				order={2}
-			/>
+				<textlabel
+					BackgroundTransparency={1}
+					Size={new UDim2(0, 0, 1, 0)}
+					AutomaticSize={Enum.AutomaticSize.X}
+					Font={FONTS.display}
+					RichText={true}
+					Text={`🎁  Предметів у сховищі: <font color="#FCD34D">${formatCount(props.count, INVENTORY_LIMIT)}</font>${full ? "  · повне" : ""}`}
+					TextSize={TEXT_SIZES.small + 1}
+					TextColor3={COLORS.text}
+					LayoutOrder={1}
+				/>
+				<frame BackgroundTransparency={1} Size={new UDim2(0, 90, 0, 12)} LayoutOrder={2}>
+					<ProgressBar
+						progress={props.count / INVENTORY_LIMIT}
+						color={full ? COLORS.canyon : COLORS.gold}
+						height={12}
+					/>
+				</frame>
+			</frame>
 		</frame>
 	);
 }
@@ -80,52 +97,84 @@ function ChestPanel(props: { chestId: ChestId }) {
 
 	let robux: React.Element;
 	if (productId === undefined) {
-		robux = <Label text="Відкриття за Robux ще не налаштоване." tone="muted" size={TEXT_SIZES.small} order={5} />;
+		robux = (
+			<Label
+				text="💎 Гра повністю проходиться без Robux · Відкриття за Robux у розробці"
+				tone="muted"
+				size={TEXT_SIZES.small}
+				align="center"
+				order={6}
+			/>
+		);
 	} else if (!robuxAllowed()) {
 		robux = (
 			<Label
-				text="Відкриття за Robux недоступне для твого акаунта."
+				text="💎 Гра повністю проходиться без Robux · Відкриття за Robux недоступне для твого акаунта"
 				tone="muted"
 				size={TEXT_SIZES.small}
-				order={5}
+				align="center"
+				order={6}
 			/>
 		);
 	} else {
 		robux = (
-			<Button
-				text={`Відкрити за R$ ${chest.robuxPrice}`}
-				variant="crystal"
-				onClick={() => MarketplaceService.PromptProductPurchase(Players.LocalPlayer, productId)}
-				disabled={full}
-				order={5}
-			/>
+			<>
+				<Button
+					text={`💎  Відкрити за R$ ${chest.robuxPrice}`}
+					variant="crystal"
+					onClick={() => MarketplaceService.PromptProductPurchase(Players.LocalPlayer, productId)}
+					disabled={full}
+					order={6}
+				/>
+				<Label
+					text="💎 Гра повністю проходиться без Robux"
+					tone="muted"
+					size={TEXT_SIZES.small}
+					align="center"
+					order={7}
+				/>
+			</>
 		);
 	}
 
 	return (
 		<>
-			<Label text={chest.description} tone="muted" order={1} />
-			<Card order={2}>
-				<Label text="Що може випасти (шанси):" display={true} order={0} />
-				{chestOdds(props.chestId).map((line, index) => (
-					<OddsRow key={`odds_${index}`} item={line.item} chance={line.chance} order={index + 1} />
-				))}
+			<Label text="✨ Що може випасти (шанси):" display={true} size={TEXT_SIZES.large} order={1} />
+			<Label text={chest.description} tone="muted" size={TEXT_SIZES.small + 1} order={2} />
+			<Card order={3}>
+				<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 0)} AutomaticSize={Enum.AutomaticSize.Y}>
+					<uigridlayout
+						CellSize={new UDim2(1 / 3, -8, 0, ITEM_CARD_HEIGHT)}
+						CellPadding={new UDim2(0, 12, 0, 14)}
+						HorizontalAlignment={Enum.HorizontalAlignment.Center}
+						SortOrder={Enum.SortOrder.LayoutOrder}
+					/>
+					{chestOdds(props.chestId).map((line, index) => (
+						<ItemCard
+							key={`odds_${index}`}
+							item={line.item}
+							topRight={{
+								text: formatPercent(line.chance),
+								color: RARITY_LIGHT[ITEMS[line.item].rarity],
+							}}
+							order={index}
+						/>
+					))}
+				</frame>
 			</Card>
-			<Label
-				text={`🎁 Предметів: ${formatCount(view.inventory.size(), INVENTORY_LIMIT)}${full ? " · інвентар повний" : ""}`}
-				tone={full ? "danger" : "muted"}
-				order={3}
-			/>
+			<StoragePill count={view.inventory.size()} order={4} />
 			<BuyButton
 				price={chest.dollarPrice}
 				money={view.money}
 				verb="Відкрити"
+				icon="✨"
 				blocked={full}
+				height={66}
+				textSize={TEXT_SIZES.title - 2}
 				onClick={() => sendToServer(OPEN_CHEST_REMOTE, props.chestId)}
-				order={4}
+				order={5}
 			/>
 			{robux}
-			<Label text="Гра повністю проходиться без Robux." tone="muted" size={TEXT_SIZES.small} order={6} />
 		</>
 	);
 }
@@ -139,71 +188,65 @@ function openChest(chestId: ChestId): void {
 	});
 }
 
-/** The reveal: the item card pops in and its rarity glow slowly turns, like a shiny drop. */
+/** The reveal: the item tile bounces in over turning light rays, like the reference reward popup. */
 function ChestResult(props: { item: ItemId; chestId: ChestId }) {
 	const def = ITEMS[props.item];
 	const color = rarityColor(props.item);
 	const [scale, scaleMotion] = useMotion(0.3);
-	const [spin, spinMotion] = useMotion(0);
 	useEffect(() => {
 		scaleMotion.spring(1, { tension: 260, friction: 12 });
-		spinMotion.linear(360 * 20, { speed: 40 });
-	}, [scaleMotion, spinMotion]);
+	}, [scaleMotion]);
 
 	return (
 		<>
-			<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 190)} LayoutOrder={1}>
+			<canvasgroup BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 230)} LayoutOrder={1}>
+				<Sunburst zIndex={1} />
 				<frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={new UDim2(0.5, 0, 0.5, 0)}
-					Size={new UDim2(0, 170, 0, 170)}
-					BackgroundColor3={color}
+					Size={new UDim2(0, 150, 0, 150)}
+					BackgroundColor3={COLORS.white}
+					ZIndex={2}
 				>
 					<uiscale Scale={scale} />
-					<uicorner CornerRadius={RADIUS.large} />
+					<uicorner CornerRadius={RADIUS.xlarge} />
 					<uistroke Color={COLORS.outline} Thickness={STROKE.heavy} />
-					<uigradient
-						Rotation={spin}
-						Color={
-							new ColorSequence([
-								new ColorSequenceKeypoint(0, COLORS.white),
-								new ColorSequenceKeypoint(0.5, Color3.fromRGB(150, 150, 150)),
-								new ColorSequenceKeypoint(1, COLORS.white),
-							])
-						}
-					/>
+					<uigradient Rotation={90} Color={rampSequence(RARITY_RAMPS[def.rarity])} />
 					<textlabel
 						BackgroundTransparency={1}
 						Size={new UDim2(1, 0, 1, 0)}
 						Text={KIND_ICONS[def.kind]}
-						TextSize={90}
-						Font={FONTS.display}
+						TextSize={84}
+						ZIndex={3}
 					/>
 				</frame>
-			</frame>
+			</canvasgroup>
 			<Label
-				text={def.name}
+				text={`${def.name} · ${RARITY_NAMES[def.rarity]}`}
 				display={true}
-				size={TEXT_SIZES.huge}
+				size={TEXT_SIZES.huge - 6}
 				color={color}
 				align="center"
-				outlined={true}
 				order={2}
 			/>
+			<Label text={KIND_NAMES[def.kind]} tone="muted" align="center" order={3} />
 			<Label
-				text={`${RARITY_NAMES[def.rarity]} · ${KIND_NAMES[def.kind]}`}
-				color={color}
+				text={effectText(def.kind, def.bonus)}
+				display={true}
+				size={TEXT_SIZES.large}
+				tone="gold"
 				align="center"
-				order={3}
+				order={4}
 			/>
-			<Label text={effectText(def.kind, def.bonus)} size={TEXT_SIZES.large} align="center" order={4} />
 			<Label
-				text="Предмет уже в інвентарі. Екіпіруй його в меню «Екіпірування»."
+				text="Предмет уже в інвентарі. Надінь його в меню «Речі»."
 				tone="muted"
+				size={TEXT_SIZES.small + 1}
 				align="center"
 				order={5}
 			/>
-			<Button text="Ще раз" onClick={() => openChest(props.chestId)} order={6} />
+			<Button text="Забрати!" onClick={closePanel} height={60} textSize={TEXT_SIZES.large} order={6} />
+			<Button text="Ще раз" variant="secondary" onClick={() => openChest(props.chestId)} order={7} />
 		</>
 	);
 }
@@ -217,10 +260,16 @@ export function startChestsController(): void {
 	});
 	onServerMessage(CHEST_RESULT_REMOTE, (item, chestId) => {
 		if (isItemId(item) && isChestId(chestId)) {
-			toast(`Випало: ${ITEMS[item].name}!`, "success", 4);
+			playSound("chestOpen");
+			const rarity = ITEMS[item].rarity;
+			if (rarity === "rare" || rarity === "epic" || rarity === "legendary") {
+				playSound("chestRare");
+			}
+			// "info", not "success": the chest has its own sound, a third one on top would be noise.
+			toast(`Випало: ${ITEMS[item].name}!`, "info", 4);
 			openPanel({
 				key: `chest_result_${item}_${os.clock()}`,
-				title: "Скриня відкрита!",
+				title: "Новий предмет!",
 				icon: "🎉",
 				render: () => <ChestResult item={item} chestId={chestId} />,
 			});
@@ -228,7 +277,11 @@ export function startChestsController(): void {
 	});
 	registerHudStat(50, (view) =>
 		view.inventory.size() > 0
-			? { icon: "🎁", text: formatCount(view.inventory.size(), INVENTORY_LIMIT) }
+			? {
+					icon: "🎁",
+					text: `Предметів у сховищі: ${formatCount(view.inventory.size(), INVENTORY_LIMIT)}`,
+					short: formatCount(view.inventory.size(), INVENTORY_LIMIT),
+				}
 			: undefined,
 	);
 }

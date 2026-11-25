@@ -95,6 +95,9 @@
   (agree on the Workspace path / names with the map author and record them in `docs/`).
 - Roblox Studio MCP (if registered) is READ-ONLY for Claude: inspect the game tree, scripts and Output.
   Tools that change the place or the account are denied in `.claude/settings.json`.
+  Exception, chosen by the developer: `user_mouse_input`, `user_keyboard_input` and `character_navigation` need
+  confirmation (`ask`), so Claude can click through the game UI in Play mode to test it. Use them only in Play mode, on
+  the game's own UI, never on Studio's own windows, publish or settings dialogs.
 
 ## Stack
 
@@ -111,6 +114,7 @@ ESLint + Prettier, GitHub Actions + Dependabot. Editor: VS Code. Node ≥ 24.
 - `npm run format`: Prettier write + ESLint autofix
 - `npm test`: build, then run unit tests headless under Lune
 - `npm run audit`: `npm audit --audit-level=moderate`
+- `npx skills install`: restore third-party agent skills from `skills-lock.json` (pinned commits) into `.agents/skills` and link them for Claude Code. Review a skill before adding it: it runs with full agent permissions.
 - `rojo serve`: live sync to Studio (run together with `npm run watch`), Studio Rojo plugin → Connect (port 34872)
 - Before finishing any task: build, lint and tests must all pass.
 
@@ -190,10 +194,15 @@ Details: `docs/architecture.md`, numbers: `docs/economy.md`.
 
 - Never read `node_modules/`, `out/`, `include/` or `package-lock.json` (blocked in `.claude/settings.json`).
 - Show only failing lines of build/lint/test output. `/pre-pr` does this for the four gates.
-- Project skills: `/pre-pr`, `/new-feature <name>`.
+- Project skills: `/pre-pr`, `/new-feature <name>`. Third-party (reviewed, pinned): `roblox-ui`, `roblox-networking`, `roblox-luau`, `find-skills`.
+  They are advice; where they disagree with this file (e.g. `execute_luau`, plain-Luau examples), this file wins.
 - A hook formats edited files with Prettier automatically; do not spend turns on formatting.
 - Subagents: `security-reviewer` (read-only; run after changes to remotes, player data, inventory, currency,
   mining, production or chests, and before a PR) and `test-writer` (lunit tests incl. bad input for pure logic).
+  Also: `exploit-hunter` (cheater mindset, before PRs on value/movement), `balance-analyst` (after price/config changes),
+  `game-designer` (ideas only), `ui-reviewer` (after any src/client/**/*.tsx change: phone fit, touch, glyphs, ui-kit),
+  `studio-verifier` (when Studio is open: Rojo sync, Output errors, screenshots; read-only MCP),
+  `playtest-planner` (the Ukrainian "what to check in Studio" list after each step), `docs-keeper` (updates docs/ only, after a feature).
 
 ## Roblox / roblox-ts pitfalls
 

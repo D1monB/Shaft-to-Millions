@@ -4,7 +4,8 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { MiningSession, canMineTier, getPickaxe, hitsRequired, rollYield } from "./mining";
 
 const IRON_PICK = PICKAXES[0];
-const STEEL_PICK = PICKAXES[1];
+// The first pickaxe that opens tier 2 ore. The fallback only satisfies the type checker: config tests catch a gap.
+const STEEL_PICK = PICKAXES.find((pickaxe) => pickaxe.tier === 2) ?? PICKAXES[0];
 
 class MiningTests {
 	// ---- config sanity: a broken config would silently ruin progression ----
@@ -18,14 +19,13 @@ class MiningTests {
 	}
 
 	@Test
-	public pickaxesGetStrictlyBetterAndPricier() {
-		for (let i = 1; i < PICKAXES.size(); i++) {
-			Assert.true(PICKAXES[i].tier > PICKAXES[i - 1].tier);
-			Assert.true(PICKAXES[i].power > PICKAXES[i - 1].power);
-			Assert.true(PICKAXES[i].price > PICKAXES[i - 1].price);
-			Assert.true(PICKAXES[i].swingSeconds > 0);
+	public everyPickaxeCanHitAndTheStarterIsFree() {
+		// The main line getting stronger is checked in upgrades.test.ts; side items may trade power for speed.
+		for (const pickaxe of PICKAXES) {
+			Assert.true(pickaxe.power > 0 && pickaxe.swingSeconds > 0 && pickaxe.tier >= 1);
 		}
 		Assert.equal(PICKAXES[0].price, 0);
+		Assert.equal(PICKAXES[0].tier, 1);
 	}
 
 	@Test
@@ -71,12 +71,12 @@ class MiningTests {
 
 	@Test
 	public getPickaxeClampsLevels() {
-		Assert.equal(getPickaxe(1), IRON_PICK);
-		Assert.equal(getPickaxe(0), IRON_PICK);
-		Assert.equal(getPickaxe(-5), IRON_PICK);
-		Assert.equal(getPickaxe(0 / 0), IRON_PICK);
-		Assert.equal(getPickaxe(999), PICKAXES[PICKAXES.size() - 1]);
-		Assert.equal(getPickaxe(2.9), STEEL_PICK);
+		Assert.equal(getPickaxe(IRON_PICK.id), IRON_PICK);
+		Assert.equal(getPickaxe(STEEL_PICK.id), STEEL_PICK);
+		// Unknown ids (broken save, item from a newer server, an id of another slot) fall back to the starter.
+		Assert.equal(getPickaxe(""), IRON_PICK);
+		Assert.equal(getPickaxe("bag_sack"), IRON_PICK);
+		Assert.equal(getPickaxe("pickaxe_future"), IRON_PICK);
 	}
 
 	// ---- node lifecycle ----
@@ -168,6 +168,18 @@ class MiningTests {
 		Assert.equal(rollYield(0 / 0, 0), 1);
 		// Capped so a data bug can never print infinite ore.
 		Assert.equal(rollYield(math.huge, 0.99), 11);
+	}
+
+	@Test
+	public swappingToAFastPickaxeRightAfterAHitIsStillOnCooldown() {
+		// Regression: the hammer (slow, strong) then the light pickaxe (fast) must not give two hits at once.
+		const hammer = getPickaxe("pickaxe_hammer");
+		const light = getPickaxe("pickaxe_light");
+		Assert.true(hammer.swingSeconds > light.swingSeconds);
+		const session = new MiningSession<string>();
+		Assert.equal(session.hit("a", ORES.coal, hammer, 10).kind, "broken");
+		Assert.equal(session.hit("b", ORES.coal, light, 10 + light.swingSeconds * 0.5).kind, "cooldown");
+		Assert.notEqual(session.hit("b", ORES.coal, light, 10 + light.swingSeconds).kind, "cooldown");
 	}
 }
 

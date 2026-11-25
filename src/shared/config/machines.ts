@@ -32,7 +32,7 @@ export const MACHINES: { readonly [K in MachineId]: MachineDef } = {
 	furnace: {
 		name: "Горн",
 		description: "Переплавляє руду на злитки. Злиток дорожчий за руду, з якої зроблений.",
-		price: 500,
+		price: 400,
 	},
 	workbench: {
 		name: "Верстат",

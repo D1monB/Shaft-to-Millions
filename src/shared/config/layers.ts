@@ -16,6 +16,12 @@ export const LAYERS: { readonly [layer: number]: LayerDef | undefined } = {
 
 export const LAYER_COUNT = 3;
 
+/**
+ * Deepest record depth in game meters, far deeper than any planned map. Stops a broken sample (falling through
+ * the world) from becoming a record. Raising it is a schema bump (see profile/schema.ts): sanitize clamps to it.
+ */
+export const MAX_DEPTH_METERS = 99_999;
+
 export function oresOfLayer(layer: number): OreId[] {
 	return ORE_IDS.filter((id) => ORES[id].layer === layer);
 }

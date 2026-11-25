@@ -29,6 +29,15 @@ export function remoteEvent(name: string): RemoteEvent {
 	return created;
 }
 
+/**
+ * Creates a RemoteEvent that only the server fires (server -> client) at startup, before any player joins.
+ * Created lazily on the first FireClient instead, a client would still be waiting for it (an "Infinite yield" warning)
+ * and could connect its handler only AFTER the first message, losing exactly that message.
+ */
+export function declareClientEvent(name: string): void {
+	remoteEvent(name);
+}
+
 // Abuse logs are rate limited too, so an attacker cannot flood the server output.
 const abuseLogLimiter = new RateLimiter(5, 0.2);
 
