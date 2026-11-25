@@ -180,11 +180,11 @@ export function buildLayerPlaceholders(): void {
 		makeCamp(4, new Vector3(0, 0.5, 160));
 		makeCamp(5, new Vector3(0, 0.5, 200));
 		buildOreRow(new Vector3(10, 0, 80), [["iron", 4]]);
-		buildOreRow(new Vector3(10, 0, 120), [["gold", 4]]);
-		buildOreRow(new Vector3(10, 0, 160), [["titanium", 4]]);
+		buildOreRow(new Vector3(10, 0, 120), [["silver", 4]]);
+		buildOreRow(new Vector3(10, 0, 160), [["gold", 4]]);
 		buildOreRow(new Vector3(10, 0, 200), [
-			["obsidian", 3],
-			["etherium", 1],
+			["titanium", 3],
+			["iridium", 1],
 		]);
 	}
 	if (needsPlaceholders(TAGS.DrillSite)) {

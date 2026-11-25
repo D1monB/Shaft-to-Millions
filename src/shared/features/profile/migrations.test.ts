@@ -377,6 +377,61 @@ class MigrationsTests {
 			Assert.true(money === money && money >= 0 && money < math.huge, `money ${money}`);
 		}
 	}
+
+	private migrateV6(data: PlainTable): PlainTable {
+		data.schemaVersion = 5;
+		const result = migrate(data, MIGRATIONS, 6);
+		Assert.true(result.ok);
+		return result.ok ? result.data : {};
+	}
+
+	@Test
+	public version6RenamesOldOresAtTheSamePrice() {
+		const data = this.migrateV6({
+			bag: { obsidian: 7, etherium: 2, titanium: 3, copper: 1 },
+			line: {
+				intake: ["copper", "obsidian", "etherium"],
+				beltProgress: 0,
+				machines: [{ queue: ["etherium", "iron"] }, { queue: ["obsidian"] }],
+			},
+			drills: { layer5: { oreId: "obsidian", buffer: 4 }, layer2: { oreId: "iron" } },
+		});
+		const bag = data.bag as PlainTable;
+		Assert.equal(bag.titanium, 10);
+		Assert.equal(bag.iridium, 2);
+		Assert.equal(bag.copper, 1);
+		Assert.undefined(bag.obsidian);
+		Assert.undefined(bag.etherium);
+		const line = data.line as PlainTable;
+		Assert.deepEqual(line.intake, ["copper", "titanium", "iridium"]);
+		const machines = line.machines as PlainTable[];
+		Assert.deepEqual(machines[0].queue, ["iridium", "iron"]);
+		Assert.deepEqual(machines[1].queue, ["titanium"]);
+		const drills = data.drills as PlainTable;
+		Assert.equal((drills.layer5 as PlainTable).oreId, "titanium");
+		Assert.equal((drills.layer2 as PlainTable).oreId, "iron");
+	}
+
+	@Test
+	public version6SurvivesBrokenData() {
+		const broken = [
+			{ bag: "x", line: 5, drills: "y" },
+			{ bag: { obsidian: 0 / 0, etherium: -3 }, line: { intake: "nope", machines: [5, { queue: 3 }] } },
+			{ bag: { obsidian: math.huge }, drills: { layer5: { oreId: 7 }, layer1: "x" } },
+		];
+		for (const save of broken) {
+			const data = this.migrateV6(save as unknown as PlainTable);
+			const bag = data.bag;
+			if (typeIs(bag, "table")) {
+				const titanium = (bag as PlainTable).titanium;
+				Assert.true(
+					titanium === undefined || (typeIs(titanium, "number") && titanium === titanium),
+					"bad titanium",
+				);
+				Assert.undefined((bag as PlainTable).obsidian);
+			}
+		}
+	}
 }
 
 export = MigrationsTests;

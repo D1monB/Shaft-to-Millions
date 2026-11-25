@@ -247,6 +247,45 @@ function refundMachineV4(machineId: unknown, machine: unknown): number {
 }
 
 /**
+ * Version 6 (decisions 031): obsidian and etherium are gone; silver and iridium came. Old ore becomes the new ore
+ * with the SAME price at version 6 (obsidian $150 = titanium, etherium $400 = iridium), so nobody loses value.
+ * Frozen: never edit this table.
+ */
+const V6_RENAMED: { readonly [id: string]: string | undefined } = { obsidian: "titanium", etherium: "iridium" };
+
+function renamedOre(id: unknown): unknown {
+	return typeIs(id, "string") ? (V6_RENAMED[id] ?? id) : id;
+}
+
+/** Moves the counts of renamed ores onto their new id (adding to what is there). Broken counts are left to sanitize. */
+function renameCounts(map: unknown): void {
+	if (!typeIs(map, "table")) {
+		return;
+	}
+	const counts = map as PlainTable;
+	for (const [oldId, newId] of pairs(V6_RENAMED)) {
+		const moved = counts[oldId];
+		if (moved === undefined) {
+			continue;
+		}
+		const amount = countOf(moved);
+		counts[oldId] = undefined;
+		counts[newId] = countOf(counts[newId]) + amount;
+	}
+}
+
+/** Renames ore ids inside a list (the belt intake, a machine queue), keeping the order. */
+function renameList(list: unknown): void {
+	if (!typeIs(list, "table")) {
+		return;
+	}
+	const items = list as unknown[];
+	for (let i = 0; i < items.size(); i++) {
+		items[i] = renamedOre(items[i]);
+	}
+}
+
+/**
  * Upgrades saved data from version `from` to `from + 1`.
  * `apply` changes the table it receives (always a copy, never the live save).
  */
@@ -347,6 +386,33 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
 			data.levels = undefined;
 			const before = typeIs(data.money, "number") && data.money === data.money ? data.money : 0;
 			data.money = before + money; // sanitize clamps to the money cap afterwards
+		},
+	},
+	{
+		// Version 6 (decisions 031): obsidian -> titanium, etherium -> iridium everywhere ore ids are saved (same
+		// price). Drills follow their layer's ore in sanitize; the bump stops an older server from deleting the new ids.
+		from: 5,
+		apply: (data) => {
+			renameCounts(data.bag);
+			if (typeIs(data.line, "table")) {
+				const line = data.line as PlainTable;
+				renameList(line.intake);
+				if (typeIs(line.machines, "table")) {
+					for (const machine of line.machines as unknown[]) {
+						if (typeIs(machine, "table")) {
+							renameList((machine as PlainTable).queue);
+						}
+					}
+				}
+			}
+			if (typeIs(data.drills, "table")) {
+				for (const [, drill] of pairs(data.drills as PlainTable)) {
+					if (typeIs(drill, "table")) {
+						const fields = drill as PlainTable;
+						fields.oreId = renamedOre(fields.oreId);
+					}
+				}
+			}
 		},
 	},
 ];

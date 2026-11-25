@@ -361,3 +361,14 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   characters only through `teleportCharacter` (movement feature), which records that spot.
 - **Why:** the client owns its character, so for a few frames after a server teleport the server still saw the old
   position; the check measured from it and flagged honest players on every join (would pull them back live).
+
+## 031. One ore per layer; silver and iridium replace obsidian and etherium (2026-11-25)
+
+- **What:** layers 1-5 hold copper, iron, silver, gold, titanium (one ore each); iridium grows only in the portal zone
+  at the bottom of layer 5 and is never drilled (`drillable: false`). Prices 5 / 12 / 30 / 70 / 150 / 400. Ore ids
+  match the map author's `ServerStorage.ItemTemplates/<ore>` folders. Schema v6 renames saved ore at the same price:
+  obsidian -> titanium ($150), etherium -> iridium ($400), in the bag, the belt intake, machine queues and drills.
+  Ore blocks stay as before: any Part/Model tagged `OreNode` with an `OreId` attribute.
+- **Why:** the developer and the map author changed the design (each ore on its own layer, iridium only near the
+  portal); the earlier per-spawn ore tables were dropped. Renaming by price means no player loses value.
+- **Later:** the portal will lead to another location (another canyon and mine with other ores). Not in this stage.

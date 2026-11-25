@@ -9,10 +9,10 @@ import { COLORS, FONTS, RADIUS, STROKE, rampSequence } from "./ui-kit";
 const ORE_ICONS: { readonly [K in OreId]: string } = {
 	copper: "🔶",
 	iron: "🔩",
+	silver: "⚪",
 	gold: "⭐",
 	titanium: "🔷",
-	obsidian: "🌑",
-	etherium: "💎",
+	iridium: "💎",
 };
 
 function colorOf(id: OreId): Color3 {

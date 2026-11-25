@@ -130,6 +130,13 @@ class DrillTests {
 		Assert.equal(state.oreId, "iron");
 		Assert.equal(state.progress, 0);
 	}
+
+	@Test
+	public iridiumIsNeverDrilled() {
+		// Iridium grows only in the portal zone (decisions 031): it must be mined by hand even with the best pickaxe.
+		Assert.false(canDrillOre(5, "iridium", 99));
+		Assert.true(canDrillOre(5, "titanium", 5));
+	}
 }
 
 export = DrillTests;

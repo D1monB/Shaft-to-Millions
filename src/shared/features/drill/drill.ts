@@ -26,7 +26,7 @@ export function isDrillUnlocked(layer: number, deepestLayer: number): boolean {
 /** The drill can only drill what the player could mine by hand: the right layer and a good enough pickaxe. */
 export function canDrillOre(layer: number, oreId: OreId, pickaxeTier: number): boolean {
 	const ore = ORES[oreId];
-	return ore.layer === layer && ore.requiredTier <= pickaxeTier;
+	return ore.layer === layer && ore.requiredTier <= pickaxeTier && ore.drillable !== false;
 }
 
 export function secondsPerPiece(layer: number, oreId: OreId): number {

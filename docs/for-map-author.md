@@ -24,7 +24,9 @@
 | Майданчик автобура | `DrillSite` | `LayerId` (number) | по одному на шар |
 | Стійка скрині | `Chest` | `ChestId` (string): `pet_chest`, `speed_chest`, `pickaxe_chest` | по одній |
 
-Значення `OreId` (поверхи ями `Tier1…5`): шар 1 це `copper`, шар 2 `iron`, шар 3 `gold`, шар 4 `titanium`, шар 5 `obsidian` і рідкісний `etherium`.
+Значення `OreId` (поверхи ями `Tier1…5`): шар 1 це `copper`, шар 2 `iron`, шар 3 `silver`, шар 4 `gold`, шар 5 `titanium`.
+Іридій (`iridium`) став лише в зоні біля порталу на дні шару 5: блоки руди з тегом `OreNode` і `OreId = iridium`.
+Бур іридій не видобуває, тільки кирка. Як позначати блоки руди: будь-яка Part або Model з тегом `OreNode` і атрибутом `OreId`.
 
 ## Шість правил, без яких щось не запрацює
 

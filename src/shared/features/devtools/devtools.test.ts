@@ -125,7 +125,7 @@ class DevtoolsTests {
 		Assert.undefined(parseDevCommand(["materials"]));
 		applyDevCommand(data, { kind: "ores" });
 		Assert.equal(data.bag.copper, DEV_ORE_AMOUNT);
-		Assert.equal(data.bag.etherium, DEV_ORE_AMOUNT);
+		Assert.equal(data.bag.iridium, DEV_ORE_AMOUNT);
 		// A second press adds again (it is a top-up button), never above the counter cap.
 		applyDevCommand(data, { kind: "ores" });
 		Assert.equal(data.bag.titanium, DEV_ORE_AMOUNT * 2);
