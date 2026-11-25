@@ -17,7 +17,8 @@ import {
 	CurrencyLabel,
 	Label,
 	ProgressBar,
-	StatChip,
+	Stack,
+	StatTile,
 	TEXT_SIZES,
 	rowItemWidth,
 } from "client/lib/ui-kit";
@@ -110,9 +111,11 @@ function Showcase() {
 			</Card>
 			<Card order={5}>
 				<Label text="Значки HUD" display={true} order={1} />
-				<StatChip icon="🕳" text="Кам'яний Пояс (1/3)" order={2} />
-				<StatChip icon="📦" text="180/200" tone="danger" order={3} />
-				<StatChip icon="✨" text="×1.25 · руда +10%" tone="success" order={4} />
+				<Stack direction="horizontal" gap={12} order={2}>
+					<StatTile icon="🕳" value="1/3" tooltip="Найглибший шар: Сірі Пласти (1/3)" order={1} />
+					<StatTile icon="📦" value="180/200" tooltip="Склад: 180/200" tone="danger" order={2} />
+					<StatTile icon="✨" value="×1.25" tooltip="Бонуси: продаж ×1.25" tone="success" order={3} />
+				</Stack>
 			</Card>
 		</>
 	);

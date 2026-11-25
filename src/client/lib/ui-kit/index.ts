@@ -3,7 +3,7 @@ export { Button } from "./button";
 export { Gloss, Shine, Sunburst } from "./effects";
 export { BuyButton } from "./buy-button";
 export type { ButtonProps } from "./button";
-export { MenuButton, StatChip } from "./badges";
+export { CapsuleBadge, MENU_BUTTON_SIZE, MenuButton, STAT_TILE_SIZE, StatTile } from "./badges";
 export { CurrencyLabel } from "./currency-label";
 export { PanelHost, ToastHost } from "./hosts";
 export { Label } from "./label";
@@ -22,4 +22,5 @@ export {
 	TEXT_SIZES,
 	toneColor,
 } from "./theme";
-export type { ButtonVariant, Tone } from "./theme";
+export { rampSequence } from "./theme";
+export type { ButtonVariant, Ramp, Tone } from "./theme";

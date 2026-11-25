@@ -63,5 +63,6 @@ export function startTravelController(): void {
 		"Подорож",
 		() => openPanel({ key: "travel", title: "Швидка подорож", icon: "🧭", render: () => <TravelPanel /> }),
 		20,
+		"success",
 	);
 }

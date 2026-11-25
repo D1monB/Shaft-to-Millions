@@ -178,3 +178,6 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   frame, rays behind legendary items must sit in a CanvasGroup (ClipsDescendants does not clip rotated children).
 - **Not included yet:** custom icons. The reference uses drawings; in Roblox they must be images owned by the game owner.
   Until the map author draws them, emoji sit inside coloured tiles.
+- **HUD layout:** money and bag capsules top right (the centre stays free), a coloured dock of menu buttons under them,
+  square stat tiles in two columns top left (a short value on the tile, the full text on hover or tap), and the goal at the
+  bottom with a progress bar (`pickGoalInfo` returns title, status and progress).

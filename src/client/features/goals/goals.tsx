@@ -1,5 +1,5 @@
-// "What next" hint: one clear goal on a sign at the bottom of the screen.
-// Features register where goals come from; the shared pickGoal chooses exactly one.
+// "What next" hint: one clear goal in a capsule at the bottom of the screen, with a bar that fills as money comes in.
+// Features register where goals come from; the shared pickGoalInfo chooses exactly one.
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
 import { BAGS } from "shared/config/bags";
@@ -8,10 +8,21 @@ import { ORES, ORE_IDS } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
 import { bagCapacity, bagTotal } from "shared/features/bag";
-import { GoalCandidate, pickGoal } from "shared/features/goals";
+import { GoalCandidate, GoalInfo, pickGoalInfo } from "shared/features/goals";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
-import { COLORS, FONTS, RADIUS, STROKE, TEXT_SIZES } from "client/lib/ui-kit";
+import {
+	COLORS,
+	CapsuleBadge,
+	DEPTH,
+	FONTS,
+	ProgressBar,
+	RADIUS,
+	RAMPS,
+	STROKE,
+	TEXT_SIZES,
+	rampSequence,
+} from "client/lib/ui-kit";
 
 const sources: Array<(view: PlayerView) => GoalCandidate[]> = [];
 
@@ -44,14 +55,14 @@ function gearGoals(view: PlayerView): GoalCandidate[] {
 	return goals;
 }
 
-function currentGoal(view: PlayerView): string {
+function currentGoal(view: PlayerView): GoalInfo {
 	const candidates: GoalCandidate[] = [];
 	for (const source of sources) {
 		for (const goal of source(view)) {
 			candidates.push(goal);
 		}
 	}
-	return pickGoal(
+	return pickGoalInfo(
 		{ money: view.money, bagUsed: bagTotal(view.bag), bagCapacity: bagCapacity(view.levels.bag) },
 		candidates,
 	);
@@ -61,47 +72,102 @@ export function startGoalsController(): void {
 	registerGoalSource(gearGoals);
 }
 
-/** The sign at the bottom centre. It bounces once whenever the goal text changes, to catch the eye. */
+const BANNER_WIDTH = 480;
+const BANNER_HEIGHT = 70;
+const BADGE_ROOM = 60;
+
+/** Escapes text for RichText, so an item name can never break the markup. */
+function escapeRich(text: string): string {
+	return text.gsub("&", "&amp;")[0].gsub("<", "&lt;")[0].gsub(">", "&gt;")[0];
+}
+
+function statusColor(info: GoalInfo): Color3 {
+	if (info.kind === "bag-full") {
+		return COLORS.danger;
+	}
+	return info.kind === "affordable" ? COLORS.success : COLORS.gold;
+}
+
+/** The goal capsule at the bottom centre. It bounces once whenever the goal changes, to catch the eye. */
 export function GoalBanner() {
 	const view = useView();
-	const text = view === undefined ? undefined : currentGoal(view);
+	const info = view === undefined ? undefined : currentGoal(view);
+	const key = info?.text;
 	const [scale, scaleMotion] = useMotion(1);
 	useEffect(() => {
-		if (text !== undefined) {
-			scaleMotion.set(1.15);
+		if (key !== undefined) {
+			scaleMotion.set(1.12);
 			scaleMotion.spring(1, { tension: 300, friction: 12 });
 		}
-	}, [text, scaleMotion]);
+	}, [key, scaleMotion]);
 
-	if (text === undefined) {
+	if (info === undefined) {
 		return undefined;
 	}
+	const isPurchase = info.kind === "saving" || info.kind === "affordable";
+	const title = isPurchase ? `Ціль: <font color="#FCD34D">${escapeRich(info.title)}</font>` : escapeRich(info.title);
 	return (
 		<frame
 			AnchorPoint={new Vector2(0.5, 1)}
-			Position={new UDim2(0.5, 0, 1, -18)}
-			Size={new UDim2(0, 0, 0, 56)}
-			AutomaticSize={Enum.AutomaticSize.X}
-			BackgroundColor3={COLORS.woodDark}
-			BackgroundTransparency={0.05}
+			Position={new UDim2(0.5, 0, 1, -14)}
+			Size={new UDim2(0, BANNER_WIDTH, 0, BANNER_HEIGHT + DEPTH.button)}
+			BackgroundTransparency={1}
 		>
 			<uiscale Scale={scale} />
-			<uisizeconstraint MaxSize={new Vector2(720, 56)} />
-			<uicorner CornerRadius={RADIUS.round} />
-			<uistroke Color={COLORS.gold} Thickness={STROKE.thick} />
-			<uipadding PaddingLeft={new UDim(0, 18)} PaddingRight={new UDim(0, 20)} />
-			<textlabel
-				BackgroundTransparency={1}
-				Size={new UDim2(0, 0, 1, 0)}
-				AutomaticSize={Enum.AutomaticSize.X}
-				Font={FONTS.display}
-				Text={`🎯  ${text}`}
-				TextSize={TEXT_SIZES.large}
-				TextColor3={COLORS.gold}
-				TextTruncate={Enum.TextTruncate.AtEnd}
+			<frame
+				BackgroundColor3={COLORS.outline}
+				BorderSizePixel={0}
+				Position={new UDim2(0, 0, 0, DEPTH.button)}
+				Size={new UDim2(1, 0, 0, BANNER_HEIGHT)}
 			>
-				<uistroke Color={COLORS.outline} Thickness={2} />
-			</textlabel>
+				<uicorner CornerRadius={RADIUS.round} />
+			</frame>
+			<frame BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={new UDim2(1, 0, 0, BANNER_HEIGHT)}>
+				<uicorner CornerRadius={RADIUS.round} />
+				<uistroke Color={COLORS.gold} Thickness={STROKE.thick} />
+				<uigradient Rotation={90} Color={rampSequence(RAMPS.capsule)} />
+				<CapsuleBadge icon="🎯" ramp={RAMPS.close} size={52} round={true} />
+				<frame
+					BackgroundTransparency={1}
+					Position={new UDim2(0, BADGE_ROOM, 0, 10)}
+					Size={new UDim2(1, -(BADGE_ROOM + 24), 1, -20)}
+				>
+					<textlabel
+						BackgroundTransparency={1}
+						Size={new UDim2(0.62, 0, 0, 26)}
+						Font={FONTS.display}
+						RichText={true}
+						Text={title}
+						TextSize={TEXT_SIZES.body}
+						TextColor3={COLORS.white}
+						TextXAlignment={Enum.TextXAlignment.Left}
+						TextTruncate={Enum.TextTruncate.AtEnd}
+					>
+						<uistroke Color={COLORS.outline} Thickness={2} />
+					</textlabel>
+					<textlabel
+						AnchorPoint={new Vector2(1, 0)}
+						BackgroundTransparency={1}
+						Position={new UDim2(1, 0, 0, 0)}
+						Size={new UDim2(0.38, 0, 0, 26)}
+						Font={FONTS.display}
+						Text={info.status}
+						TextSize={TEXT_SIZES.body - 2}
+						TextColor3={statusColor(info)}
+						TextXAlignment={Enum.TextXAlignment.Right}
+						TextTruncate={Enum.TextTruncate.AtEnd}
+					>
+						<uistroke Color={COLORS.outline} Thickness={2} />
+					</textlabel>
+					<frame BackgroundTransparency={1} Position={new UDim2(0, 0, 1, -16)} Size={new UDim2(1, 0, 0, 16)}>
+						<ProgressBar
+							progress={info.progress}
+							color={info.kind === "bag-full" ? COLORS.canyon : COLORS.success}
+							height={16}
+						/>
+					</frame>
+				</frame>
+			</frame>
 		</frame>
 	);
 }

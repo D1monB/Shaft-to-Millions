@@ -41,7 +41,7 @@ import {
 } from "shared/features/factory";
 import { PlayerView } from "shared/features/profile";
 import { previewSale } from "shared/features/selling";
-import { formatCount, formatDuration, formatMoney } from "shared/lib/format";
+import { formatCompact, formatCount, formatDuration, formatMoney } from "shared/lib/format";
 import { deepCopy } from "shared/lib/tables";
 import { registerGoalSource } from "client/features/goals";
 import { registerHudStat } from "client/features/hud";
@@ -458,7 +458,8 @@ export function startFactoryController(): void {
 		const capacity = warehouseCapacity(view.levels.warehouse);
 		return {
 			icon: "📦",
-			text: formatCount(used, capacity),
+			text: `Склад: ${formatCount(used, capacity)}`,
+			short: `${formatCompact(used)}/${formatCompact(capacity)}`,
 			tone: used >= capacity ? "danger" : "normal",
 		};
 	});
@@ -470,7 +471,8 @@ export function startFactoryController(): void {
 		}
 		return {
 			icon: "🏭",
-			text: `в роботі ${summary.working} · готово ${summary.ready}`,
+			text: `Фабрика: в роботі ${summary.working} · готово ${summary.ready}`,
+			short: summary.ready > 0 ? `✅ ${summary.ready}` : `${summary.working}`,
 			tone: summary.ready > 0 ? "success" : "normal",
 		};
 	});

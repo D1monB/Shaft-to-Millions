@@ -161,6 +161,7 @@ export function startEquipmentController(): void {
 		"Речі",
 		() => openPanel({ key: "equipment", title: "Екіпірування", icon: "🎒", render: () => <EquipmentPanel /> }),
 		10,
+		"crystal",
 	);
 	registerHudStat(60, (view) => {
 		const bonuses = bonusesOf(view);
@@ -169,7 +170,8 @@ export function startEquipmentController(): void {
 		}
 		return {
 			icon: "✨",
-			text: `×${string.format("%.2f", bonuses.sellMultiplier)} · руда +${formatPercent(bonuses.yieldBonus)}`,
+			text: `Бонуси: продаж ×${string.format("%.2f", bonuses.sellMultiplier)} · руда +${formatPercent(bonuses.yieldBonus)}`,
+			short: `×${string.format("%.2f", bonuses.sellMultiplier)}`,
 			tone: "success",
 		};
 	});

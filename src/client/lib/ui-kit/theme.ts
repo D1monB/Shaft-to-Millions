@@ -129,6 +129,9 @@ export const RAMPS = {
 	close: { top: rgb(251, 113, 133), mid: rgb(239, 68, 68), bottom: rgb(185, 28, 28) },
 	/** Stat tiles and quiet buttons: a lighter plank fading to a dark one. */
 	plank: { top: rgb(107, 68, 48), mid: rgb(74, 46, 30), bottom: rgb(43, 25, 15) },
+	/** HUD capsules (money, bag, goal): darker than planks so the coloured badges pop. */
+	capsule: { top: rgb(61, 37, 24), mid: rgb(48, 29, 18), bottom: rgb(36, 20, 12) },
+	coin: { top: rgb(253, 224, 71), mid: rgb(251, 191, 36), bottom: rgb(249, 115, 22) },
 } satisfies Record<string, Ramp>;
 
 export type ButtonVariant = "primary" | "secondary" | "success" | "danger" | "crystal";

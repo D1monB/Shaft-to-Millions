@@ -228,7 +228,11 @@ export function startChestsController(): void {
 	});
 	registerHudStat(50, (view) =>
 		view.inventory.size() > 0
-			? { icon: "🎁", text: formatCount(view.inventory.size(), INVENTORY_LIMIT) }
+			? {
+					icon: "🎁",
+					text: `Предметів у сховищі: ${formatCount(view.inventory.size(), INVENTORY_LIMIT)}`,
+					short: formatCount(view.inventory.size(), INVENTORY_LIMIT),
+				}
 			: undefined,
 	);
 }

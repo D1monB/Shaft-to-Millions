@@ -172,12 +172,13 @@ export function startDrillController(): void {
 
 	registerHudStat(5, (view) => ({
 		icon: "🕳",
-		text: `${LAYERS[view.deepestLayer]?.name ?? view.deepestLayer} (${view.deepestLayer}/${LAYER_COUNT})`,
+		text: `Найглибший шар: ${LAYERS[view.deepestLayer]?.name ?? view.deepestLayer} (${view.deepestLayer}/${LAYER_COUNT})`,
+		short: `${view.deepestLayer}/${LAYER_COUNT}`,
 	}));
-	registerHudStat(25, (view) => ({
-		icon: "👟",
-		text: `${math.floor(walkSpeedFor(view.levels.shoes, speedBonusOf(view)))}`,
-	}));
+	registerHudStat(25, (view) => {
+		const speed = math.floor(walkSpeedFor(view.levels.shoes, speedBonusOf(view)));
+		return { icon: "👟", text: `Швидкість ходьби: ${speed}`, short: `${speed}` };
+	});
 
 	registerGoalSource((view) => {
 		for (let layer = 1; layer <= LAYER_COUNT; layer++) {
