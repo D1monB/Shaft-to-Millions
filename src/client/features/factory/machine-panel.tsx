@@ -392,8 +392,8 @@ function MachinePanel(props: { machineId: MachineId }) {
 	const room = queueLimitOf(machineId, state.queueLevel) - state.queue.size();
 	return (
 		<>
-			{storageTotal(state.ready) > 0 && <ReadyCard machineId={machineId} state={state} order={1} />}
-			<NowCard machineId={machineId} state={state} now={now} order={2} />
+			{storageTotal(state.ready) > 0 && <ReadyCard key="Ready" machineId={machineId} state={state} order={1} />}
+			<NowCard key="Queue" machineId={machineId} state={state} now={now} order={2} />
 			{recipesOf(machineId).map((recipeId, index) => (
 				<RecipeCard
 					key={recipeId}
@@ -405,7 +405,7 @@ function MachinePanel(props: { machineId: MachineId }) {
 					order={10 + index}
 				/>
 			))}
-			<UpgradeCard machineId={machineId} state={state} view={view} order={50} />
+			<UpgradeCard key="Upgrades" machineId={machineId} state={state} view={view} order={50} />
 		</>
 	);
 }
