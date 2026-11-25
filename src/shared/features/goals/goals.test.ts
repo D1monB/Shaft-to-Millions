@@ -26,6 +26,17 @@ class GoalsTests {
 	}
 
 	@Test
+	public firstFurnaceBeatsABagAndTiesWithAPickaxeByPrice() {
+		const furnace: GoalCandidate = { label: "Горн", price: 500, priority: 0 };
+		// Furnace (priority 0) beats the bag (priority 1) even when the bag is cheaper.
+		const overBag = pickGoal({ money: 1000, bagUsed: 0, bagCapacity: 25 }, [BAG, furnace]);
+		Assert.true(overBag.find("Горн")[0] !== undefined);
+		// Same priority as an ore-unlocking pickaxe: the pricier one is shown, so the player is not stuck on a cheap one.
+		const overPickaxe = pickGoal({ money: 1000, bagUsed: 0, bagCapacity: 25 }, [PICK, furnace]);
+		Assert.true(overPickaxe.find("Горн")[0] !== undefined);
+	}
+
+	@Test
 	public noGoalsLeft() {
 		Assert.true(pickGoal({ money: 0, bagUsed: 0, bagCapacity: 25 }, []).find("Клікай")[0] !== undefined);
 		Assert.true(pickGoal({ money: 0, bagUsed: 5, bagCapacity: 25 }, []).find("глибше")[0] !== undefined);

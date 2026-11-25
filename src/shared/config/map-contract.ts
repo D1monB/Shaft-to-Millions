@@ -10,6 +10,8 @@ export const TAGS = {
 	SellZone: "SellZone",
 	/** Respawn point and progress checkpoint of a layer. Attribute LayerId. */
 	CampSpawn: "CampSpawn",
+	/** Where fast travel to the surface puts the player. One Part is enough. */
+	SurfaceSpawn: "SurfaceSpawn",
 	/** Base storage on the surface: the bag is unloaded here for the factory. */
 	Warehouse: "Warehouse",
 	/** A factory machine spot. Attribute MachineId. */
