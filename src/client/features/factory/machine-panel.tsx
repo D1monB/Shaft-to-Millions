@@ -229,6 +229,7 @@ function NowCard(props: { machineId: MachineId; state: MachineState; now: number
 			)}
 			{state.queue.size() >= 2 && (
 				<Button
+					key="Cancel"
 					text="Скасувати останній у черзі"
 					variant="secondary"
 					textSize={TEXT_SIZES.small + 2}
@@ -257,6 +258,7 @@ function ReadyCard(props: { machineId: MachineId; state: MachineState; order: nu
 				))}
 			</Stack>
 			<Button
+				key="Collect"
 				text="Забрати на склад"
 				variant="success"
 				shine={true}
@@ -329,6 +331,7 @@ function UpgradeStrip(props: {
 			<LevelPips level={level} levels={levels.size()} order={2} />
 			{upcoming !== undefined ? (
 				<BuyButton
+					key="Buy"
 					price={upcoming.price}
 					money={props.view.money}
 					verb={props.track === "speed" ? `До ×${upcoming.value}` : `До ${upcoming.value} місць`}
@@ -347,8 +350,8 @@ function UpgradeCard(props: { machineId: MachineId; state: MachineState; view: P
 	return (
 		<Card order={props.order} accent={COLORS.gold} gap={14}>
 			<Label text="⚙️ Покращення" display={true} size={TEXT_SIZES.large} order={1} />
-			<UpgradeStrip {...props} track="speed" order={2} />
-			<UpgradeStrip {...props} track="queue" order={3} />
+			<UpgradeStrip {...props} key="Speed" track="speed" order={2} />
+			<UpgradeStrip {...props} key="QueueSize" track="queue" order={3} />
 		</Card>
 	);
 }
