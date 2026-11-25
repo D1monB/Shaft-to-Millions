@@ -178,6 +178,10 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   frame, rays behind legendary items must sit in a CanvasGroup (ClipsDescendants does not clip rotated children).
 - **Not included yet:** custom icons. The reference uses drawings; in Roblox they must be images owned by the game owner.
   Until the map author draws them, emoji sit inside coloured tiles.
-- **HUD layout:** money and bag capsules top right (the centre stays free), a coloured dock of menu buttons under them,
-  square stat tiles in two columns top left (a short value on the tile, the full text on hover or tap), and the goal at the
-  bottom with a progress bar (`pickGoalInfo` returns title, status and progress).
+- **HUD layout (1:1 with the reference picture, the developer asked for it):** money and bag capsules side by side at the top
+  centre, one column of square stat tiles on the left edge (a short value on the tile, the full text on hover or tap), the
+  coloured dock on the right edge, the goal at the bottom with a progress bar (`pickGoalInfo` gives title, status, progress).
+  Not copied on purpose: the green "+" next to the balance (it would read as "buy money"; dollars are never sold) and a
+  "Chest" dock button (chests open at their stands).
+- **Chest panel:** rewards as rarity cards in a grid (chance, icon, name, rarity, effect), the legendary card with turning
+  rays, a storage pill and a big green open button; the odds stay visible before any payment (Roblox policy).

@@ -12,6 +12,10 @@ export interface BuyButtonProps {
 	readonly blocked?: boolean;
 	readonly order?: number;
 	readonly width?: UDim;
+	readonly height?: number;
+	readonly textSize?: number;
+	/** Shown before the verb, e.g. "✨". */
+	readonly icon?: string;
 }
 
 /**
@@ -21,7 +25,7 @@ export interface BuyButtonProps {
 export function BuyButton(props: BuyButtonProps) {
 	const affordable = props.money >= props.price;
 	const text = affordable
-		? `${props.verb} за ${formatMoney(props.price)}`
+		? `${props.icon !== undefined ? `${props.icon}  ` : ""}${props.verb} за ${formatMoney(props.price)}`
 		: `${formatMoney(props.price)} · бракує ${formatMoney(props.price - props.money)}`;
 	return (
 		<Button
@@ -32,6 +36,8 @@ export function BuyButton(props: BuyButtonProps) {
 			shine={affordable && props.blocked !== true}
 			order={props.order}
 			width={props.width}
+			height={props.height}
+			textSize={props.textSize}
 		/>
 	);
 }

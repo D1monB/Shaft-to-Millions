@@ -134,7 +134,7 @@ export const RAMPS = {
 	coin: { top: rgb(253, 224, 71), mid: rgb(251, 191, 36), bottom: rgb(249, 115, 22) },
 } satisfies Record<string, Ramp>;
 
-export type ButtonVariant = "primary" | "secondary" | "success" | "danger" | "crystal";
+export type ButtonVariant = "primary" | "secondary" | "success" | "danger" | "crystal" | "slate";
 
 /** Button ramps. Text is always white with a dark outline, like the reference design. */
 export const BUTTON_RAMPS: { [K in ButtonVariant]: Ramp } = {
@@ -143,6 +143,8 @@ export const BUTTON_RAMPS: { [K in ButtonVariant]: Ramp } = {
 	success: { top: rgb(52, 211, 153), mid: rgb(34, 197, 94), bottom: rgb(21, 128, 61) },
 	danger: RAMPS.close,
 	crystal: { top: rgb(56, 189, 248), mid: rgb(59, 130, 246), bottom: rgb(37, 99, 235) },
+	/** Quiet tools (Dev). */
+	slate: { top: rgb(100, 116, 139), mid: rgb(71, 85, 105), bottom: rgb(51, 65, 85) },
 };
 
 export const DISABLED_RAMP: Ramp = { top: rgb(100, 116, 139), mid: rgb(71, 85, 105), bottom: rgb(51, 65, 85) };

@@ -134,5 +134,6 @@ export function startDevtoolsController(): void {
 		"Dev",
 		() => openPanel({ key: "devtools", title: "Dev-інструменти", icon: "🛠", render: () => <DevPanel /> }),
 		90,
+		"slate",
 	);
 }

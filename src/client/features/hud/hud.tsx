@@ -1,6 +1,8 @@
-// The always-visible HUD, laid out so the centre of the screen stays free for the game:
-//   top right: money and bag capsules, below them the coloured dock of menu buttons;
-//   top left: square stat tiles (hover or tap a tile for its full text).
+// The always-visible HUD, laid out exactly like the developer's reference picture:
+//   top centre: money and bag capsules side by side;
+//   left edge, vertically centred: a column of square stat tiles (hover or tap a tile for its full text);
+//   right edge, vertically centred: the coloured dock of menu buttons;
+//   bottom centre: the goal (goals feature).
 // Other features plug in their own stats and buttons, so the HUD knows nothing about factories or chests.
 import React from "@rbxts/react";
 import { bagCapacity, bagTotal } from "shared/features/bag";
@@ -71,18 +73,19 @@ export function registerHudButton(
 	buttons.sort((a, b) => a.order < b.order);
 }
 
-// ---------------------------------------------------------------- top right: money and bag
+// ---------------------------------------------------------------- top centre: money and bag
 
-const CAPSULE_WIDTH = 270;
+const MONEY_WIDTH = 260;
+const BAG_WIDTH = 340;
 const CAPSULE_HEIGHT = 56;
 /** Room on the left of a capsule for the badge that sticks out of it. */
 const BADGE_ROOM = 58;
 
-function Capsule(props: React.PropsWithChildren<{ order: number }>) {
+function Capsule(props: React.PropsWithChildren<{ order: number; width: number }>) {
 	return (
 		<frame
 			BackgroundTransparency={1}
-			Size={new UDim2(0, CAPSULE_WIDTH, 0, CAPSULE_HEIGHT + DEPTH.button)}
+			Size={new UDim2(0, props.width, 0, CAPSULE_HEIGHT + DEPTH.button)}
 			LayoutOrder={props.order}
 		>
 			<frame
@@ -105,7 +108,7 @@ function Capsule(props: React.PropsWithChildren<{ order: number }>) {
 
 function MoneyCapsule(props: { money: number }) {
 	return (
-		<Capsule order={1}>
+		<Capsule order={1} width={MONEY_WIDTH}>
 			<CapsuleBadge icon="$" ramp={RAMPS.coin} size={62} round={true} rotation={-6} />
 			<frame
 				BackgroundTransparency={1}
@@ -135,7 +138,7 @@ function MoneyCapsule(props: { money: number }) {
 function BagCapsule(props: { used: number; capacity: number }) {
 	const full = props.used >= props.capacity;
 	return (
-		<Capsule order={2}>
+		<Capsule order={2} width={BAG_WIDTH}>
 			<CapsuleBadge icon="🎒" ramp={RAMPS.close} size={58} rotation={3} />
 			<frame
 				AnchorPoint={new Vector2(0, 0.5)}
@@ -154,19 +157,21 @@ function BagCapsule(props: { used: number; capacity: number }) {
 	);
 }
 
-function TopRight(props: { view: PlayerView }) {
+function TopCentre(props: { view: PlayerView }) {
 	return (
 		<frame
-			AnchorPoint={new Vector2(1, 0)}
-			Position={new UDim2(1, -18, 0, 12)}
+			AnchorPoint={new Vector2(0.5, 0)}
+			Position={new UDim2(0.5, 0, 0, 12)}
 			Size={new UDim2(0, 0, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.XY}
 			BackgroundTransparency={1}
 		>
+			{/* The gap leaves room for the bag badge that sticks out to the left of its capsule. */}
 			<uilistlayout
-				Padding={new UDim(0, 10)}
+				FillDirection={Enum.FillDirection.Horizontal}
+				Padding={new UDim(0, 30)}
 				SortOrder={Enum.SortOrder.LayoutOrder}
-				HorizontalAlignment={Enum.HorizontalAlignment.Right}
+				VerticalAlignment={Enum.VerticalAlignment.Top}
 			/>
 			<MoneyCapsule money={props.view.money} />
 			<BagCapsule used={bagTotal(props.view.bag)} capacity={bagCapacity(props.view.levels.bag)} />
@@ -176,14 +181,11 @@ function TopRight(props: { view: PlayerView }) {
 
 // ---------------------------------------------------------------- right: dock
 
-/** The dock starts below the two capsules. */
-const DOCK_TOP = 12 + 2 * (CAPSULE_HEIGHT + DEPTH.button) + 10 + 26;
-
 function Dock() {
 	return (
 		<frame
-			AnchorPoint={new Vector2(1, 0)}
-			Position={new UDim2(1, -18, 0, DOCK_TOP)}
+			AnchorPoint={new Vector2(1, 0.5)}
+			Position={new UDim2(1, -18, 0.5, 0)}
 			Size={new UDim2(0, MENU_BUTTON_SIZE, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.Y}
 			BackgroundTransparency={1}
@@ -203,7 +205,7 @@ function Dock() {
 	);
 }
 
-// ---------------------------------------------------------------- top left: stat tiles
+// ---------------------------------------------------------------- left: stat tiles
 
 function StatGrid(props: { view: PlayerView }) {
 	const tiles: React.Element[] = [];
@@ -225,15 +227,15 @@ function StatGrid(props: { view: PlayerView }) {
 	return (
 		<frame
 			Position={new UDim2(0, 18, 0, 12)}
-			Size={new UDim2(0, STAT_TILE_SIZE * 2 + 12, 0, 0)}
-			AutomaticSize={Enum.AutomaticSize.Y}
+			Size={new UDim2(0, STAT_TILE_SIZE, 1, -24)}
 			BackgroundTransparency={1}
 		>
-			<uigridlayout
-				CellSize={new UDim2(0, STAT_TILE_SIZE, 0, STAT_TILE_SIZE + DEPTH.button)}
-				CellPadding={new UDim2(0, 12, 0, 10)}
-				FillDirectionMaxCells={2}
+			{/* One column centred on the left edge, like the reference. The frame spans the screen height so the list
+			    can centre itself; seven tiles still fit on a short screen. */}
+			<uilistlayout
+				Padding={new UDim(0, 8)}
 				SortOrder={Enum.SortOrder.LayoutOrder}
+				VerticalAlignment={Enum.VerticalAlignment.Center}
 			/>
 			{tiles}
 		</frame>
@@ -247,7 +249,7 @@ export function Hud() {
 	}
 	return (
 		<>
-			<TopRight view={view} />
+			<TopCentre view={view} />
 			<StatGrid view={view} />
 			<Dock />
 		</>
