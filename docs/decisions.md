@@ -117,6 +117,44 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   would otherwise be granted again for every sample and a 3x speed hack would pass. Known limit: a hack of about 1.7x or less
   is not caught; that is the price of not punishing lag.
 
+## 015. Fast travel
+
+- **Date:** 2026-11-24
+- **Decision:** a menu button opens a list of the surface and every opened camp. Travel is free with a 30 s pause per
+  player (`shared/features/travel/tuning.ts`). The server checks the destination (integer 0..N, camp opened, character
+  alive, pause over), moves the character and calls `resetMovementBaseline`. The surface point is a new map tag
+  `SurfaceSpawn` (one Part). The pause starts only after a successful trip.
+- **Why:** going up must never feel like a punishment (CLAUDE.md). The pause stops constant hopping and keeps the descent
+  meaningful. Not free or tied to depth for now: the economy is not measured yet.
+- **Not included:** an elevator with its own animation. A later feature can reuse the same service.
+
+## 016. Machine and warehouse upgrades
+
+- **Date:** 2026-11-25
+- **Decision:** each machine has two upgrade tracks (speed x1 / 1.25 / 1.6 / 2, queue 10 / 15 / 20 / 30) and the warehouse has
+  capacity levels (1000 / 2000 / 4000 / 8000). Levels are saved (`machines.<id>.speedLevel/queueLevel`, `levels.warehouse`).
+  Prices are guesses in `shared/config/machines.ts`. Buying happens through two server-checked remotes at the machine or
+  the warehouse; money and level change in one frame. Finished crafts are settled at the OLD speed before a level changes.
+- **Schema:** version 2 with a migration that adds the new fields (an older server must refuse a v2 save instead of cutting
+  the longer queue and deleting crafts). The queue cut in `sanitize` uses the machine's own queue level.
+- **Why:** the balance analysis showed the factory stops mattering after about tier 3. Upgrades give a reason to invest in it.
+- **Upgrade mid-craft:** a speed upgrade keeps the share of the craft in progress (`setSpeedLevel`), so it never finishes at once.
+- **Open:** prices and multipliers need a play-test (see docs/balance-tuning.md). The sell-vs-process estimate already uses
+  the upgraded speed.
+
+## 017. Pets are drawn by every client
+
+- **Date:** 2026-11-25
+- **Decision:** the server no longer welds pet balls to characters. It publishes the equipped pet item ids as a Player
+  attribute (`EquippedPets`). Each client draws the pets of all players from an object pool and moves them with frame-rate
+  independent smoothing and a small bob, fanned out behind the owner. Players farther than 120 studs from the camera get no
+  pets drawn. Pets jump to their target after a teleport instead of flying across the map.
+- **Why:** smooth movement needs per-frame updates, which welds cannot give without network ownership problems, and the
+  server should do no per-frame work (CLAUDE.md: effects on the client with object pools). The attribute is read
+  defensively (`decodePets` keeps only known pet ids, at most 3).
+- **Not included:** real pet models. The friend's Blender models can replace the balls later; only `acquirePart` and
+  `style` in `client/features/pets/pets-controller.ts` need to change.
+
 ## 018. Bigger UI and a font comparison
 
 - **Date:** 2026-11-25

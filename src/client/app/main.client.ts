@@ -8,8 +8,10 @@ import { startEquipmentController } from "client/features/equipment";
 import { startFactoryController } from "client/features/factory";
 import { startGoalsController } from "client/features/goals";
 import { startMiningController } from "client/features/mining";
+import { startPetsController } from "client/features/pets";
 import { startProfileController } from "client/features/profile";
 import { startSellController } from "client/features/selling";
+import { startTravelController } from "client/features/travel";
 import { startShopController } from "client/features/upgrades";
 import { mountUi } from "./ui-root";
 
@@ -19,8 +21,10 @@ startSellController();
 startGoalsController();
 startFactoryController();
 startDrillController();
+startTravelController();
 startChestsController();
 startEquipmentController();
+startPetsController();
 startDevtoolsController();
 
 mountUi();
