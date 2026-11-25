@@ -5,6 +5,7 @@
 //   bottom centre: the goal (goals feature).
 // Other features plug in their own stats and buttons, so the HUD knows nothing about factories or chests.
 import React from "@rbxts/react";
+import { UserInputService } from "@rbxts/services";
 import { bagCapacity, bagTotal } from "shared/features/bag";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
@@ -181,11 +182,21 @@ function TopCentre(props: { view: PlayerView }) {
 
 // ---------------------------------------------------------------- right: dock
 
+/**
+ * On touch screens Roblox puts the jump button in the bottom-right corner. A dock centred on the right edge reaches into
+ * it on a phone in landscape, so there the dock sits higher.
+ */
+const PHONE_DOCK_CENTRE = 0.38;
+
+function isPhone(): boolean {
+	return UserInputService.TouchEnabled && !UserInputService.KeyboardEnabled;
+}
+
 function Dock() {
 	return (
 		<frame
 			AnchorPoint={new Vector2(1, 0.5)}
-			Position={new UDim2(1, -18, 0.5, 0)}
+			Position={new UDim2(1, -18, isPhone() ? PHONE_DOCK_CENTRE : 0.5, 0)}
 			Size={new UDim2(0, MENU_BUTTON_SIZE, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.Y}
 			BackgroundTransparency={1}
@@ -207,6 +218,8 @@ function Dock() {
 
 // ---------------------------------------------------------------- left: stat tiles
 
+const TILE_GAP = 12;
+
 function StatGrid(props: { view: PlayerView }) {
 	const tiles: React.Element[] = [];
 	stats.forEach((entry, index) => {
@@ -227,15 +240,18 @@ function StatGrid(props: { view: PlayerView }) {
 	return (
 		<frame
 			Position={new UDim2(0, 18, 0, 12)}
-			Size={new UDim2(0, STAT_TILE_SIZE, 1, -24)}
+			Size={new UDim2(0, STAT_TILE_SIZE * 2 + TILE_GAP, 1, -24)}
 			BackgroundTransparency={1}
 		>
-			{/* One column centred on the left edge, like the reference. The frame spans the screen height so the list
-			    can centre itself; seven tiles still fit on a short screen. */}
-			<uilistlayout
-				Padding={new UDim(0, 8)}
-				SortOrder={Enum.SortOrder.LayoutOrder}
+			{/* One column centred on the left edge, like the reference. The frame spans the screen height, so the grid
+			    fills it top to bottom and starts a second column by itself only when a short screen (a phone in
+			    landscape) has no room for all tiles. */}
+			<uigridlayout
+				CellSize={new UDim2(0, STAT_TILE_SIZE, 0, STAT_TILE_SIZE + DEPTH.button)}
+				CellPadding={new UDim2(0, TILE_GAP, 0, 8)}
+				FillDirection={Enum.FillDirection.Vertical}
 				VerticalAlignment={Enum.VerticalAlignment.Center}
+				SortOrder={Enum.SortOrder.LayoutOrder}
 			/>
 			{tiles}
 		</frame>

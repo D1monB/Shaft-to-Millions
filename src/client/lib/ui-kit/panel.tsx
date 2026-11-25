@@ -147,7 +147,9 @@ function CloseButton(props: { onClose: () => void }) {
 	return (
 		<frame
 			AnchorPoint={new Vector2(1, 0)}
-			Position={new UDim2(1, 16, 0, -26)}
+			// Inside the board's right edge: on phones the board is almost as wide as the screen, and a button hanging
+			// outside it was cut off.
+			Position={new UDim2(1, -10, 0, -24)}
 			Size={new UDim2(0, CLOSE_SIZE, 0, CLOSE_SIZE + DEPTH.button)}
 			BackgroundTransparency={1}
 			ZIndex={6}
@@ -181,17 +183,22 @@ function CloseButton(props: { onClose: () => void }) {
 				/>
 				<uigradient Rotation={90} Color={rampSequence(RAMPS.close)} />
 				<Gloss zIndex={2} />
-				<textlabel
-					BackgroundTransparency={1}
-					Size={new UDim2(1, 0, 1, 0)}
-					Font={FONTS.display}
-					Text="✕"
-					TextSize={34}
-					TextColor3={COLORS.white}
-					ZIndex={3}
-				>
-					<uistroke Color={COLORS.outline} Thickness={2.5} />
-				</textlabel>
+				{/* The cross is drawn with two bars: BuilderSans has no "✕" glyph and showed an empty box. */}
+				{[45, -45].map((angle) => (
+					<frame
+						key={`bar_${angle}`}
+						AnchorPoint={new Vector2(0.5, 0.5)}
+						Position={new UDim2(0.5, 0, 0.5, 0)}
+						Size={new UDim2(0, 30, 0, 8)}
+						Rotation={angle}
+						BackgroundColor3={COLORS.white}
+						BorderSizePixel={0}
+						ZIndex={3}
+					>
+						<uicorner CornerRadius={RADIUS.round} />
+						<uistroke Color={COLORS.outline} Thickness={2} />
+					</frame>
+				))}
 			</textbutton>
 		</frame>
 	);

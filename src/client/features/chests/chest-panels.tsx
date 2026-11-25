@@ -348,7 +348,7 @@ function ChestResult(props: { item: ItemId; chestId: ChestId }) {
 				</frame>
 			</canvasgroup>
 			<Label
-				text={`${def.name} • ${RARITY_NAMES[def.rarity]}`}
+				text={`${def.name} · ${RARITY_NAMES[def.rarity]}`}
 				display={true}
 				size={TEXT_SIZES.huge - 6}
 				color={color}
