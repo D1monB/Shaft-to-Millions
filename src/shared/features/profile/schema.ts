@@ -14,7 +14,7 @@ import { GearState, createStarterGear } from "shared/features/upgrades";
  * Also bump (with an empty migration) when you RAISE a cap in sanitize.ts, otherwise an older server
  * still running during an update clamps the new value and saves it over the player's data.
  */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 /** Lifetime counters. Used for the hint system and later for leaderboards. */
 export interface ProfileStats {

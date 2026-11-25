@@ -1,12 +1,13 @@
-// Every ore in the game. A new ore is a new entry here, not new code.
+// Every ore in the game (decisions 027: the friend's 6 ores on the 5 floors of his pit). A new ore is a new entry here.
 // Balance notes: price grows faster than hardness, so deeper ore is worth the trip;
 // `requiredTier` locks ore behind a better pickaxe (see pickaxes.ts) so progress is visible.
+// `price` is the raw-ore value; the tycoon line multiplies it by the stage it reaches (config/line.ts).
 
-export type OreId = "coal" | "copper" | "iron" | "quartz" | "silver" | "gold" | "obsidian" | "cobalt";
+export type OreId = "copper" | "iron" | "gold" | "titanium" | "obsidian" | "etherium";
 
 export interface OreDef {
 	readonly name: string;
-	/** Sell price of one piece, in dollars. */
+	/** Sell price of one piece of raw ore, in dollars. */
 	readonly price: number;
 	/** Damage needed to break one node. Hits = ceil(hardness / pickaxe power). */
 	readonly hardness: number;
@@ -21,7 +22,6 @@ export interface OreDef {
 }
 
 export const ORES: { readonly [K in OreId]: OreDef } = {
-	coal: { name: "Вугілля", price: 2, hardness: 2, requiredTier: 1, respawnSeconds: 6, layer: 1, color: [45, 45, 50] },
 	copper: {
 		name: "Мідь",
 		price: 5,
@@ -33,72 +33,54 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	},
 	iron: {
 		name: "Залізо",
-		price: 9,
-		hardness: 5,
-		requiredTier: 1,
+		price: 12,
+		hardness: 6,
+		requiredTier: 2,
 		respawnSeconds: 10,
-		layer: 1,
-		color: [170, 160, 150],
-	},
-	// A rare vein on layer 1 that the starter pickaxe cannot break: the first visible goal.
-	quartz: {
-		name: "Кварц",
-		price: 25,
-		hardness: 6,
-		requiredTier: 2,
-		respawnSeconds: 20,
-		layer: 1,
-		color: [235, 225, 255],
-	},
-	silver: {
-		name: "Срібло",
-		price: 20,
-		hardness: 6,
-		requiredTier: 2,
-		respawnSeconds: 12,
 		layer: 2,
-		color: [210, 215, 225],
+		color: [170, 160, 150],
 	},
 	gold: {
 		name: "Золото",
-		price: 45,
+		price: 30,
 		hardness: 9,
 		requiredTier: 3,
-		respawnSeconds: 16,
-		layer: 2,
+		respawnSeconds: 14,
+		layer: 3,
 		color: [245, 200, 60],
+	},
+	titanium: {
+		name: "Титан",
+		price: 70,
+		hardness: 13,
+		requiredTier: 4,
+		respawnSeconds: 18,
+		layer: 4,
+		color: [150, 175, 200],
 	},
 	obsidian: {
 		name: "Обсидіан",
-		price: 80,
-		hardness: 12,
-		requiredTier: 3,
-		respawnSeconds: 18,
-		layer: 3,
+		price: 150,
+		hardness: 18,
+		requiredTier: 5,
+		respawnSeconds: 22,
+		layer: 5,
 		color: [40, 20, 60],
 	},
-	cobalt: {
-		name: "Кобальт",
-		price: 150,
-		hardness: 16,
-		requiredTier: 4,
-		respawnSeconds: 24,
-		layer: 3,
-		color: [40, 90, 220],
+	// The rare jackpot of the deepest floor: hard and slow to come back.
+	etherium: {
+		name: "Ефіріум",
+		price: 400,
+		hardness: 24,
+		requiredTier: 5,
+		respawnSeconds: 45,
+		layer: 5,
+		color: [120, 240, 230],
 	},
 };
 
 /** Ids in display order (cheap to expensive). */
-export const ORE_IDS: ReadonlyArray<OreId> = [
-	"coal",
-	"copper",
-	"iron",
-	"quartz",
-	"silver",
-	"gold",
-	"obsidian",
-	"cobalt",
-];
+export const ORE_IDS: ReadonlyArray<OreId> = ["copper", "iron", "gold", "titanium", "obsidian", "etherium"];
 
 export function isOreId(value: unknown): value is OreId {
 	return typeIs(value, "string") && (ORES as Record<string, OreDef | undefined>)[value] !== undefined;

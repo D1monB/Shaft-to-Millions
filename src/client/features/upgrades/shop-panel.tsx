@@ -1,6 +1,6 @@
 // Shop panel: a catalogue. One tab per slot (pickaxes, bags, shoes), one card per item. Everything is for sale
-// at once: an item costs money plus materials from the warehouse, is kept forever and can be equipped any time.
-// Buying and equipping send only the item id; the server checks distance, money, materials and ownership.
+// at once: an item costs money only, is kept forever and can be equipped any time.
+// Buying and equipping send only the item id; the server checks distance, money and ownership.
 import React, { useState } from "@rbxts/react";
 import { BAGS } from "shared/config/bags";
 import { GearBase } from "shared/config/gear";
@@ -15,14 +15,11 @@ import {
 	GearSlot,
 	gearCardState,
 	isGearSlot,
-	materialList,
-	missingMaterials,
 } from "shared/features/upgrades";
 import { PlayerView } from "shared/features/profile";
 import { formatPercent } from "shared/lib/format";
 import { useView } from "client/features/profile";
 import { ITEM_CARD_HEIGHT, RarityCard } from "client/lib/item-card";
-import { ResourceTile } from "client/lib/resource-tile";
 import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
 import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
@@ -35,10 +32,8 @@ const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: string; read
 	{ key: "shoes", label: "👟 Взуття", icon: "👟" },
 ];
 
-/** Footer: a row of material tiles (with "have/need" under each) above the button. */
-const MATERIAL_TILE = 30;
-const MATERIALS_ROW = MATERIAL_TILE + 24;
-const FOOTER_HEIGHT = MATERIALS_ROW + 64;
+/** Footer: the buy / equip button or a note. */
+const FOOTER_HEIGHT = 64;
 const BASE_WALK_SPEED = 16;
 
 /** Card colours climb the rarity ramp along the catalogue, so the best gear looks the best. */
@@ -89,67 +84,23 @@ function FooterNote(props: { text: string; color: Color3 }) {
 /** The button area at the bottom of the footer, so buttons line up across cards. */
 function ButtonSlot(props: React.PropsWithChildren) {
 	return (
-		<frame
-			BackgroundTransparency={1}
-			Position={new UDim2(0, 0, 0, MATERIALS_ROW)}
-			Size={new UDim2(1, 0, 1, -MATERIALS_ROW)}
-		>
+		<frame BackgroundTransparency={1} Size={UDim2.fromScale(1, 1)}>
 			{props.children}
 		</frame>
 	);
 }
 
-/** Each material as a small tile; "have/need" under it is green when there is enough, red when not. */
-function MaterialTiles(props: { def: GearBase; view: PlayerView }) {
-	const list = materialList(props.def.materials);
-	if (list.size() === 0) {
-		return (
-			<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, MATERIALS_ROW)}>
-				<FooterNote text="Лише гроші" color={COLORS.textMuted} />
-			</frame>
-		);
-	}
-	return (
-		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, MATERIALS_ROW)}>
-			<uilistlayout
-				FillDirection={Enum.FillDirection.Horizontal}
-				HorizontalAlignment={Enum.HorizontalAlignment.Center}
-				Padding={new UDim(0, 14)}
-				SortOrder={Enum.SortOrder.LayoutOrder}
-			/>
-			{list.map((entry, index) => {
-				const have = props.view.warehouse[entry.id] ?? 0;
-				return (
-					<ResourceTile
-						key={entry.id}
-						id={entry.id}
-						size={MATERIAL_TILE}
-						caption={`${math.min(have, entry.amount)}/${entry.amount}`}
-						captionColor={have >= entry.amount ? COLORS.success : COLORS.danger}
-						order={index}
-					/>
-				);
-			})}
-		</frame>
-	);
-}
-
 function ForSaleFooter(props: { def: GearBase; view: PlayerView }) {
-	const enough = missingMaterials(props.def, props.view.warehouse).size() === 0;
 	return (
-		<>
-			<MaterialTiles def={props.def} view={props.view} />
-			<ButtonSlot>
-				<BuyButton
-					price={props.def.price}
-					money={props.view.money}
-					verb="Купити"
-					blocked={!enough}
-					textSize={TEXT_SIZES.small}
-					onClick={() => sendToServer(BUY_GEAR_REMOTE, props.def.id)}
-				/>
-			</ButtonSlot>
-		</>
+		<ButtonSlot>
+			<BuyButton
+				price={props.def.price}
+				money={props.view.money}
+				verb="Купити"
+				textSize={TEXT_SIZES.small}
+				onClick={() => sendToServer(BUY_GEAR_REMOTE, props.def.id)}
+			/>
+		</ButtonSlot>
 	);
 }
 

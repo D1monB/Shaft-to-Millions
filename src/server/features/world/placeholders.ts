@@ -111,12 +111,7 @@ export function buildBasePlaceholders(): void {
 			color: Color3.fromRGB(90, 90, 95),
 			material: Enum.Material.Slate,
 		});
-		buildOreRow(new Vector3(10, 0, 20), [
-			["coal", 4],
-			["copper", 3],
-			["iron", 3],
-			["quartz", 1],
-		]);
+		buildOreRow(new Vector3(10, 0, 20), [["copper", 6]]);
 	}
 	if (needsPlaceholders(TAGS.SurfaceSpawn)) {
 		makePlaceholder({
@@ -198,28 +193,29 @@ function makeCamp(layer: number, position: Vector3): void {
 }
 
 /**
- * Test layers 2 and 3 next to layer 1 (in the real map they are deeper, here they are just further away),
- * with a camp per layer and a drill site per layer. Walk to camp 2, then camp 3, to open the layers.
+ * Test layers 2 to 5 next to layer 1 (in the real map they are deeper, here they are just further away),
+ * with a camp per layer and a drill site per layer. Walk to camp 2, then 3, 4 and 5, to open the layers.
  */
 export function buildLayerPlaceholders(): void {
 	if (needsPlaceholders(TAGS.CampSpawn)) {
 		makePlaceholder({
 			name: "DeepFloor",
-			size: new Vector3(160, 1, 80),
-			position: new Vector3(40, -0.5, 100),
+			size: new Vector3(160, 1, 200),
+			position: new Vector3(40, -0.5, 160),
 			color: Color3.fromRGB(70, 55, 50),
 			material: Enum.Material.Basalt,
 		});
 		makeCamp(1, new Vector3(0, 0.5, 40));
 		makeCamp(2, new Vector3(0, 0.5, 80));
 		makeCamp(3, new Vector3(0, 0.5, 120));
-		buildOreRow(new Vector3(10, 0, 80), [
-			["silver", 3],
-			["gold", 2],
-		]);
-		buildOreRow(new Vector3(10, 0, 120), [
+		makeCamp(4, new Vector3(0, 0.5, 160));
+		makeCamp(5, new Vector3(0, 0.5, 200));
+		buildOreRow(new Vector3(10, 0, 80), [["iron", 4]]);
+		buildOreRow(new Vector3(10, 0, 120), [["gold", 4]]);
+		buildOreRow(new Vector3(10, 0, 160), [["titanium", 4]]);
+		buildOreRow(new Vector3(10, 0, 200), [
 			["obsidian", 3],
-			["cobalt", 2],
+			["etherium", 1],
 		]);
 	}
 	if (needsPlaceholders(TAGS.DrillSite)) {
@@ -227,6 +223,8 @@ export function buildLayerPlaceholders(): void {
 			[1, 40],
 			[2, 80],
 			[3, 120],
+			[4, 160],
+			[5, 200],
 		] as const) {
 			makePlaceholder({
 				name: `DrillSite_${layer}`,

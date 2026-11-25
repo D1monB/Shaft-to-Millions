@@ -309,3 +309,8 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Offline:** the line keeps running while the player is away at half speed, for at most 8 hours (tunable).
 - **Why:** matches the friend's map and the tycoon genre; one generic rule instead of a recipe per product, so a new
   ore works on the whole line with one config entry.
+- **Schema v4 (step 2, ores):** removed ores and products (coal, quartz, silver, cobalt, silver ingot, silver contact)
+  are paid out at their old prices; removed recipes leave machine queues and are refunded; a drill on an ore that
+  moved to another layer switches to the layer ore and its buffer is paid out. The bump also raises the layer cap
+  from 3 to 5. Gear item ids are kept (saved in profiles); only display names changed (silver -> steel, the old
+  obsidian/cobalt pickaxes are now titanium/obsidian).

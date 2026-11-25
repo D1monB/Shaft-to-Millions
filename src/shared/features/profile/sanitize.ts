@@ -139,7 +139,7 @@ function repairDrills(data: PlainTable, repairs: string[]): void {
 		const drill = repairTable(drills, key, path, repairs);
 		const oreId = drill.oreId;
 		if (!isOreId(oreId) || ORES[oreId].layer !== layer) {
-			drill.oreId = ORE_IDS.find((id) => ORES[id].layer === layer) ?? "coal";
+			drill.oreId = ORE_IDS.find((id) => ORES[id].layer === layer) ?? "copper";
 			repairs.push(path + ".oreId");
 		}
 		repairNumber(drill, "lastTick", 0, MAX_TIMESTAMP, 0, path + ".lastTick", repairs);

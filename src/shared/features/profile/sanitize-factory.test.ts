@@ -80,9 +80,9 @@ class SanitizeFactoryTests {
 	@Test
 	public repairsWarehouseCounts() {
 		const result = load((raw) => {
-			raw.warehouse = { coal: -1, gold_circuit: 2.5 };
+			raw.warehouse = { titanium: -1, gold_circuit: 2.5 };
 		});
-		Assert.equal(result.data.warehouse.coal, 0);
+		Assert.equal(result.data.warehouse.titanium, 0);
 		Assert.equal(result.data.warehouse.gold_circuit, 2);
 	}
 

@@ -9,12 +9,15 @@ export interface LayerDef {
 
 /** Index = layer number (1-based). Index 0 is unused so `LAYERS[n]` reads naturally. */
 export const LAYERS: { readonly [layer: number]: LayerDef | undefined } = {
-	1: { name: "Сірі Пласти", mood: "Тихі сірі стіни, перші жили вугілля й міді." },
-	2: { name: "Іржаві Порожнини", mood: "Руді печери з краплями води й блиском срібла." },
-	3: { name: "Базальтова Глибина", mood: "Чорний камінь, жар і рідкісний кобальт." },
+	1: { name: "Сірі Пласти", mood: "Тихі сірі стіни й перші жили міді." },
+	2: { name: "Іржаві Порожнини", mood: "Руді печери з краплями води й залізною рудою." },
+	3: { name: "Базальтова Глибина", mood: "Чорний камінь, жар і блиск золота." },
+	// Names of layers 4 and 5 are proposals (decisions 027): confirm with the developer and the map author.
+	4: { name: "Титанові Ребра", mood: "Холодні сталеві скелі, що дзвенять від удару." },
+	5: { name: "Ефірне Дно", mood: "Темне скло обсидіану й рідкісне сяйво ефіріуму." },
 };
 
-export const LAYER_COUNT = 3;
+export const LAYER_COUNT = 5;
 
 /**
  * Deepest record depth in game meters, far deeper than any planned map. Stops a broken sample (falling through

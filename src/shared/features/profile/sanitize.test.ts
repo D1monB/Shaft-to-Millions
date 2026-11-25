@@ -80,9 +80,9 @@ class SanitizeGearAndBagTests {
 	@Test
 	public bagCountsAreRepaired() {
 		const result = load((raw) => {
-			raw.bag = { coal: -5, iron: 2.5, copper: 0 / 0 };
+			raw.bag = { titanium: -5, iron: 2.5, copper: 0 / 0 };
 		});
-		Assert.equal(result.data.bag.coal, 0);
+		Assert.equal(result.data.bag.titanium, 0);
 		Assert.equal(result.data.bag.iron, 2);
 		Assert.equal(result.data.bag.copper, 0);
 	}

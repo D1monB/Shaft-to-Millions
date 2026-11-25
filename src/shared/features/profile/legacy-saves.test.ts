@@ -57,6 +57,13 @@ function load(raw: PlainTable) {
 	return result;
 }
 
+/**
+ * What the version 4 migration (new ores) pays for the fixture: coal in the bag 4 x $2 and in the warehouse 12 x $2,
+ * the coal a queued smelt_iron no longer takes ($2), and the drill on layer 1 whose iron moved to layer 2
+ * (buffer 4 x $9).
+ */
+const V4_PAYOUT = 8 + 24 + 2 + 36;
+
 class LegacySaveTests {
 	@Test
 	public version2SaveLoadsAtTheCurrentVersionWithoutRepairs() {
@@ -69,13 +76,11 @@ class LegacySaveTests {
 	@Test
 	public version2SaveKeepsEverythingThatIsNotGear() {
 		const data = load(version2Save()).data;
-		Assert.equal(data.money, 12_345);
+		Assert.equal(data.money, 12_345 + V4_PAYOUT);
 		Assert.equal(data.stats.totalEarned, 98_765);
 		Assert.equal(data.stats.oresMined, 321);
-		Assert.equal(data.bag.coal, 4);
 		Assert.equal(data.bag.iron, 7);
 		Assert.equal(data.levels.warehouse, 2);
-		Assert.equal(data.warehouse.coal, 12);
 		Assert.equal(data.warehouse.copper_ingot, 3);
 		Assert.equal(data.deepestLayer, 2);
 		Assert.equal(data.nextUid, 3);
@@ -110,6 +115,19 @@ class LegacySaveTests {
 	}
 
 	@Test
+	public version4RemovedOresArePaidOutAndDrillsFollowTheirLayer() {
+		const data = load(version2Save()).data;
+		const bag = data.bag as unknown as PlainTable;
+		const warehouse = data.warehouse as unknown as PlainTable;
+		Assert.undefined(bag.coal);
+		Assert.undefined(warehouse.coal);
+		Assert.equal(data.drills.layer1?.oreId, "copper");
+		Assert.equal(data.drills.layer1?.buffer, 0);
+		// Kept recipes stay queued; only the coal they no longer take is paid back.
+		Assert.equal(data.machines.furnace?.queue.size(), 2);
+	}
+
+	@Test
 	public version2SaveGetsTheNewFieldsWithDefaults() {
 		const data = load(version2Save()).data;
 		Assert.equal(data.deepestMeters, 0);
@@ -120,7 +138,7 @@ class LegacySaveTests {
 		const result = load(version1Save());
 		Assert.equal(result.data.schemaVersion, CURRENT_SCHEMA_VERSION);
 		Assert.equal(result.repairs.size(), 0);
-		Assert.equal(result.data.money, 12_345);
+		Assert.equal(result.data.money, 12_345 + V4_PAYOUT);
 		Assert.equal(result.data.levels.warehouse, 1);
 		Assert.equal(result.data.machines.furnace?.speedLevel, 1);
 		Assert.equal(result.data.gear.equipped.pickaxe, "pickaxe_iron");

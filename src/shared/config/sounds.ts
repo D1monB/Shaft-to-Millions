@@ -23,9 +23,7 @@ const METAL_HITS = "rbxassetid://9116651255"; // "Metal Hits 2 (SFX)", ProSoundE
 const METAL_CLANG = "rbxassetid://9125819216"; // "Robot Impact Miscellaneous Metal Clangs", ProSoundEffects
 const SHALE_LIGHT = "rbxassetid://9119050283"; // "Shale Break Low End Crackling Rock 1 (SFX)", ProSoundEffects
 const SHALE_DEEP = "rbxassetid://9119050772"; // "Shale Break Low End Crackling Rock 6 (SFX)", ProSoundEffects
-const ROCK_DROP_2 = "rbxassetid://9118587494"; // "Rock Drop On Concrete Drops Breaks 2 (SFX)", ProSoundEffects
 const ROCK_DROP_3 = "rbxassetid://9118587698"; // "Rock Drop On Concrete Drops Breaks 3 (SFX)", ProSoundEffects
-const ROCK_DROP_4 = "rbxassetid://9118587701"; // "Rock Drop On Concrete Drops Breaks 4 (SFX)", ProSoundEffects
 const WHOOSH_FIRE = "rbxassetid://9120696702"; // "Whoosh By Airy Whomping Humming Rumbling 12 (SFX)", ProSoundEffects
 const REWARD_RISE_1 = "rbxassetid://88130568524452"; // "SS_wobbleboxx_rewards_Rise01", RBLXEssentials
 const REWARD_RISE_2 = "rbxassetid://97069579625373"; // "SS_wobbleboxx_rewards_Rise02", RBLXEssentials
@@ -48,14 +46,12 @@ export const SOUNDS: { readonly [K in SoundId]: SoundDef } = {
 
 /** The break sound of every ore: a different sound or pitch each, so the player hears what broke. */
 export const ORE_BREAK_SOUNDS: { readonly [K in OreId]: SoundDef } = {
-	coal: { assetId: ROCK_DROP_2, volume: 0.6, minGap: 0.1, speed: 0.9 },
 	copper: { assetId: ROCK_DROP_3, volume: 0.6, minGap: 0.1, speed: 1.05 },
 	iron: { assetId: METAL_CLANG, volume: 0.5, minGap: 0.1, speed: 0.95 },
-	quartz: { assetId: SHALE_LIGHT, volume: 0.6, minGap: 0.1, speed: 1.35 },
-	silver: { assetId: METAL_HITS, volume: 0.6, minGap: 0.1, speed: 1.25 },
 	gold: { assetId: METAL_CLANG, volume: 0.6, minGap: 0.1, speed: 1.3 },
+	titanium: { assetId: METAL_HITS, volume: 0.6, minGap: 0.1, speed: 1.15 },
 	obsidian: { assetId: SHALE_DEEP, volume: 0.7, minGap: 0.1, speed: 0.75 },
-	cobalt: { assetId: ROCK_DROP_4, volume: 0.7, minGap: 0.1, speed: 0.8 },
+	etherium: { assetId: SHALE_LIGHT, volume: 0.7, minGap: 0.1, speed: 1.4 },
 };
 
 export const SOUND_IDS: ReadonlyArray<SoundId> = [

@@ -59,8 +59,8 @@ class DevtoolsTests {
 	public resetGivesIndependentTablesNotSharedOnes() {
 		const data = createDefaultProfileData();
 		applyDevCommand(data, { kind: "resetProfile" });
-		data.bag.coal = 5;
-		Assert.undefined(createDefaultProfileData().bag.coal);
+		data.bag.titanium = 5;
+		Assert.undefined(createDefaultProfileData().bag.titanium);
 	}
 
 	@Test
@@ -124,11 +124,11 @@ class DevtoolsTests {
 		Assert.equal(data.warehouse.iron_ingot, DEV_MATERIAL_AMOUNT);
 		Assert.equal(data.warehouse.gold_circuit, DEV_MATERIAL_AMOUNT);
 		// Raw ore too, so the furnace can be tried right away.
-		Assert.equal(data.warehouse.coal, DEV_MATERIAL_AMOUNT);
+		Assert.equal(data.warehouse.titanium, DEV_MATERIAL_AMOUNT);
 		Assert.equal(data.warehouse.copper, DEV_MATERIAL_AMOUNT);
 		// A second press adds again (it is a top-up button), never above the counter cap.
 		applyDevCommand(data, { kind: "materials" });
-		Assert.equal(data.warehouse.coal, DEV_MATERIAL_AMOUNT * 2);
+		Assert.equal(data.warehouse.titanium, DEV_MATERIAL_AMOUNT * 2);
 	}
 
 	@Test

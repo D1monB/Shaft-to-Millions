@@ -20,6 +20,111 @@ function itemForOldLevel(slot: string, level: unknown): string {
 }
 
 /**
+ * Version 4 replaced the ores (decisions 027). Old prices of everything that was removed, in dollars, so a player is
+ * paid for what disappears instead of losing it. Frozen: never edit these tables.
+ */
+const OLD_PRICES: { readonly [id: string]: number | undefined } = {
+	coal: 2,
+	copper: 5,
+	iron: 9,
+	quartz: 25,
+	silver: 20,
+	gold: 45,
+	obsidian: 80,
+	cobalt: 150,
+	silver_ingot: 65,
+	silver_contact: 230,
+};
+
+/** Resources that no longer exist after version 4. */
+const REMOVED_IN_V4: ReadonlyArray<string> = ["coal", "quartz", "silver", "cobalt", "silver_ingot", "silver_contact"];
+
+/**
+ * Money back per queued craft: the whole input value for removed recipes; for kept recipes, the value of the input
+ * the recipe no longer takes (coal in smelting, quartz in the circuit).
+ */
+const RECIPE_REFUND_V4: {
+	readonly [id: string]: { readonly machine: string; readonly money: number; readonly removed: boolean } | undefined;
+} = {
+	smelt_silver: { machine: "furnace", money: 42, removed: true },
+	make_contact: { machine: "workbench", money: 145, removed: true },
+	smelt_iron: { machine: "furnace", money: 2, removed: false },
+	smelt_gold: { machine: "furnace", money: 2, removed: false },
+	make_circuit: { machine: "workbench", money: 25, removed: false },
+};
+
+/** The longest queue version 3 allowed (top queue level). Entries beyond it were never real crafts. */
+const MAX_QUEUE_V3 = 30;
+
+/** The ores each old drill layer may hold after version 4 (only layers 1-3 existed before). */
+const LAYER_ORES_V4: { readonly [key: string]: ReadonlyArray<string> | undefined } = {
+	layer1: ["copper"],
+	layer2: ["iron"],
+	layer3: ["gold"],
+};
+
+function countOf(value: unknown): number {
+	return typeIs(value, "number") && value === value && value > 0 && value < math.huge ? math.floor(value) : 0;
+}
+
+/** Removes the removed resources from a count map and returns their value. */
+function cashOutRemoved(map: unknown): number {
+	if (!typeIs(map, "table")) {
+		return 0;
+	}
+	const counts = map as PlainTable;
+	let money = 0;
+	for (const id of REMOVED_IN_V4) {
+		money += countOf(counts[id]) * (OLD_PRICES[id] ?? 0);
+		counts[id] = undefined;
+	}
+	return money;
+}
+
+/**
+ * Version 4 for one machine: removed recipes leave the queue, every affected craft is paid back. Only crafts that
+ * sanitize would have kept are paid (right machine, within the old queue cap), so a corrupt save earns nothing extra.
+ */
+function cashOutQueue(machineId: unknown, machine: PlainTable): number {
+	let money = cashOutRemoved(machine.ready);
+	if (!typeIs(machine.queue, "table")) {
+		return money;
+	}
+	// Anything that is not a recipe id would be dropped by sanitize anyway.
+	const kept: string[] = [];
+	let paid = 0;
+	for (const recipe of machine.queue as unknown[]) {
+		if (!typeIs(recipe, "string")) {
+			continue;
+		}
+		const refund = RECIPE_REFUND_V4[recipe];
+		if (refund !== undefined && refund.machine === machineId && paid < MAX_QUEUE_V3) {
+			money += refund.money;
+			paid += 1;
+		}
+		if (refund === undefined || !refund.removed) {
+			kept.push(recipe);
+		}
+	}
+	machine.queue = kept;
+	return money;
+}
+
+/** Version 4 for one drill: an ore that left its layer is replaced by the layer ore; the buffer is paid back. */
+function cashOutDrill(key: string, drill: PlainTable): number {
+	const allowed = LAYER_ORES_V4[key];
+	const oreId = drill.oreId;
+	if (allowed === undefined || (typeIs(oreId, "string") && allowed.includes(oreId))) {
+		return 0;
+	}
+	const money = countOf(drill.buffer) * (typeIs(oreId, "string") ? (OLD_PRICES[oreId] ?? 0) : 0);
+	drill.oreId = allowed[0];
+	drill.buffer = 0;
+	drill.progress = 0;
+	return money;
+}
+
+/**
  * Upgrades saved data from version `from` to `from + 1`.
  * `apply` changes the table it receives (always a copy, never the live save).
  */
@@ -76,6 +181,30 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
 			}
 			data.levels = levels;
 			data.gear = { owned, equipped };
+		},
+	},
+	{
+		// Version 4 (new ores, decisions 027): removed ores and products are paid out at their old price; a drill on an
+		// ore that moved to another layer switches to the layer ore. The bump also raises the layer cap from 3 to 5.
+		from: 3,
+		apply: (data) => {
+			let money = cashOutRemoved(data.bag) + cashOutRemoved(data.warehouse);
+			if (typeIs(data.machines, "table")) {
+				for (const [machineId, machine] of pairs(data.machines as PlainTable)) {
+					if (typeIs(machine, "table")) {
+						money += cashOutQueue(machineId, machine as PlainTable);
+					}
+				}
+			}
+			if (typeIs(data.drills, "table")) {
+				for (const [key, drill] of pairs(data.drills as PlainTable)) {
+					if (typeIs(key, "string") && typeIs(drill, "table")) {
+						money += cashOutDrill(key, drill as PlainTable);
+					}
+				}
+			}
+			const before = typeIs(data.money, "number") && data.money === data.money ? data.money : 0;
+			data.money = before + money; // sanitize clamps to the money cap afterwards
 		},
 	},
 ];

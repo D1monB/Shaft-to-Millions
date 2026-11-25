@@ -5,11 +5,10 @@ import React, { useEffect } from "@rbxts/react";
 import { MACHINE_IDS } from "shared/config/machines";
 import { ORES, ORE_IDS } from "shared/config/ores";
 import { PickaxeDef } from "shared/config/pickaxes";
-import { RESOURCES } from "shared/config/resources";
 import { bagCapacity, bagTotal } from "shared/features/bag";
 import { GoalCandidate, GoalInfo, pickGoalInfo } from "shared/features/goals";
 import { getPickaxe } from "shared/features/mining";
-import { GearSlot, missingMaterials, nextGearToBuy } from "shared/features/upgrades";
+import { GearSlot, nextGearToBuy } from "shared/features/upgrades";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
 import {
@@ -32,19 +31,13 @@ export function registerGoalSource(source: (view: PlayerView) => GoalCandidate[]
 	sources.push(source);
 }
 
-/** The next main-line item of a slot as a goal, with the first missing material if any. */
+/** The next main-line item of a slot as a goal. */
 function gearGoal(view: PlayerView, slot: GearSlot, priority: number): GoalCandidate | undefined {
 	const upcoming = nextGearToBuy(slot, view.gear, getPickaxe(view.gear.equipped.pickaxe).tier);
 	if (upcoming === undefined) {
 		return undefined;
 	}
-	const lack = missingMaterials(upcoming, view.warehouse)[0];
-	return {
-		label: upcoming.name,
-		price: upcoming.price,
-		priority,
-		missing: lack === undefined ? undefined : `${RESOURCES[lack.id].name} ${lack.have}/${lack.need}`,
-	};
+	return { label: upcoming.name, price: upcoming.price, priority };
 }
 
 function gearGoals(view: PlayerView): GoalCandidate[] {

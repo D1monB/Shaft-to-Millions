@@ -75,10 +75,10 @@ class FactoryTests {
 	@Test
 	public enqueueRefusesWithoutInputs() {
 		const state = newMachineState();
-		const store: Counts = { iron: 10 }; // smelting iron also needs coal
+		const store: Counts = { iron: 1 }; // smelting iron needs 2
 		const result = enqueue(state, store, "smelt_iron", 1, 0, LIMIT);
 		Assert.false(result.ok);
-		Assert.equal(store.iron, 10);
+		Assert.equal(store.iron, 1);
 	}
 
 	@Test
@@ -165,7 +165,7 @@ class FactoryTests {
 		const state = newMachineState();
 		const store: Counts = { copper: 6 };
 		enqueue(state, store, "smelt_copper", 2, 0, LIMIT);
-		store.coal = 100;
+		store.gold = 100;
 		Assert.false(cancelLast(state, store, 100));
 		Assert.equal(state.queue.size(), 2);
 	}
@@ -174,7 +174,7 @@ class FactoryTests {
 	public collectMovesOnlyWhatFits() {
 		const state = newMachineState();
 		state.ready = { copper_ingot: 5 };
-		const store: Counts = { coal: 8 };
+		const store: Counts = { gold: 8 };
 		Assert.equal(collect(state, store, 10), 2);
 		Assert.equal(store.copper_ingot, 2);
 		Assert.equal(state.ready.copper_ingot, 3);
@@ -185,26 +185,26 @@ class FactoryTests {
 
 	@Test
 	public depositStopsAtCapacityAndKeepsTheRest() {
-		const bag: { [id: string]: number | undefined } = { coal: 5, copper: 5 };
+		const bag: { [id: string]: number | undefined } = { gold: 5, copper: 5 };
 		const store: Counts = {};
-		Assert.equal(depositAll(bag, store, ["coal", "copper"], 7), 7);
-		Assert.equal(store.coal, 5);
+		Assert.equal(depositAll(bag, store, ["gold", "copper"], 7), 7);
+		Assert.equal(store.gold, 5);
 		Assert.equal(store.copper, 2);
-		Assert.undefined(bag.coal);
+		Assert.undefined(bag.gold);
 		Assert.equal(bag.copper, 3);
 	}
 
 	@Test
 	public depositIgnoresBadCounts() {
-		const bag: { [id: string]: number | undefined } = { coal: -5, copper: 0 / 0 };
+		const bag: { [id: string]: number | undefined } = { gold: -5, copper: 0 / 0 };
 		const store: Counts = {};
-		Assert.equal(depositAll(bag, store, ["coal", "copper"], 100), 0);
+		Assert.equal(depositAll(bag, store, ["gold", "copper"], 100), 0);
 		Assert.equal(storageTotal(store), 0);
 	}
 
 	@Test
 	public maxCraftsUsesTheScarcestInput() {
-		Assert.equal(maxCrafts({ iron: 10, coal: 2 }, "smelt_iron"), 2);
+		Assert.equal(maxCrafts({ iron: 5 }, "smelt_iron"), 2);
 		Assert.equal(maxCrafts({}, "smelt_iron"), 0);
 	}
 
@@ -221,7 +221,7 @@ class FactoryTests {
 
 	@Test
 	public estimateOfNothingIsNothing() {
-		const estimate = simulateProcessing({ coal: 3 }, recipesOf("furnace"));
+		const estimate = simulateProcessing({ titanium: 3 }, recipesOf("furnace"));
 		Assert.equal(estimate.crafts, 0);
 		Assert.equal(estimate.valueAfter, estimate.valueBefore);
 	}

@@ -9,25 +9,21 @@ import { COLORS, FONTS, RADIUS, STROKE, rampSequence } from "./ui-kit";
 const PRODUCT_LOOK: { readonly [K in ProductId]: { readonly metal: OreId; readonly icon: string } } = {
 	copper_ingot: { metal: "copper", icon: "🧱" },
 	iron_ingot: { metal: "iron", icon: "🧱" },
-	silver_ingot: { metal: "silver", icon: "🧱" },
 	gold_ingot: { metal: "gold", icon: "🧱" },
 	copper_wire: { metal: "copper", icon: "➰" },
 	iron_gear: { metal: "iron", icon: "⚙️" },
-	silver_contact: { metal: "silver", icon: "🔌" },
 	gold_circuit: { metal: "gold", icon: "💾" },
 };
 
 // Each ore has its own glyph, not only its own colour. Only emoji from old Unicode versions: newer ones (e.g. the
 // rock, Unicode 13) are missing from the Roblox emoji font and draw an empty square.
 const ORE_ICONS: { readonly [K in OreId]: string } = {
-	coal: "⚫",
 	copper: "🔶",
 	iron: "🔩",
-	quartz: "🔷",
-	silver: "🔘",
 	gold: "⭐",
+	titanium: "🔷",
 	obsidian: "🌑",
-	cobalt: "💎",
+	etherium: "💎",
 };
 
 function colorOf(id: ResourceId): Color3 {

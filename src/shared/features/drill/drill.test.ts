@@ -37,9 +37,9 @@ class DrillTests {
 
 	@Test
 	public drillsOnlyWhatThePickaxeCouldMine() {
-		Assert.true(canDrillOre(1, "coal", 1));
-		Assert.false(canDrillOre(1, "quartz", 1));
-		Assert.true(canDrillOre(1, "quartz", 2));
+		Assert.true(canDrillOre(1, "copper", 1));
+		Assert.false(canDrillOre(2, "iron", 1));
+		Assert.true(canDrillOre(2, "iron", 2));
 		// Ore from another layer is never allowed.
 		Assert.false(canDrillOre(1, "gold", 5));
 	}
@@ -47,7 +47,7 @@ class DrillTests {
 	@Test
 	public manualMiningIsMuchFasterThanTheDrill() {
 		// Design rule: automation must not make the pickaxe pointless.
-		for (const oreId of ["coal", "copper", "iron"] as const) {
+		for (const oreId of ["copper"] as const) {
 			const pickaxe = PICKAXES[0];
 			const manualSeconds = hitsRequired(ORES[oreId].hardness, pickaxe.power) * pickaxe.swingSeconds;
 			Assert.true(secondsPerPiece(1, oreId) >= manualSeconds * 5, `${oreId} drill too fast`);
@@ -56,8 +56,8 @@ class DrillTests {
 
 	@Test
 	public producesOverTimeAndKeepsLeftoverProgress() {
-		const state = newDrillState("coal", 0);
-		const perPiece = secondsPerPiece(1, "coal");
+		const state = newDrillState("copper", 0);
+		const perPiece = secondsPerPiece(1, "copper");
 		Assert.equal(advanceDrill(state, 1, perPiece * 2.5), 2);
 		Assert.equal(state.buffer, 2);
 		Assert.equal(state.progress, perPiece * 0.5);
@@ -66,7 +66,7 @@ class DrillTests {
 
 	@Test
 	public stopsWhenTheBufferIsFull() {
-		const state = newDrillState("coal", 0);
+		const state = newDrillState("copper", 0);
 		advanceDrill(state, 1, 1e6);
 		Assert.equal(state.buffer, layerOneDrill().bufferCapacity);
 		Assert.equal(advanceDrill(state, 1, 2e6), 0);
@@ -75,7 +75,7 @@ class DrillTests {
 
 	@Test
 	public offlineTimeIsCapped() {
-		const state = newDrillState("coal", 0);
+		const state = newDrillState("copper", 0);
 		advanceDrill(state, 1, MAX_OFFLINE_DRILL_SECONDS * 100);
 		Assert.true(state.buffer <= layerOneDrill().bufferCapacity);
 		Assert.equal(state.lastTick, MAX_OFFLINE_DRILL_SECONDS * 100);
@@ -83,7 +83,7 @@ class DrillTests {
 
 	@Test
 	public backwardsClockProducesNothing() {
-		const state = newDrillState("coal", 1000);
+		const state = newDrillState("copper", 1000);
 		Assert.equal(advanceDrill(state, 1, 10), 0);
 		Assert.equal(state.lastTick, 1000);
 		Assert.equal(advanceDrill(state, 1, 0 / 0), 0);
@@ -104,10 +104,10 @@ class DrillTests {
 
 	@Test
 	public switchingOreNeedsAnEmptyBuffer() {
-		const state = newDrillState("coal", 0);
+		const state = newDrillState("copper", 0);
 		state.buffer = 1;
 		Assert.false(selectDrillOre(state, "iron", 5));
-		Assert.equal(state.oreId, "coal");
+		Assert.equal(state.oreId, "copper");
 		state.buffer = 0;
 		state.progress = 7;
 		Assert.true(selectDrillOre(state, "iron", 5));

@@ -1,63 +1,52 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { BAGS } from "shared/config/bags";
-import { GearBase } from "shared/config/gear";
+import { ORES, ORE_IDS } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
-import { RESOURCES, ResourceId } from "shared/config/resources";
 import { SHOES } from "shared/config/shoes";
 import {
 	GEAR_BY_SLOT,
 	GEAR_SLOTS,
 	GearState,
-	MaterialStock,
 	applyPurchase,
 	createStarterGear,
 	findGear,
 	gearCardState,
 	isGearSlot,
-	materialList,
-	missingMaterials,
-	isReachableWithTier,
 	nextGearToBuy,
-	tierNeeded,
 	tryBuyGear,
 	tryEquipGear,
 } from "./upgrades";
 
-const STONE = PICKAXES[1]; // money only
-const COPPER = PICKAXES[2]; // money + copper ingots
+const STONE = PICKAXES[1];
+const COPPER = PICKAXES[2];
 
-function apply(id: string, money: number, stock: MaterialStock, gear: GearState): number {
-	const result = tryBuyGear(id, money, stock, gear);
+function apply(id: string, money: number, gear: GearState): number {
+	const result = tryBuyGear(id, money, gear);
 	if (!result.ok) {
 		return money;
 	}
-	applyPurchase(result, stock, gear);
+	applyPurchase(result, gear);
 	return result.money;
 }
 
 class UpgradesTests {
 	@Test
-	public everyItemIdIsUniqueAndEveryMaterialExists() {
+	public everyItemIdIsUniqueAndHasAPrice() {
 		const seen = new Set<string>();
 		for (const slot of GEAR_SLOTS) {
 			for (const def of GEAR_BY_SLOT[slot]) {
 				Assert.false(seen.has(def.id));
 				seen.add(def.id);
-				Assert.true(def.price >= 0 && def.price < math.huge);
-				for (const [id, amount] of pairs(def.materials)) {
-					Assert.notUndefined(RESOURCES[id as ResourceId]);
-					Assert.true(amount > 0 && math.floor(amount) === amount);
-				}
+				Assert.true(def.price >= 0 && def.price < math.huge && math.floor(def.price) === def.price);
 			}
 		}
 	}
 
 	@Test
-	public startersAreFreeAndNeedNoMaterials() {
+	public startersAreFree() {
 		for (const slot of GEAR_SLOTS) {
 			const starter = GEAR_BY_SLOT[slot][0];
 			Assert.equal(starter.price, 0);
-			Assert.equal(materialList(starter.materials).size(), 0);
 			Assert.equal(starter.special, undefined);
 		}
 		const gear = createStarterGear();
@@ -84,105 +73,58 @@ class UpgradesTests {
 	}
 
 	@Test
-	public everyPickaxeIsReachableFromTheStarter() {
-		// Regression: the cobalt pickaxe once needed cobalt ore, which only its own tier can mine, so it could never be
-		// bought. Walk the progression: buy any pickaxe whose materials the current tier can get, until nothing is left.
-		let tier = PICKAXES[0].tier;
-		const owned = new Set<string>([PICKAXES[0].id]);
-		let progressed = true;
-		while (progressed) {
-			progressed = false;
-			for (const def of PICKAXES) {
-				if (owned.has(def.id)) {
-					continue;
-				}
-				let reachable = true;
-				for (const entry of materialList(def.materials)) {
-					if (tierNeeded(entry.id) > tier) {
-						reachable = false;
-					}
-				}
-				if (reachable) {
-					owned.add(def.id);
-					tier = math.max(tier, def.tier);
-					progressed = true;
-				}
-			}
-		}
-		for (const def of PICKAXES) {
-			Assert.true(owned.has(def.id), `${def.id} can never be bought: its materials need a higher pickaxe tier`);
+	public everyOreTierHasAPickaxe() {
+		// Every ore must be minable by some pickaxe on sale, or a whole floor is a dead end.
+		for (const id of ORE_IDS) {
+			Assert.true(
+				PICKAXES.some((def) => def.tier >= ORES[id].requiredTier),
+				`no pickaxe mines ${id}`,
+			);
 		}
 	}
 
 	@Test
 	public buysForMoneyAndEquips() {
 		const gear = createStarterGear();
-		const money = apply(STONE.id, 1000, {}, gear);
+		const money = apply(STONE.id, 1000, gear);
 		Assert.equal(money, 1000 - STONE.price);
 		Assert.true(gear.owned.includes(STONE.id));
 		Assert.equal(gear.equipped.pickaxe, STONE.id);
 	}
 
 	@Test
-	public materialsAreTakenFromTheStock() {
+	public refusesWithoutMoney() {
 		const gear = createStarterGear();
-		const stock: MaterialStock = { copper_ingot: 7, coal: 3 };
-		apply(COPPER.id, 1000, stock, gear);
-		Assert.equal(stock.copper_ingot, 7 - (COPPER.materials.copper_ingot ?? 0));
-		Assert.equal(stock.coal, 3);
-		// Spending the last piece removes the key, like everywhere else in the warehouse.
-		const exact: MaterialStock = { copper_ingot: COPPER.materials.copper_ingot };
-		apply(COPPER.id, 1000, exact, createStarterGear());
-		Assert.undefined(exact.copper_ingot);
-	}
-
-	@Test
-	public refusesWithoutMoneyOrMaterials() {
-		const gear = createStarterGear();
-		const poor = tryBuyGear(STONE.id, STONE.price - 1, {}, gear);
+		const poor = tryBuyGear(STONE.id, STONE.price - 1, gear);
 		Assert.true(!poor.ok && poor.reason === "not-enough-money");
-		const noIngots = tryBuyGear(COPPER.id, 1_000_000, { copper_ingot: 1 }, gear);
-		Assert.true(!noIngots.ok && noIngots.reason === "not-enough-materials");
 		Assert.equal(gear.owned.size(), 3);
 	}
 
 	@Test
-	public exactMoneyAndMaterialsAreEnough() {
-		const stock: MaterialStock = { copper_ingot: COPPER.materials.copper_ingot };
-		Assert.true(tryBuyGear(COPPER.id, COPPER.price, stock, createStarterGear()).ok);
+	public exactMoneyIsEnough() {
+		Assert.true(tryBuyGear(COPPER.id, COPPER.price, createStarterGear()).ok);
+		Assert.equal(0, apply(COPPER.id, COPPER.price, createStarterGear()));
 	}
 
 	@Test
 	public secondPurchaseOfTheSameItemIsRefused() {
 		const gear = createStarterGear();
-		const money = apply(STONE.id, 1000, {}, gear);
-		const again = tryBuyGear(STONE.id, money, {}, gear);
+		const money = apply(STONE.id, 1000, gear);
+		const again = tryBuyGear(STONE.id, money, gear);
 		Assert.true(!again.ok && again.reason === "owned");
-		Assert.true(!tryBuyGear(PICKAXES[0].id, 1000, {}, gear).ok);
+		Assert.true(!tryBuyGear(PICKAXES[0].id, 1000, gear).ok);
 	}
 
 	@Test
 	public badIdsAndBrokenNumbersAreRefused() {
 		const gear = createStarterGear();
 		for (const id of [undefined, 5, "", "pickaxe_unknown", "money", {}] as unknown[]) {
-			const result = tryBuyGear(id, 1_000_000, {}, gear);
+			const result = tryBuyGear(id, 1_000_000, gear);
 			Assert.true(!result.ok && result.reason === "unknown");
 			Assert.undefined(findGear(id));
 		}
-		Assert.false(tryBuyGear(STONE.id, 0 / 0, {}, gear).ok);
-		Assert.false(tryBuyGear(STONE.id, -math.huge, {}, gear).ok);
-		// NaN or negative stock never counts as having materials.
-		Assert.false(tryBuyGear(COPPER.id, 1000, { copper_ingot: 0 / 0 }, gear).ok);
-		Assert.false(tryBuyGear(COPPER.id, 1000, { copper_ingot: -50 }, gear).ok);
-	}
-
-	@Test
-	public missingMaterialsListsWhatIsShort() {
-		const missing = missingMaterials(COPPER, { copper_ingot: 2 });
-		Assert.equal(missing.size(), 1);
-		Assert.equal(missing[0].id, "copper_ingot");
-		Assert.equal(missing[0].have, 2);
-		Assert.equal(missingMaterials(STONE, {}).size(), 0);
+		Assert.false(tryBuyGear(STONE.id, 0 / 0, gear).ok);
+		Assert.false(tryBuyGear(STONE.id, -math.huge, gear).ok);
 	}
 
 	@Test
@@ -190,7 +132,7 @@ class UpgradesTests {
 		const gear = createStarterGear();
 		const notOwned = tryEquipGear(STONE.id, gear);
 		Assert.true(!notOwned.ok && notOwned.reason === "not-owned");
-		apply(STONE.id, 1000, {}, gear);
+		apply(STONE.id, 1000, gear);
 		const already = tryEquipGear(STONE.id, gear);
 		Assert.true(!already.ok && already.reason === "already");
 		const back = tryEquipGear(PICKAXES[0].id, gear);
@@ -206,7 +148,7 @@ class UpgradesTests {
 		const gear = createStarterGear();
 		Assert.equal(gearCardState(PICKAXES[0].id, gear), "equipped");
 		Assert.equal(gearCardState(STONE.id, gear), "for-sale");
-		apply(STONE.id, 1000, {}, gear);
+		apply(STONE.id, 1000, gear);
 		Assert.equal(gearCardState(PICKAXES[0].id, gear), "owned");
 		Assert.equal(gearCardState(STONE.id, gear), "equipped");
 	}
@@ -226,21 +168,20 @@ class UpgradesTests {
 	}
 
 	@Test
-	public hintSkipsItemsBehindAWall() {
+	public hintPrefersACheaperSidePickaxeThatOpensNewOre() {
 		const gear = createStarterGear();
 		for (const def of PICKAXES) {
-			if (def.tier <= 2) {
+			if (def.tier <= 3) {
 				gear.owned.push(def.id);
 			}
 		}
-		// Everything of tier 1-2 is owned. Gold and obsidian need tier 3 materials; the drill is reachable but costs $200K:
-		// the cheaper way through the wall is the hammer, a side item.
-		const hint = nextGearToBuy("pickaxe", gear, 2);
-		Assert.notUndefined(hint);
-		Assert.true(isReachableWithTier(hint as GearBase, 2));
-		Assert.equal(hint?.id, "pickaxe_hammer");
+		// The hammer (tier 4, side item) is cheaper than the titanium pickaxe (tier 4, main line).
+		const hammer = PICKAXES.find((def) => def.id === "pickaxe_hammer");
+		const mainLine = nextGearToBuy("pickaxe", gear);
+		Assert.true((hammer?.price ?? math.huge) < (mainLine?.price ?? 0));
+		Assert.equal(nextGearToBuy("pickaxe", gear, 3)?.id, "pickaxe_hammer");
 		gear.owned.push("pickaxe_hammer");
-		Assert.equal(nextGearToBuy("pickaxe", gear, 3)?.id, "pickaxe_gold");
+		Assert.equal(nextGearToBuy("pickaxe", gear, 4)?.id, mainLine?.id);
 	}
 
 	@Test
@@ -248,13 +189,6 @@ class UpgradesTests {
 		const gear = createStarterGear();
 		Assert.equal(nextGearToBuy("pickaxe", gear)?.id, STONE.id);
 		Assert.equal(nextGearToBuy("pickaxe", gear, 1)?.id, STONE.id);
-	}
-
-	@Test
-	public tierNeededHandlesUnknownAndBadInput() {
-		Assert.equal(tierNeeded("nope" as ResourceId), math.huge);
-		Assert.false(isReachableWithTier(PICKAXES[6], 0 / 0));
-		Assert.false(isReachableWithTier(PICKAXES[6], 2));
 	}
 
 	@Test
