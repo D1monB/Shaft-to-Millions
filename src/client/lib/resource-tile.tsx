@@ -17,7 +17,8 @@ const PRODUCT_LOOK: { readonly [K in ProductId]: { readonly metal: OreId; readon
 	gold_circuit: { metal: "gold", icon: "💾" },
 };
 
-const ORE_ICON = "🪨";
+// The rock emoji (Unicode 13) is missing from the Roblox emoji font and draws an empty square; the gem is old enough.
+const ORE_ICON = "💎";
 
 function colorOf(id: ResourceId): Color3 {
 	const ore = isOreId(id) ? id : PRODUCT_LOOK[id as ProductId].metal;

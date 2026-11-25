@@ -42,7 +42,7 @@ function DevPanel() {
 				order={50}
 			/>
 			<Button
-				text="+30 кожного матеріалу на склад"
+				text="+30 руди й матеріалів на склад"
 				variant="crystal"
 				onClick={() => sendToServer(DEV_COMMAND_REMOTE, "materials")}
 				order={52}

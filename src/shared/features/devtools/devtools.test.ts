@@ -70,15 +70,19 @@ class DevtoolsTests {
 	}
 
 	@Test
-	public materialsAddEachMaterialOnce() {
+	public materialsAddEveryOreAndProduct() {
 		const data = createDefaultProfileData();
 		Assert.equal(parseDevCommand(["materials"])?.kind, "materials");
 		Assert.undefined(parseDevCommand(["materials", 99]));
 		applyDevCommand(data, { kind: "materials" });
-		// Iron ingots are used by several items but are added only once.
 		Assert.equal(data.warehouse.iron_ingot, DEV_MATERIAL_AMOUNT);
 		Assert.equal(data.warehouse.gold_circuit, DEV_MATERIAL_AMOUNT);
-		Assert.undefined(data.warehouse.coal);
+		// Raw ore too, so the furnace can be tried right away.
+		Assert.equal(data.warehouse.coal, DEV_MATERIAL_AMOUNT);
+		Assert.equal(data.warehouse.copper, DEV_MATERIAL_AMOUNT);
+		// A second press adds again (it is a top-up button), never above the counter cap.
+		applyDevCommand(data, { kind: "materials" });
+		Assert.equal(data.warehouse.coal, DEV_MATERIAL_AMOUNT * 2);
 	}
 
 	@Test

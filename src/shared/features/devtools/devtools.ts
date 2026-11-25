@@ -2,14 +2,14 @@
 // Pure rules only. The server service registers the remote ONLY in Roblox Studio (RunService.IsStudio()),
 // so on live servers this code is never reachable. Amounts are fixed presets, never a number sent by a client.
 import { LAYER_COUNT } from "shared/config/layers";
-import { ResourceId } from "shared/config/resources";
-import { GEAR_BY_SLOT, GEAR_SLOTS, materialList } from "shared/features/upgrades";
+import { RESOURCE_IDS } from "shared/config/resources";
+import { GEAR_BY_SLOT, GEAR_SLOTS } from "shared/features/upgrades";
 import type { ProfileData } from "shared/features/profile";
 import { MAX_COUNTER } from "shared/lib/repair";
 
 export const DEV_MONEY_AMOUNTS: ReadonlyArray<number> = [1_000, 100_000, 10_000_000];
 
-/** Pieces of every material that some gear needs, added by one "materials" command. */
+/** Pieces of every ore and product, added by one "materials" command. */
 export const DEV_MATERIAL_AMOUNT = 30;
 
 export type DevCommand =
@@ -53,14 +53,8 @@ export function applyDevCommand(data: ProfileData, command: DevCommand): void {
 			data.gear.equipped[slot] = items[items.size() - 1].id;
 		}
 	} else if (command.kind === "materials") {
-		// Each material once, however many items use it.
-		const ids = new Set<ResourceId>();
-		for (const slot of GEAR_SLOTS) {
-			for (const def of GEAR_BY_SLOT[slot]) {
-				materialList(def.materials).forEach((entry) => ids.add(entry.id));
-			}
-		}
-		for (const id of ids) {
+		// Every ore and product: enough to try the machines (ore) and the gear shop (ingots, parts) at once.
+		for (const id of RESOURCE_IDS) {
 			data.warehouse[id] = math.min((data.warehouse[id] ?? 0) + DEV_MATERIAL_AMOUNT, MAX_COUNTER);
 		}
 	} else {
