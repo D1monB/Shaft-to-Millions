@@ -10,7 +10,9 @@ import {
 	STAGE_VALUE,
 } from "shared/config/line";
 import {
+	LineMove,
 	LineState,
+	MAX_LINE_MOVES,
 	advanceLine,
 	advanceOffline,
 	applyBuyLineMachine,
@@ -389,6 +391,48 @@ class LineTests {
 		Assert.equal(10, lineIncome(10, math.huge));
 		Assert.equal(0, lineIncome(-5, 2));
 		Assert.equal(0, lineIncome(0 / 0, 2));
+	}
+
+	@Test
+	public movesReportRawOreAndMachineOutputs() {
+		// No machines: raw ore leaves the start of the belt (from = -1) toward the SellStation.
+		const raw = lineWith(0);
+		raw.intake.push("copper", "iron");
+		const rawMoves: LineMove[] = [];
+		advanceLine(raw, BELT_SECONDS_PER_ITEM * 2, valueOf, never, rawMoves);
+		Assert.equal(rawMoves.size(), 2);
+		Assert.equal(rawMoves[0].ore, "copper");
+		Assert.equal(rawMoves[0].from, -1);
+
+		// Two machines: the intake feeds machine 0, then machine 0's output moves on (from = 0).
+		const state = lineWith(2);
+		state.intake.push("copper");
+		const moves: LineMove[] = [];
+		advanceLine(state, 0, valueOf, never, moves);
+		Assert.equal(moves.size(), 1);
+		Assert.equal(moves[0].from, -1);
+		const later: LineMove[] = [];
+		advanceLine(state, LINE_MACHINES[0].seconds, valueOf, never, later);
+		Assert.true(later.some((move) => move.from === 0 && move.ore === "copper"));
+	}
+
+	@Test
+	public movesAreCappedAndOptional() {
+		const state = lineWith(0);
+		for (let i = 0; i < MAX_LINE_MOVES * 3; i++) {
+			state.intake.push("copper");
+		}
+		const moves: LineMove[] = [];
+		advanceLine(state, LINE_MAX_STEP, valueOf, never, moves);
+		Assert.true(moves.size() <= MAX_LINE_MOVES);
+		// Without a list the money is the same: visuals never change the result.
+		const a = lineWith(1);
+		const b = lineWith(1);
+		a.intake.push("iron", "iron");
+		b.intake.push("iron", "iron");
+		const withMoves = advanceLine(a, LINE_MAX_STEP, valueOf, never, []);
+		const without = advanceLine(b, LINE_MAX_STEP, valueOf, never);
+		Assert.equal(withMoves.money, without.money);
 	}
 }
 

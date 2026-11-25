@@ -10,6 +10,7 @@ export {
 	isLineIdle,
 	itemValue,
 	lineIncome,
+	MAX_LINE_MOVES,
 	machineAction,
 	newLineState,
 	nextLineMachine,
@@ -22,6 +23,7 @@ export {
 export type {
 	BuyLineMachineResult,
 	LineMachineState,
+	LineMove,
 	LineState,
 	LineTickResult,
 	LineUpgradeResult,
@@ -30,6 +32,14 @@ export type {
 	OreValueOf,
 	RandomFn,
 } from "./line";
-export { LINE_DISTANCE, UPGRADE_LINE_MACHINE_REMOTE } from "./network";
+export {
+	BELT_PATH_VALUE,
+	ITEM_TEMPLATES_FOLDER,
+	LINE_DISTANCE,
+	LINE_FLOW_REMOTE,
+	UPGRADE_LINE_MACHINE_REMOTE,
+} from "./network";
 export { gapAround, splitStretch } from "./belt-gap";
 export type { Span } from "./belt-gap";
+export { nearestIndex, orderChain, parseBeltPath, pathBetween, routeFor } from "./belt-path";
+export type { BeltRoute, StoredBeltPath, Vec3 } from "./belt-path";

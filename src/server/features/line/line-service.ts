@@ -1,12 +1,15 @@
 // The tycoon line on the server (decisions 027): choosing a plot, building it for its owner, buying machines and
 // dropping ore through ProximityPrompts, upgrades through a remote, the production tick and the offline run.
 // Everything that moves value happens here; the client sees the result in its view and in the built plot.
-import { Players } from "@rbxts/services";
+import { Players, ReplicatedStorage, ServerStorage } from "@rbxts/services";
 import { LINE_MACHINES } from "shared/config/line";
 import { PLOT_ATTRIBUTES } from "shared/config/map-contract";
-import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
+import { ORES, ORE_IDS, OreId, isOreId } from "shared/config/ores";
 import {
+	ITEM_TEMPLATES_FOLDER,
 	LINE_DISTANCE,
+	LINE_FLOW_REMOTE,
+	LineMove,
 	UPGRADE_LINE_MACHINE_REMOTE,
 	advanceLine,
 	advanceOffline,
@@ -35,7 +38,7 @@ import {
 import { getSellMultiplier } from "server/features/selling";
 import { notify } from "server/lib/notify";
 import { getRootPosition } from "server/lib/proximity";
-import { logAbuse, onClientRequest } from "server/lib/remotes";
+import { declareUnreliableClientEvent, logAbuse, onClientRequest } from "server/lib/remotes";
 import { buildSign } from "./buy-signs";
 import { Plot, buildBase, clearBase, loadPlots, placeMachine, signCFrame, slotCFrame, spawnPosition } from "./plots";
 
@@ -434,9 +437,57 @@ function tickPlayer(player: Player, seconds: number): void {
 	if (isLineIdle(data.line)) {
 		return;
 	}
-	const result = advanceLine(data.line, seconds, valueOf, roll);
+	const moves: LineMove[] = [];
+	const result = advanceLine(data.line, seconds, valueOf, roll, moves);
 	credit(player, data, result.money);
 	markDirty(player);
+	broadcastFlow(player, moves);
+}
+
+let flowEvent: UnreliableRemoteEvent | undefined;
+
+/**
+ * Tells every client what moved on this player's line, so items can ride the belt on screen. Visuals only: the
+ * message may be lost, and clients never send anything back. Ore ids go as their index in ORE_IDS (smaller packets).
+ */
+function broadcastFlow(player: Player, moves: ReadonlyArray<LineMove>): void {
+	const plot = plotOf.get(player);
+	const index = plot?.model.GetAttribute(PLOT_ATTRIBUTES.PlotIndex);
+	if (flowEvent === undefined || moves.size() === 0 || !typeIs(index, "number")) {
+		return;
+	}
+	const flat: number[] = [];
+	for (const move of moves) {
+		const oreIndex = ORE_IDS.indexOf(move.ore as OreId);
+		if (oreIndex >= 0) {
+			flat.push(oreIndex, move.from);
+		}
+	}
+	if (flat.size() > 0) {
+		flowEvent.FireAllClients(index, flat);
+	}
+}
+
+/**
+ * The map author keeps the item models in ServerStorage, which clients cannot see. A copy goes to ReplicatedStorage
+ * once at start (78 small models), so clients can show them on the belt.
+ */
+function publishItemTemplates(): void {
+	const source = ServerStorage.FindFirstChild(ITEM_TEMPLATES_FOLDER);
+	if (source === undefined) {
+		warn("[line] ServerStorage.ItemTemplates not found: the belt shows no items");
+		return;
+	}
+	if (ReplicatedStorage.FindFirstChild(ITEM_TEMPLATES_FOLDER) === undefined) {
+		const copy = source.Clone();
+		// Only the looks go to clients: any script inside a model stays on the server.
+		for (const descendant of copy.GetDescendants()) {
+			if (descendant.IsA("LuaSourceContainer")) {
+				descendant.Destroy();
+			}
+		}
+		copy.Parent = ReplicatedStorage;
+	}
 }
 
 function onLoaded(player: Player): void {
@@ -465,6 +516,8 @@ function onLoaded(player: Player): void {
 }
 
 export function startLineService(): void {
+	flowEvent = declareUnreliableClientEvent(LINE_FLOW_REMOTE);
+	publishItemTemplates();
 	plots = loadPlots();
 	for (const plot of plots) {
 		plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);

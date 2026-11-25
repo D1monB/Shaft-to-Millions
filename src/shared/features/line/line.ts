@@ -207,6 +207,27 @@ export function itemValue(state: LineState, ore: string, lastIndex: number, valu
 
 // ---- processing ----
 
+/**
+ * One item leaving a place on the line, for the belt visuals only (the money never depends on it).
+ * `from` = -1: raw ore leaving the start of the belt; `from` = i: an item leaving machine i (its stage is i + 1).
+ */
+export interface LineMove {
+	readonly ore: string;
+	readonly from: number;
+}
+
+/**
+ * At most this many moves are reported per step: a visual hint, not a log. It keeps one LineFlow message well under
+ * the ~900 byte limit of an UnreliableRemoteEvent (larger messages are dropped whole).
+ */
+export const MAX_LINE_MOVES = 24;
+
+function report(moves: LineMove[] | undefined, ore: string, from: number): void {
+	if (moves !== undefined && moves.size() < MAX_LINE_MOVES) {
+		moves.push({ ore, from });
+	}
+}
+
 export interface LineTickResult {
 	/** Money from items sold at the end of the line (whole dollars). */
 	readonly money: number;
@@ -219,11 +240,18 @@ export interface LineTickResult {
  * at most one machine per step and a machine sees the space freed by the next one. A machine whose next queue is
  * full stops (keeps its item), it never throws ore away. Before the machines, the intake feeds the first machine, or
  * with no machine the raw ore rides the belt to the SellStation.
+ * @param moves optional list that receives what left where in this step (belt visuals)
  */
-export function advanceLine(state: LineState, seconds: number, valueOf: OreValueOf, random: RandomFn): LineTickResult {
+export function advanceLine(
+	state: LineState,
+	seconds: number,
+	valueOf: OreValueOf,
+	random: RandomFn,
+	moves?: LineMove[],
+): LineTickResult {
 	const dt = isFiniteNumber(seconds) ? math.clamp(seconds, 0, LINE_MAX_STEP) : 0;
 	// The intake first: ore just dropped on the belt reaches the first machine in the same step.
-	const raw = feedFromIntake(state, dt, valueOf);
+	const raw = feedFromIntake(state, dt, valueOf, moves);
 	const last = state.machines.size() - 1;
 	let money = raw.money;
 	let sold = raw.sold;
@@ -243,6 +271,7 @@ export function advanceLine(state: LineState, seconds: number, valueOf: OreValue
 			const outputs = random() < upgradeValue("duplicate", machine.duplicate) ? 2 : 1;
 			if (i === last) {
 				const ore = machine.queue.remove(0) as string;
+				report(moves, ore, i);
 				const value = itemValue(state, ore, i, valueOf);
 				if (value !== undefined) {
 					money += math.round(value * outputs);
@@ -256,6 +285,7 @@ export function advanceLine(state: LineState, seconds: number, valueOf: OreValue
 					break;
 				}
 				const ore = machine.queue.remove(0) as string;
+				report(moves, ore, i);
 				for (let n = 0; n < math.min(outputs, room); n++) {
 					target.queue.push(ore);
 				}
@@ -270,13 +300,15 @@ export function advanceLine(state: LineState, seconds: number, valueOf: OreValue
 }
 
 /** The intake: ore moves onto the first machine as far as its queue has room, or sells raw without machines. */
-function feedFromIntake(state: LineState, dt: number, valueOf: OreValueOf): LineTickResult {
+function feedFromIntake(state: LineState, dt: number, valueOf: OreValueOf, moves?: LineMove[]): LineTickResult {
 	const first = state.machines[0];
 	if (first !== undefined) {
 		state.beltProgress = 0;
 		const room = queueLimit(state, 0) - first.queue.size();
 		for (let n = 0; n < room && state.intake.size() > 0; n++) {
-			first.queue.push(state.intake.remove(0) as string);
+			const ore = state.intake.remove(0) as string;
+			report(moves, ore, -1);
+			first.queue.push(ore);
 		}
 		return { money: 0, sold: 0 };
 	}
@@ -289,6 +321,7 @@ function feedFromIntake(state: LineState, dt: number, valueOf: OreValueOf): Line
 	state.beltProgress += dt;
 	while (state.beltProgress >= BELT_SECONDS_PER_ITEM && state.intake.size() > 0) {
 		const ore = state.intake.remove(0) as string;
+		report(moves, ore, -1);
 		const value = itemValue(state, ore, -1, valueOf);
 		if (value !== undefined) {
 			money += math.round(value);

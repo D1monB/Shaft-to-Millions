@@ -3,9 +3,11 @@
 // when a player claims a plot, the belt and the SellStation are built there, and each machine appears only after it
 // is bought. A plot without its own Factory uses the first plot's one, placed the same way relative to its Base.
 // The place file is never changed: everything here exists only while the server runs.
-import { ServerStorage, Workspace } from "@rbxts/services";
 import { PLOTS, PLOT_ATTRIBUTES } from "shared/config/map-contract";
-import { computeFills, layFiller, SlotFill } from "./belt-fill";
+import { HttpService, ServerStorage, Workspace } from "@rbxts/services";
+import { LINE_MACHINES } from "shared/config/line";
+import { BELT_PATH_VALUE } from "shared/features/line";
+import { BeltPath, computeBeltPath, computeFills, layFiller, SlotFill } from "./belt-fill";
 
 interface Layout {
 	/** The template Factory (in ServerStorage), never parented to the map. */
@@ -16,6 +18,8 @@ interface Layout {
 	readonly machines: ReadonlyMap<number, Model>;
 	/** Belt filler and sign spot for every machine place, in template space (shared by plots with one template). */
 	readonly fills: ReadonlyMap<number, SlotFill>;
+	/** The belt as one ordered path (template space), for the item visuals on clients. */
+	readonly path?: BeltPath;
 }
 
 export interface Plot {
@@ -104,6 +108,7 @@ export function loadPlots(): Plot[] {
 	}
 	// Filler geometry is worked out once per template Factory (plots without their own share the first one).
 	const fillsOf = new Map<Instance, Map<number, SlotFill>>();
+	const pathOf = new Map<Instance, BeltPath | undefined>();
 	const fillsFor = (factory: Instance, base: BasePart, machines: Map<number, Model>) => {
 		let fills = fillsOf.get(factory);
 		if (fills === undefined) {
@@ -127,7 +132,11 @@ export function loadPlots(): Plot[] {
 		const transform = own.has(model) ? new CFrame() : base.CFrame.mul(sharedBase.CFrame.Inverse());
 		const machines = machinesOf(factory);
 		const fills = fillsFor(factory, own.has(model) ? base : sharedBase, machines);
-		plots.push({ model, base, layout: { factory, transform, machines, fills }, placed: new Map() });
+		if (!pathOf.has(factory)) {
+			pathOf.set(factory, computeBeltPath(factory, machines, fills));
+		}
+		const path = pathOf.get(factory);
+		plots.push({ model, base, layout: { factory, transform, machines, fills, path }, placed: new Map() });
 	}
 	return plots;
 }
@@ -168,6 +177,7 @@ export function buildBase(plot: Plot): Folder {
 	const machines = new Instance("Folder");
 	machines.Name = PLOTS.Machines;
 	machines.Parent = built;
+	writeBeltPath(plot, built);
 	// Every machine place starts covered by belt; placeMachine takes the filler away.
 	const fills = new Instance("Folder");
 	fills.Name = FILLS_FOLDER;
@@ -181,6 +191,30 @@ export function buildBase(plot: Plot): Folder {
 	built.Parent = plot.model;
 	plot.built = built;
 	return built;
+}
+
+/**
+ * Stores the belt path of this plot (world space) as JSON in the built Factory, for the item visuals on clients:
+ * { p: [x, y, z, ...], m: [path index of machine 1..12, -1 if unknown], s: SellStation index }.
+ */
+function writeBeltPath(plot: Plot, built: Folder): void {
+	const path = plot.layout.path;
+	if (path === undefined) {
+		return;
+	}
+	const flat: number[] = [];
+	for (const point of path.points) {
+		const world = plot.layout.transform.PointToWorldSpace(point);
+		flat.push(math.round(world.X * 10) / 10, math.round(world.Y * 10) / 10, math.round(world.Z * 10) / 10);
+	}
+	const machineIndexes: number[] = [];
+	for (let stage = 1; stage <= LINE_MACHINES.size(); stage++) {
+		machineIndexes.push(path.machines.get(stage) ?? -1);
+	}
+	const value = new Instance("StringValue");
+	value.Name = BELT_PATH_VALUE;
+	value.Value = HttpService.JSONEncode({ p: flat, m: machineIndexes, s: path.sell });
+	value.Parent = built;
 }
 
 /** Puts the model of machine `stage` on the plot (after it is bought or when the owner's line is rebuilt). */

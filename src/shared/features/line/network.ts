@@ -6,3 +6,15 @@ export const UPGRADE_LINE_MACHINE_REMOTE = "UpgradeLineMachine";
 
 /** How close (studs) the player must be to a machine model of their own plot. Machine models are big. */
 export const LINE_DISTANCE = 30;
+
+/**
+ * Server -> all clients, unreliable, visuals only: (plotIndex: number, moves: number[]) where moves is a flat list
+ * [oreIndex, from, oreIndex, from, ...]; oreIndex into ORE_IDS, from as in LineMove (-1 = start of the belt).
+ */
+export const LINE_FLOW_REMOTE = "LineFlow";
+
+/** Name of the StringValue in a built plot Factory that holds the belt path as JSON (see plots.ts). */
+export const BELT_PATH_VALUE = "BeltPath";
+
+/** Folder in ReplicatedStorage with the map author's item models, copied from ServerStorage at server start. */
+export const ITEM_TEMPLATES_FOLDER = "ItemTemplates";

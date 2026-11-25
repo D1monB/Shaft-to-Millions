@@ -3,7 +3,7 @@
 // the nearest straight belt piece (same look, same ConveyorFlow and tags, so the author's animator moves them too),
 // and a sign beside the belt shows the machine and its price. Buying puts the machine in place of the filler.
 // Geometry is worked out once per template Factory, in template space; plots apply their own transform.
-import { gapAround, splitStretch, Span } from "shared/features/line";
+import { gapAround, nearestIndex, orderChain, splitStretch, Span } from "shared/features/line";
 import { PLOTS } from "shared/config/map-contract";
 
 /** One filler piece in template space: which belt part to copy, where it goes and its new size. */
@@ -150,4 +150,64 @@ export function layFiller(fill: SlotFill, transform: CFrame, parent: Instance): 
 		copy.CFrame = transform.mul(piece.cframe);
 		copy.Parent = parent;
 	}
+}
+
+/** The belt as one ordered path in template space, with where each machine and the SellStation sit on it. */
+export interface BeltPath {
+	/** Points on top of the belt, from the start of the line to its end. */
+	readonly points: ReadonlyArray<Vector3>;
+	/** Path index nearest to each machine place, by stage (1..12). */
+	readonly machines: ReadonlyMap<number, number>;
+	/** Path index nearest to the SellStation, or -1. */
+	readonly sell: number;
+}
+
+function toVec(point: Vector3) {
+	return { x: point.X, y: point.Y, z: point.Z };
+}
+
+/**
+ * Orders the belt pieces (the author's conveyors and our fillers) into one path starting at machine 1's place.
+ * Neighbouring pieces are at most one piece length apart, so that (plus a little) is the link distance.
+ */
+export function computeBeltPath(
+	factory: Instance,
+	machines: ReadonlyMap<number, Model>,
+	fills: ReadonlyMap<number, SlotFill>,
+): BeltPath | undefined {
+	const tops: Vector3[] = [];
+	let longest = 0;
+	for (const part of factory.FindFirstChild(PLOTS.Conveyors)?.GetDescendants() ?? []) {
+		if (part.IsA("BasePart")) {
+			tops.push(part.Position.add(new Vector3(0, part.Size.Y / 2, 0)));
+			longest = math.max(longest, part.Size.X, part.Size.Z);
+		}
+	}
+	for (const [, fill] of fills) {
+		for (const piece of fill.pieces) {
+			tops.push(piece.cframe.Position.add(new Vector3(0, piece.size.Y / 2, 0)));
+			longest = math.max(longest, piece.size.X, piece.size.Z);
+		}
+	}
+	const first = machines.get(1);
+	if (first === undefined || tops.size() === 0) {
+		return undefined;
+	}
+	const points = tops.map(toVec);
+	const order = orderChain(points, toVec(first.GetBoundingBox()[0].Position), longest + 1);
+	const ordered = order.map((index) => tops[index]);
+	const orderedVecs = ordered.map(toVec);
+	const machineIndex = new Map<number, number>();
+	for (const [stage, machine] of machines) {
+		machineIndex.set(stage, nearestIndex(orderedVecs, toVec(machine.GetBoundingBox()[0].Position)));
+	}
+	const sellStation = factory.FindFirstChild("SellStation");
+	const sell =
+		sellStation !== undefined && sellStation.IsA("Model")
+			? nearestIndex(orderedVecs, toVec(sellStation.GetPivot().Position))
+			: -1;
+	if (order.size() < tops.size()) {
+		warn(`[line] belt path covers ${order.size()} of ${tops.size()} belt pieces: some items may skip a stretch`);
+	}
+	return { points: ordered, machines: machineIndex, sell };
 }

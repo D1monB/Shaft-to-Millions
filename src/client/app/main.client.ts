@@ -7,6 +7,7 @@ import { startDrillController } from "client/features/drill";
 import { startEquipmentController } from "client/features/equipment";
 import { startGoalsController } from "client/features/goals";
 import { startLeaderboardController } from "client/features/leaderboard";
+import { startBeltVisuals } from "client/features/line";
 import { startMiningController } from "client/features/mining";
 import { startPetsController } from "client/features/pets";
 import { startProfileController } from "client/features/profile";
@@ -26,6 +27,7 @@ startChestsController();
 startEquipmentController();
 startPetsController();
 startDevtoolsController();
+startBeltVisuals();
 
 mountUi();
 startProfileController();
