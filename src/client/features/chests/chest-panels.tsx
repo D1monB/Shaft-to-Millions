@@ -25,6 +25,7 @@ import { toast } from "client/lib/toasts";
 import {
 	BuyButton,
 	Button,
+	ButtonRow,
 	COLORS,
 	CardStrip,
 	FONTS,
@@ -36,6 +37,7 @@ import {
 	Sunburst,
 	TEXT_SIZES,
 	rampSequence,
+	rowItemWidth,
 } from "client/lib/ui-kit";
 
 /** Robux is offered only when the server says so (fail closed, same as the server). */
@@ -199,8 +201,12 @@ function openChest(chestId: ChestId): void {
 	});
 }
 
-/** The reveal: the item tile bounces in over turning light rays, like the reference reward popup. */
-function ChestResult(props: { item: ItemId; chestId: ChestId }) {
+/**
+ * The reveal: the item tile bounces in over turning light rays on the left, its name and effect on the right.
+ * Side by side so it fits a landscape phone without scrolling (developer's feedback 2026-11-25); the buttons are in
+ * the pinned footer.
+ */
+function ChestResult(props: { item: ItemId }) {
 	const def = ITEMS[props.item];
 	const color = rarityColor(props.item);
 	const [scale, scaleMotion] = useMotion(0.3);
@@ -209,13 +215,13 @@ function ChestResult(props: { item: ItemId; chestId: ChestId }) {
 	}, [scaleMotion]);
 
 	return (
-		<>
-			<canvasgroup BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 230)} LayoutOrder={1}>
+		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 190)} LayoutOrder={1}>
+			<canvasgroup BackgroundTransparency={1} Size={new UDim2(0, 190, 0, 190)}>
 				<Sunburst zIndex={1} />
 				<frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={new UDim2(0.5, 0, 0.5, 0)}
-					Size={new UDim2(0, 150, 0, 150)}
+					Size={new UDim2(0, 120, 0, 120)}
 					BackgroundColor3={COLORS.white}
 					ZIndex={2}
 				>
@@ -227,38 +233,45 @@ function ChestResult(props: { item: ItemId; chestId: ChestId }) {
 						BackgroundTransparency={1}
 						Size={new UDim2(1, 0, 1, 0)}
 						Text={KIND_ICONS[def.kind]}
-						TextSize={84}
+						TextSize={68}
 						ZIndex={3}
 					/>
 				</frame>
 			</canvasgroup>
-			<Label
-				text={`${def.name} · ${RARITY_NAMES[def.rarity]}`}
-				display={true}
-				size={TEXT_SIZES.huge - 6}
-				color={color}
-				align="center"
+			<frame BackgroundTransparency={1} Position={new UDim2(0, 206, 0, 0)} Size={new UDim2(1, -206, 1, 0)}>
+				<uilistlayout
+					Padding={new UDim(0, 6)}
+					SortOrder={Enum.SortOrder.LayoutOrder}
+					VerticalAlignment={Enum.VerticalAlignment.Center}
+				/>
+				<Label text={def.name} display={true} size={TEXT_SIZES.huge - 6} color={color} order={1} />
+				<Label text={`${RARITY_NAMES[def.rarity]} · ${KIND_NAMES[def.kind]}`} tone="muted" order={2} />
+				<Label
+					text={effectText(def.kind, def.bonus)}
+					display={true}
+					size={TEXT_SIZES.large}
+					tone="gold"
+					order={3}
+				/>
+				<Label text="Уже в інвентарі. Надінь у меню «Речі»." tone="muted" size={TEXT_SIZES.small} order={4} />
+			</frame>
+		</frame>
+	);
+}
+
+/** Pinned under the reveal: take it, or open the same chest again. */
+function ChestResultFooter(props: { chestId: ChestId }) {
+	return (
+		<ButtonRow count={2} order={1}>
+			<Button text="Забрати!" onClick={closePanel} width={rowItemWidth(2)} order={1} />
+			<Button
+				text="Ще раз"
+				variant="secondary"
+				onClick={() => openChest(props.chestId)}
+				width={rowItemWidth(2)}
 				order={2}
 			/>
-			<Label text={KIND_NAMES[def.kind]} tone="muted" align="center" order={3} />
-			<Label
-				text={effectText(def.kind, def.bonus)}
-				display={true}
-				size={TEXT_SIZES.large}
-				tone="gold"
-				align="center"
-				order={4}
-			/>
-			<Label
-				text="Предмет уже в інвентарі. Надінь його в меню «Речі»."
-				tone="muted"
-				size={TEXT_SIZES.small + 1}
-				align="center"
-				order={5}
-			/>
-			<Button text="Забрати!" onClick={closePanel} height={60} textSize={TEXT_SIZES.large} order={6} />
-			<Button text="Ще раз" variant="secondary" onClick={() => openChest(props.chestId)} order={7} />
-		</>
+		</ButtonRow>
 	);
 }
 
@@ -282,7 +295,9 @@ export function startChestsController(): void {
 				key: `chest_result_${item}_${os.clock()}`,
 				title: "Новий предмет!",
 				icon: "🎉",
-				render: () => <ChestResult item={item} chestId={chestId} />,
+				accent: CHEST_ACCENTS[chestId],
+				render: () => <ChestResult item={item} />,
+				footer: () => <ChestResultFooter chestId={chestId} />,
 			});
 		}
 	});
