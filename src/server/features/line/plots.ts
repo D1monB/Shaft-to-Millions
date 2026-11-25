@@ -5,6 +5,7 @@
 // The place file is never changed: everything here exists only while the server runs.
 import { ServerStorage, Workspace } from "@rbxts/services";
 import { PLOTS, PLOT_ATTRIBUTES } from "shared/config/map-contract";
+import { computeFills, layFiller, SlotFill } from "./belt-fill";
 
 interface Layout {
 	/** The template Factory (in ServerStorage), never parented to the map. */
@@ -13,6 +14,8 @@ interface Layout {
 	readonly transform: CFrame;
 	/** Template machine models by stage (1..12). */
 	readonly machines: ReadonlyMap<number, Model>;
+	/** Belt filler and sign spot for every machine place, in template space (shared by plots with one template). */
+	readonly fills: ReadonlyMap<number, SlotFill>;
 }
 
 export interface Plot {
@@ -26,6 +29,11 @@ export interface Plot {
 }
 
 const TEMPLATE_FOLDER = "LineTemplates";
+const FILLS_FOLDER = "BeltFills";
+
+function fillName(stage: number): string {
+	return `Fill_${stage}`;
+}
 
 function plotModels(): Model[] {
 	const folder = Workspace.FindFirstChild(PLOTS.MapFolder)?.FindFirstChild(PLOTS.PlotsFolder);
@@ -44,6 +52,12 @@ function plotModels(): Model[] {
 function baseOf(plot: Model): BasePart | undefined {
 	const base = plot.FindFirstChild(PLOTS.Base);
 	return base !== undefined && base.IsA("BasePart") ? base : undefined;
+}
+
+/** Base.PlayerSpawn, or the middle of the Base. */
+function spawnOf(base: BasePart): Vector3 {
+	const spawn = base.FindFirstChild("PlayerSpawn");
+	return spawn !== undefined && spawn.IsA("Attachment") ? spawn.WorldPosition : base.Position;
 }
 
 /** Moves every model and part under `root` by `transform` (parts keep their attachments and children). */
@@ -88,6 +102,16 @@ export function loadPlots(): Plot[] {
 			factory.Parent = storage;
 		}
 	}
+	// Filler geometry is worked out once per template Factory (plots without their own share the first one).
+	const fillsOf = new Map<Instance, Map<number, SlotFill>>();
+	const fillsFor = (factory: Instance, base: BasePart, machines: Map<number, Model>) => {
+		let fills = fillsOf.get(factory);
+		if (fills === undefined) {
+			fills = computeFills(factory, machines, spawnOf(base));
+			fillsOf.set(factory, fills);
+		}
+		return fills;
+	};
 	const plots: Plot[] = [];
 	for (const model of models) {
 		const base = baseOf(model);
@@ -101,7 +125,9 @@ export function loadPlots(): Plot[] {
 			continue;
 		}
 		const transform = own.has(model) ? new CFrame() : base.CFrame.mul(sharedBase.CFrame.Inverse());
-		plots.push({ model, base, layout: { factory, transform, machines: machinesOf(factory) }, placed: new Map() });
+		const machines = machinesOf(factory);
+		const fills = fillsFor(factory, own.has(model) ? base : sharedBase, machines);
+		plots.push({ model, base, layout: { factory, transform, machines, fills }, placed: new Map() });
 	}
 	return plots;
 }
@@ -112,11 +138,15 @@ export function slotCFrame(plot: Plot, stage: number): CFrame | undefined {
 	return template !== undefined ? plot.layout.transform.mul(template.GetPivot()) : undefined;
 }
 
+/** Where the buy sign of machine `stage` stands on this plot, or undefined if no belt was found near it. */
+export function signCFrame(plot: Plot, stage: number): CFrame | undefined {
+	const fill = plot.layout.fills.get(stage);
+	return fill !== undefined ? plot.layout.transform.mul(fill.sign) : undefined;
+}
+
 /** The point players appear at on this plot: Base.PlayerSpawn, or the middle of the Base. */
 export function spawnPosition(plot: Plot): Vector3 {
-	const spawn = plot.base.FindFirstChild("PlayerSpawn");
-	const position = spawn !== undefined && spawn.IsA("Attachment") ? spawn.WorldPosition : plot.base.Position;
-	return position.add(new Vector3(0, 4, 0));
+	return spawnOf(plot.base).add(new Vector3(0, 4, 0));
 }
 
 /** Builds the belt and the SellStation (everything of the Factory except the machines). Machines come one by one. */
@@ -138,6 +168,16 @@ export function buildBase(plot: Plot): Folder {
 	const machines = new Instance("Folder");
 	machines.Name = PLOTS.Machines;
 	machines.Parent = built;
+	// Every machine place starts covered by belt; placeMachine takes the filler away.
+	const fills = new Instance("Folder");
+	fills.Name = FILLS_FOLDER;
+	fills.Parent = built;
+	for (const [stage, fill] of plot.layout.fills) {
+		const holder = new Instance("Folder");
+		holder.Name = fillName(stage);
+		layFiller(fill, plot.layout.transform, holder);
+		holder.Parent = fills;
+	}
 	built.Parent = plot.model;
 	plot.built = built;
 	return built;
@@ -150,6 +190,7 @@ export function placeMachine(plot: Plot, stage: number): Model | undefined {
 	if (template === undefined || folder === undefined || plot.placed.has(stage)) {
 		return plot.placed.get(stage);
 	}
+	plot.built?.FindFirstChild(FILLS_FOLDER)?.FindFirstChild(fillName(stage))?.Destroy();
 	const machine = template.Clone();
 	machine.PivotTo(plot.layout.transform.mul(template.GetPivot()));
 	machine.SetAttribute(PLOT_ATTRIBUTES.Bought, true);

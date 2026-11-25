@@ -36,7 +36,8 @@ import { getSellMultiplier } from "server/features/selling";
 import { notify } from "server/lib/notify";
 import { getRootPosition } from "server/lib/proximity";
 import { logAbuse, onClientRequest } from "server/lib/remotes";
-import { Plot, buildBase, clearBase, loadPlots, placeMachine, slotCFrame, spawnPosition } from "./plots";
+import { buildSign } from "./buy-signs";
+import { Plot, buildBase, clearBase, loadPlots, placeMachine, signCFrame, slotCFrame, spawnPosition } from "./plots";
 
 const TICK_SECONDS = 1;
 /** How close (studs) to a plot's spawn point the player must stand to claim it. */
@@ -131,6 +132,17 @@ function makeAnchor(parent: Instance, name: string, cframe: CFrame): BasePart {
 const DROP_KEYS = { keyboard: Enum.KeyCode.E, gamepad: Enum.KeyCode.ButtonX };
 const BUY_KEYS = { keyboard: Enum.KeyCode.F, gamepad: Enum.KeyCode.ButtonY };
 
+/** Runs a plot action for a player: rate limited, and a failure is logged instead of breaking the connection. */
+function guarded(player: Player, action: (player: Player) => void): void {
+	if (!promptLimiter.tryTake(player.UserId, os.clock())) {
+		return;
+	}
+	const [ok, err] = pcall(action, player);
+	if (!ok) {
+		warn(`[line] prompt failed: ${err}`);
+	}
+}
+
 function makePrompt(
 	parent: Instance,
 	action: string,
@@ -148,27 +160,58 @@ function makePrompt(
 	prompt.HoldDuration = 0;
 	prompt.MaxActivationDistance = LINE_DISTANCE - 4;
 	prompt.Parent = parent;
-	prompt.Triggered.Connect((player) => {
-		if (!promptLimiter.tryTake(player.UserId, os.clock())) {
-			return;
-		}
-		const [ok, err] = pcall(onTriggered, player);
-		if (!ok) {
-			warn(`[line] prompt failed: ${err}`);
-		}
-	});
+	prompt.Triggered.Connect((player) => guarded(player, onTriggered));
 }
 
-/** The slot of the next machine: an invisible anchor at its place with a "buy" prompt. Removed when all are bought. */
-function refreshBuySlot(plot: Plot, owned: number): void {
-	plot.built?.FindFirstChild("BuySlot")?.Destroy();
-	const def = LINE_MACHINES[owned];
-	const cframe = slotCFrame(plot, owned + 1);
-	if (plot.built === undefined || def === undefined || cframe === undefined) {
+const SIGNS_FOLDER = "BuySigns";
+
+/** Where a player must stand to buy machine `stage`: at its sign, or at its place if no sign could be put. */
+function buyPoint(plot: Plot, stage: number): Vector3 | undefined {
+	return (signCFrame(plot, stage) ?? slotCFrame(plot, stage))?.Position;
+}
+
+/**
+ * A sign beside every machine place that is not bought yet. Only the next one is active: F (gamepad Y), a click or
+ * a tap buys it. Rebuilt after every purchase (at most 12 small models).
+ */
+function refreshSigns(plot: Plot, owned: number): void {
+	plot.built?.FindFirstChild(SIGNS_FOLDER)?.Destroy();
+	if (plot.built === undefined) {
 		return;
 	}
-	const slot = makeAnchor(plot.built, "BuySlot", cframe);
-	makePrompt(slot, `Купити за ${formatMoney(def.price)}`, def.name, BUY_KEYS, (player) => buyNext(player, plot));
+	const folder = new Instance("Folder");
+	folder.Name = SIGNS_FOLDER;
+	folder.Parent = plot.built;
+	for (let index = owned; index < LINE_MACHINES.size(); index++) {
+		const def = LINE_MACHINES[index];
+		const stage = index + 1;
+		const at = signCFrame(plot, stage);
+		const active = index === owned;
+		if (at === undefined) {
+			// No belt near this place: keep the old invisible buy point, so the machine can still be bought.
+			const cframe = slotCFrame(plot, stage);
+			if (active && cframe !== undefined) {
+				const slot = makeAnchor(folder, `BuySlot_${stage}`, cframe);
+				makePrompt(slot, `Купити за ${formatMoney(def.price)}`, def.name, BUY_KEYS, (p) => buyNext(p, plot));
+			}
+			continue;
+		}
+		const { board } = buildSign(
+			`Sign_${stage}`,
+			at,
+			{ machineName: def.name, price: formatMoney(def.price), active, requires: LINE_MACHINES[index - 1]?.name },
+			folder,
+		);
+		if (!active) {
+			continue;
+		}
+		makePrompt(board, `Купити за ${formatMoney(def.price)}`, def.name, BUY_KEYS, (p) => buyNext(p, plot));
+		// A click or a tap on the board buys too (phones). The server learns who clicked from the engine, not the client.
+		const click = new Instance("ClickDetector");
+		click.MaxActivationDistance = LINE_DISTANCE - 4;
+		click.Parent = board;
+		click.MouseClick.Connect((player) => guarded(player, (p) => buyNext(p, plot)));
+	}
 }
 
 /** Builds the plot for its owner: belt and SellStation, every bought machine, the intake and the next slot. */
@@ -188,7 +231,7 @@ function buildFor(plot: Plot, data: ProfileData): void {
 		const intake = makeAnchor(built, "Intake", intakeAt);
 		makePrompt(intake, "Скинути руду із сумки", "Початок стрічки", DROP_KEYS, (player) => dropOre(player, plot));
 	}
-	refreshBuySlot(plot, data.line.machines.size());
+	refreshSigns(plot, data.line.machines.size());
 }
 
 // ---- prompt actions (server-side Triggered: the engine tells us who pressed it) ----
@@ -206,7 +249,7 @@ function ownData(player: Player, plot: Plot, at: Vector3 | undefined): ProfileDa
 function buyNext(player: Player, plot: Plot): void {
 	const current = getProfileData(player);
 	const nextStage = current !== undefined ? current.line.machines.size() + 1 : 0;
-	const data = ownData(player, plot, slotCFrame(plot, nextStage)?.Position);
+	const data = ownData(player, plot, buyPoint(plot, nextStage));
 	if (data === undefined) {
 		return;
 	}
@@ -225,7 +268,7 @@ function buyNext(player: Player, plot: Plot): void {
 	if (machine !== undefined) {
 		clearOfMachine(machine);
 	}
-	refreshBuySlot(plot, data.line.machines.size());
+	refreshSigns(plot, data.line.machines.size());
 	notify(player, `Збудовано: ${result.def.name}!`, "success");
 }
 

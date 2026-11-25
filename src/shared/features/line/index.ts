@@ -31,3 +31,5 @@ export type {
 	RandomFn,
 } from "./line";
 export { LINE_DISTANCE, UPGRADE_LINE_MACHINE_REMOTE } from "./network";
+export { gapAround, splitStretch } from "./belt-gap";
+export type { Span } from "./belt-gap";
