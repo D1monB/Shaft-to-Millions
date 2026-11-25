@@ -8,7 +8,7 @@ import { LAYERS } from "shared/config/layers";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { reachLayer, unlockCooldownLeft } from "shared/features/layers";
 import { RateLimiter } from "shared/lib/rate-limiter";
-import { resetMovementBaseline } from "server/features/movement";
+import { teleportCharacter } from "server/features/movement";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition } from "server/lib/proximity";
@@ -72,10 +72,8 @@ function onCharacterAdded(player: Player, character: Model): void {
 	// Wait one frame so the default spawn finishes before we move the character.
 	task.defer(() => {
 		if (character.Parent !== undefined) {
-			const target = position.add(new Vector3(0, 4, 0));
-			character.PivotTo(new CFrame(target));
-			// Our own move must not look like a teleport to the movement check.
-			resetMovementBaseline(player, target);
+			// Through movement, so our own move does not look like a teleport to the check.
+			teleportCharacter(player, position.add(new Vector3(0, 4, 0)));
 		}
 	});
 }

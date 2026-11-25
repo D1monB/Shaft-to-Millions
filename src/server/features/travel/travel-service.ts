@@ -4,7 +4,7 @@ import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { SURFACE, TRAVEL_REMOTE, canTravelTo, isTravelDestination, travelCooldownLeft } from "shared/features/travel";
 import { RateLimiter } from "shared/lib/rate-limiter";
-import { resetMovementBaseline } from "server/features/movement";
+import { teleportCharacter } from "server/features/movement";
 import { getProfileData } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
@@ -61,10 +61,8 @@ function handleTravel(player: Player, args: Array<unknown>): void {
 
 	// Start the pause only after a successful trip, so a missing map point never costs the player 30 s.
 	lastTravelAt.set(player, os.clock());
-	const target = position.add(new Vector3(0, 4, 0));
-	character.PivotTo(new CFrame(target));
-	// Our own move must not look like a teleport to the movement check.
-	resetMovementBaseline(player, target);
+	// Through movement, so our own move does not look like a teleport to the check.
+	teleportCharacter(player, position.add(new Vector3(0, 4, 0)));
 }
 
 export function startTravelService(): void {

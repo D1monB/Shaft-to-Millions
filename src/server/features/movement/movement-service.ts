@@ -41,13 +41,24 @@ export function setSpeedBonusProvider(provider: (player: Player) => number): voi
 }
 
 /**
- * Call right AFTER the server itself moves a character (plot spawn, camp respawn, fast travel) with the position it
- * was moved to. The check then waits for the character to arrive there before measuring again.
- * Why: otherwise the jump looks like a teleport and an honest player would be pulled back.
+ * The ONLY way server code should move a character (plot spawn, camp respawn, fast travel). It remembers where the
+ * character was, moves it, and makes the movement check wait for the client to report the new spot.
+ * Why: a bare PivotTo looks like a teleport to the check, and an honest player would be pulled back.
+ * Does nothing if the character is not in the world.
  */
-export function resetMovementBaseline(player: Player, target: Vector3): void {
+export function teleportCharacter(player: Player, target: Vector3): void {
+	const character = player.Character;
+	if (character === undefined || character.Parent === undefined) {
+		return;
+	}
+	const from = character.GetPivot().Position;
+	character.PivotTo(new CFrame(target));
 	states.delete(player);
-	const settling = beginSettle(target.X, target.Y, target.Z, os.clock());
+	const settling = beginSettle(
+		{ x: from.X, y: from.Y, z: from.Z },
+		{ x: target.X, y: target.Y, z: target.Z },
+		os.clock(),
+	);
 	if (settling !== undefined) {
 		pending.set(player, settling);
 	} else {
@@ -107,20 +118,20 @@ function checkPosition(player: Player): void {
 	// Right after a server teleport: wait for the client to report the new spot, then start over from there.
 	const settling = pending.get(player);
 	if (settling !== undefined) {
-		const verdict = settle(settling, sample.x, sample.y, sample.z, sample.time);
+		const verdict = settle(settling, sample, sample.time, walkSpeed);
 		if (verdict === "wait") {
 			return;
 		}
 		pending.delete(player);
 		if (verdict === "timeout") {
-			const target = new Vector3(settling.x, settling.y, settling.z);
+			const target = new Vector3(settling.target.x, settling.target.y, settling.target.z);
 			// Studio only warns, like the speed check (decision 028): Studio tools may move the character.
 			if (!RunService.IsStudio()) {
 				putAt(character, root, target);
 			}
 			states.set(player, { x: target.X, y: target.Y, z: target.Z, time: sample.time, strikes: 0 });
 			if (logLimiter.tryTake(player.UserId, os.clock())) {
-				warn(`[movement] user ${player.UserId} did not arrive at a server teleport target, put there`);
+				warn(`[movement] user ${player.UserId} left the path of a server teleport, put at its target`);
 			}
 			return;
 		}

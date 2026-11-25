@@ -356,5 +356,8 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **What:** after the server moves a character (plot spawn, camp respawn, fast travel) the movement check gets the
   target and skips samples until the character is within 12 studs of it (at most 2 s), then starts a new baseline
   there. A character that does not arrive in time is put at the target (live servers; Studio only warns).
+  The wait is not a free pass (exploit review): a sample is accepted only near the target or within walking reach
+  of the spot the character was teleported from; anything else is put at the target at once. Server code moves
+  characters only through `teleportCharacter` (movement feature), which records that spot.
 - **Why:** the client owns its character, so for a few frames after a server teleport the server still saw the old
   position; the check measured from it and flagged honest players on every join (would pull them back live).

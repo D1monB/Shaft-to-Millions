@@ -24,7 +24,7 @@ import { RateLimiter } from "shared/lib/rate-limiter";
 import { MAX_COUNTER } from "shared/lib/repair";
 import { isIntegerInRange } from "shared/lib/validate";
 import { hasRespawnCamp } from "server/features/layers";
-import { resetMovementBaseline } from "server/features/movement";
+import { teleportCharacter } from "server/features/movement";
 import {
 	getLoadedPlayers,
 	getProfileData,
@@ -78,12 +78,7 @@ function isNear(player: Player, position: Vector3 | undefined, distance: number)
 
 /** Moves a live character to a position without tripping the movement check. */
 function teleport(player: Player, position: Vector3): void {
-	const character = player.Character;
-	if (character === undefined || character.Parent === undefined) {
-		return;
-	}
-	character.PivotTo(new CFrame(position));
-	resetMovementBaseline(player, position);
+	teleportCharacter(player, position);
 }
 
 /**
