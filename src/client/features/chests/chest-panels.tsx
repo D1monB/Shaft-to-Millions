@@ -15,6 +15,7 @@ import {
 import { formatCount, formatPercent } from "shared/lib/format";
 import { registerHudStat } from "client/features/hud";
 import { useView } from "client/features/profile";
+import { ITEM_CARD_HEIGHT, ItemCard } from "client/lib/item-card";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText, rarityColor } from "client/lib/item-display";
 import { closePanel, openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
@@ -38,142 +39,6 @@ import {
 /** Robux is offered only when the server says so (fail closed, same as the server). */
 function robuxAllowed(): boolean {
 	return Players.LocalPlayer.GetAttribute(ROBUX_CHESTS_ALLOWED_ATTRIBUTE) === true;
-}
-
-const CARD_HEIGHT = 200;
-/** Height of the dark block under each card. */
-const CARD_DEPTH = 5;
-
-/** What is written on a rarity card. Kept apart from the surface so a legendary card can wrap it in a CanvasGroup. */
-function CardContent(props: { item: ItemId; chance: number }) {
-	const def = ITEMS[props.item];
-	const light = RARITY_LIGHT[def.rarity];
-	return (
-		<>
-			<textlabel
-				AnchorPoint={new Vector2(1, 0)}
-				Position={new UDim2(1, -8, 0, 8)}
-				Size={new UDim2(0, 60, 0, 26)}
-				BackgroundColor3={COLORS.outline}
-				BackgroundTransparency={0.15}
-				Font={FONTS.display}
-				Text={formatPercent(props.chance)}
-				TextSize={17}
-				TextColor3={light}
-				ZIndex={4}
-			>
-				<uicorner CornerRadius={RADIUS.small} />
-			</textlabel>
-			<textlabel
-				AnchorPoint={new Vector2(0.5, 0)}
-				BackgroundTransparency={1}
-				Position={new UDim2(0.5, 0, 0, 30)}
-				Size={new UDim2(0, 80, 0, 58)}
-				Text={KIND_ICONS[def.kind]}
-				TextSize={48}
-				ZIndex={3}
-			/>
-			<textlabel
-				BackgroundTransparency={1}
-				Position={new UDim2(0, 6, 0, 92)}
-				Size={new UDim2(1, -12, 0, 26)}
-				Font={FONTS.display}
-				Text={def.name}
-				TextColor3={COLORS.white}
-				TextScaled={true}
-				ZIndex={3}
-			>
-				<uitextsizeconstraint MaxTextSize={21} MinTextSize={12} />
-				<uistroke Color={COLORS.outline} Thickness={2} />
-			</textlabel>
-			<frame
-				AnchorPoint={new Vector2(0.5, 0)}
-				Position={new UDim2(0.5, 0, 0, 120)}
-				Size={new UDim2(0, 0, 0, 22)}
-				AutomaticSize={Enum.AutomaticSize.X}
-				BackgroundColor3={COLORS.outline}
-				BackgroundTransparency={0.25}
-				ZIndex={3}
-			>
-				<uicorner CornerRadius={RADIUS.round} />
-				<uipadding PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} />
-				<textlabel
-					BackgroundTransparency={1}
-					Size={new UDim2(0, 0, 1, 0)}
-					AutomaticSize={Enum.AutomaticSize.X}
-					Font={FONTS.display}
-					Text={RARITY_NAMES[def.rarity].upper()}
-					TextSize={13}
-					TextColor3={light}
-					ZIndex={4}
-				/>
-			</frame>
-			<frame
-				BackgroundColor3={COLORS.black}
-				BackgroundTransparency={0.8}
-				BorderSizePixel={0}
-				Position={new UDim2(0, 10, 0, 150)}
-				Size={new UDim2(1, -20, 0, 2)}
-				ZIndex={3}
-			/>
-			<textlabel
-				BackgroundTransparency={1}
-				Position={new UDim2(0, 6, 0, 154)}
-				Size={new UDim2(1, -12, 0, 38)}
-				Font={FONTS.display}
-				Text={effectText(def.kind, def.bonus)}
-				TextColor3={COLORS.white}
-				TextScaled={true}
-				TextWrapped={true}
-				ZIndex={3}
-			>
-				<uitextsizeconstraint MaxTextSize={15} MinTextSize={10} />
-				<uistroke Color={COLORS.outline} Thickness={1.5} />
-			</textlabel>
-		</>
-	);
-}
-
-/**
- * One possible reward: a card coloured by rarity with the chance in the corner.
- * The legendary card turns light rays behind its content; rays need a CanvasGroup to be clipped to the card.
- */
-function RarityCard(props: { item: ItemId; chance: number; order: number }) {
-	const rarity = ITEMS[props.item].rarity;
-	const ramp = RARITY_RAMPS[rarity];
-	const legendary = rarity === "legendary";
-	const faceSize = new UDim2(1, 0, 1, -CARD_DEPTH);
-	return (
-		<frame BackgroundTransparency={1} LayoutOrder={props.order}>
-			<frame
-				BackgroundColor3={COLORS.outline}
-				BorderSizePixel={0}
-				Position={new UDim2(0, 0, 0, CARD_DEPTH)}
-				Size={faceSize}
-			>
-				<uicorner CornerRadius={RADIUS.large} />
-			</frame>
-			{legendary ? (
-				<canvasgroup BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={faceSize}>
-					<uicorner CornerRadius={RADIUS.large} />
-					<uigradient Rotation={90} Color={rampSequence(ramp)} />
-					<Sunburst zIndex={1} />
-					<CardContent item={props.item} chance={props.chance} />
-				</canvasgroup>
-			) : (
-				<frame BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={faceSize}>
-					<uicorner CornerRadius={RADIUS.large} />
-					<uigradient Rotation={90} Color={rampSequence(ramp)} />
-					<CardContent item={props.item} chance={props.chance} />
-				</frame>
-			)}
-			{/* The outline sits on its own layer: a CanvasGroup would cut a stroke drawn on itself. */}
-			<frame BackgroundTransparency={1} Size={faceSize} ZIndex={5}>
-				<uicorner CornerRadius={RADIUS.large} />
-				<uistroke Color={COLORS.outline} Thickness={STROKE.thick} />
-			</frame>
-		</frame>
-	);
 }
 
 /** "🎁 Предметів у сховищі: 14 / 60" with a small bar, centred like in the reference. */
@@ -278,13 +143,21 @@ function ChestPanel(props: { chestId: ChestId }) {
 			<Card order={3}>
 				<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 0)} AutomaticSize={Enum.AutomaticSize.Y}>
 					<uigridlayout
-						CellSize={new UDim2(1 / 3, -8, 0, CARD_HEIGHT)}
+						CellSize={new UDim2(1 / 3, -8, 0, ITEM_CARD_HEIGHT)}
 						CellPadding={new UDim2(0, 12, 0, 14)}
 						HorizontalAlignment={Enum.HorizontalAlignment.Center}
 						SortOrder={Enum.SortOrder.LayoutOrder}
 					/>
 					{chestOdds(props.chestId).map((line, index) => (
-						<RarityCard key={`odds_${index}`} item={line.item} chance={line.chance} order={index} />
+						<ItemCard
+							key={`odds_${index}`}
+							item={line.item}
+							topRight={{
+								text: formatPercent(line.chance),
+								color: RARITY_LIGHT[ITEMS[line.item].rarity],
+							}}
+							order={index}
+						/>
 					))}
 				</frame>
 			</Card>

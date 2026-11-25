@@ -10,6 +10,8 @@ export { Label } from "./label";
 export { ButtonRow, Card, Stack, rowItemWidth } from "./layout";
 export { Panel } from "./panel";
 export { ProgressBar } from "./progress-bar";
+export { Tabs } from "./tabs";
+export type { TabItem } from "./tabs";
 export {
 	COLORS,
 	DEFAULT_PLAYER_COLOR,

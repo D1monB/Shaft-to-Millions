@@ -185,3 +185,9 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   "Chest" dock button (chests open at their stands).
 - **Chest panel:** rewards as rarity cards in a grid (chance, icon, name, rarity, effect), the legendary card with turning
   rays, a storage pill and a big green open button; the odds stay visible before any payment (Roblox policy).
+- **Inventory:** tabs by category (pets, speed auras, pickaxe auras) with counts; one rarity card per kind of item with
+  "×N" for copies (`groupInventory`, unit tested), equipped items first with a green outline and "✔ НАДІТО". The rarity card
+  (`client/lib/item-card.tsx`) is shared with the chest odds grid.
+- **Phones first:** the close cross is drawn (BuilderSans has no "✕"), the close button stays inside the board, stat tiles
+  start a second column only when a short screen has no room, and on touch screens the dock sits higher, away from the jump
+  button.
