@@ -21,7 +21,7 @@ import { NameCache, Scores, WrittenScores, emptySnapshot, readBoards, writeScore
 import { createMemoryStore, createOrderedStore } from "./stores";
 import { LeaderboardStore } from "./ports";
 
-const FALLBACK_NAME = "Гравець";
+const FALLBACK_NAME = "Player";
 
 /** Extra studs below the feet the ground raycast reaches (slopes, stairs, a small hop). */
 const GROUND_SLACK_STUDS = 3;

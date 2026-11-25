@@ -4,8 +4,8 @@ import { shoesFor, walkSpeedFor } from "./speed";
 
 class SpeedTests {
 	@Test
-	public shoesGetFasterAndStartAtRobloxDefault() {
-		Assert.equal(SHOES[0].walkSpeed, 16);
+	public shoesGetFasterAndStartAboveRobloxDefault() {
+		Assert.equal(SHOES[0].walkSpeed, 20);
 		Assert.equal(SHOES[0].price, 0);
 		for (let i = 1; i < SHOES.size(); i++) {
 			Assert.true(SHOES[i].walkSpeed > SHOES[i - 1].walkSpeed);
@@ -15,8 +15,8 @@ class SpeedTests {
 
 	@Test
 	public auraMultiplies() {
-		Assert.equal(walkSpeedFor(SHOES[0].id, 0), 16);
-		Assert.equal(walkSpeedFor(SHOES[0].id, 0.25), 20);
+		Assert.equal(walkSpeedFor(SHOES[0].id, 0), 20);
+		Assert.equal(walkSpeedFor(SHOES[0].id, 0.25), 25);
 	}
 
 	@Test
@@ -27,8 +27,8 @@ class SpeedTests {
 
 	@Test
 	public badInputFallsBackSafely() {
-		Assert.equal(walkSpeedFor("", 0 / 0), 16);
-		Assert.equal(walkSpeedFor("bag_sack", -1), 16);
+		Assert.equal(walkSpeedFor("", 0 / 0), 20);
+		Assert.equal(walkSpeedFor("bag_sack", -1), 20);
 		Assert.equal(shoesFor(SHOES[2].id), SHOES[2]);
 	}
 }

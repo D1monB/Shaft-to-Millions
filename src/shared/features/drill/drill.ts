@@ -1,7 +1,8 @@
 // Pure auto-drill rules: production over time (online and capped offline), the buffer, and delivery to
-// the warehouse by conveyor. Time is passed in as unix seconds.
+// the hopper of the player's line by conveyor (decisions 027). Time is passed in as unix seconds.
 import { DRILLS, MAX_OFFLINE_DRILL_SECONDS } from "shared/config/drills";
 import { ORES, OreId } from "shared/config/ores";
+import { LineState, depositOre } from "shared/features/line";
 
 export interface DrillState {
 	oreId: OreId;
@@ -9,7 +10,7 @@ export interface DrillState {
 	lastTick: number;
 	/** Seconds already worked toward the next piece. */
 	progress: number;
-	/** Pieces waiting for space in the warehouse. */
+	/** Pieces waiting for space in the line hopper (the start of the belt). */
 	buffer: number;
 }
 
@@ -25,7 +26,7 @@ export function isDrillUnlocked(layer: number, deepestLayer: number): boolean {
 /** The drill can only drill what the player could mine by hand: the right layer and a good enough pickaxe. */
 export function canDrillOre(layer: number, oreId: OreId, pickaxeTier: number): boolean {
 	const ore = ORES[oreId];
-	return ore.layer === layer && ore.requiredTier <= pickaxeTier;
+	return ore.layer === layer && ore.requiredTier <= pickaxeTier && ore.drillable !== false;
 }
 
 export function secondsPerPiece(layer: number, oreId: OreId): number {
@@ -58,21 +59,10 @@ export function advanceDrill(state: DrillState, layer: number, now: number): num
 	return produced;
 }
 
-/** Conveyor: moves the buffer into the warehouse, limited by `freeSpace`. Returns pieces moved. */
-export function deliverDrill(
-	state: DrillState,
-	warehouse: { [id: string]: number | undefined },
-	freeSpace: number,
-): number {
-	// Luau's math.min/max ignore NaN in some argument orders, so reject non-positive and NaN space explicitly.
-	if (!(freeSpace > 0)) {
-		return 0;
-	}
-	const moved = math.min(state.buffer, math.floor(freeSpace));
-	if (moved > 0) {
-		warehouse[state.oreId] = (warehouse[state.oreId] ?? 0) + moved;
-		state.buffer -= moved;
-	}
+/** Conveyor: moves the buffer onto the start of the belt as far as it has room. Returns pieces moved. */
+export function deliverDrill(state: DrillState, line: LineState): number {
+	const moved = depositOre(line, { [state.oreId]: state.buffer }, [state.oreId]).get(state.oreId) ?? 0;
+	state.buffer -= moved;
 	return moved;
 }
 

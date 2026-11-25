@@ -1,8 +1,9 @@
+import { nameKeys, ref, text } from "shared/features/i18n";
 import { CollectionService, Workspace } from "@rbxts/services";
 import { DRILLS, drillKey } from "shared/config/drills";
 import { LAYER_COUNT, oresOfLayer } from "shared/config/layers";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
-import { ORES, isOreId } from "shared/config/ores";
+import { isOreId } from "shared/config/ores";
 import {
 	BUY_DRILL_REMOTE,
 	DRILL_DISTANCE,
@@ -14,7 +15,6 @@ import {
 	newDrillState,
 	selectDrillOre,
 } from "shared/features/drill";
-import { storageFree, warehouseCapacity } from "shared/features/factory";
 import { getPickaxe } from "shared/features/mining";
 import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
@@ -44,12 +44,8 @@ function tickDrills(data: ProfileData): [number, number] {
 			continue;
 		}
 		produced += advanceDrill(state, layer, time);
-		// Conveyor to the warehouse. Whatever does not fit stays in the drill's buffer.
-		delivered += deliverDrill(
-			state,
-			data.warehouse,
-			storageFree(data.warehouse, warehouseCapacity(data.levels.warehouse)),
-		);
+		// Conveyor to the line hopper. Whatever does not fit stays in the drill's buffer.
+		delivered += deliverDrill(state, data.line);
 	}
 	return [produced, delivered];
 }
@@ -74,19 +70,19 @@ function handleBuy(player: Player, args: Array<unknown>): void {
 		return;
 	}
 	if (data.money < def.price) {
-		notify(player, "Не вистачає грошей.", "error");
+		notify(player, text("common.notEnoughMoney"), "error");
 		return;
 	}
 	const tier = getPickaxe(data.gear.equipped.pickaxe).tier;
 	const firstOre = oresOfLayer(layer).find((oreId) => canDrillOre(layer, oreId, tier));
 	if (firstOre === undefined) {
-		notify(player, "Твоя кирка не бере жодної руди цього шару.", "error");
+		notify(player, text("drill.pickaxeTooWeak"), "error");
 		return;
 	}
 	data.money -= def.price;
 	data.drills[drillKey(layer)] = newDrillState(firstOre, now());
 	markDirty(player);
-	notify(player, `Збудовано: ${def.name}! Конвеєр везе руду на склад.`, "success");
+	notify(player, text("drill.built", { name: ref(nameKeys.drill(layer)) }), "success");
 }
 
 function handleSelect(player: Player, args: Array<unknown>): void {
@@ -105,15 +101,15 @@ function handleSelect(player: Player, args: Array<unknown>): void {
 		return;
 	}
 	if (!canDrillOre(layer, oreId, getPickaxe(data.gear.equipped.pickaxe).tier)) {
-		notify(player, `${ORES[oreId].name}: потрібна краща кирка.`, "error");
+		notify(player, text("drill.needPickaxe", { ore: ref(nameKeys.ore(oreId)) }), "error");
 		return;
 	}
 	tickDrills(data); // count what was produced with the old ore and try to empty the buffer first
 	if (selectDrillOre(state, oreId, now())) {
 		markDirty(player);
-		notify(player, `Бур тепер добуває: ${ORES[oreId].name}.`, "success");
+		notify(player, text("drill.selected", { ore: ref(nameKeys.ore(oreId)) }), "success");
 	} else {
-		notify(player, "Спершу звільни склад: у бурі ще лежить руда.", "error");
+		notify(player, text("drill.clearFirst"), "error");
 	}
 }
 
@@ -121,7 +117,7 @@ export function startDrillService(): void {
 	onClientRequest(BUY_DRILL_REMOTE, new RateLimiter(3, 1), handleBuy);
 	onClientRequest(SELECT_DRILL_ORE_REMOTE, new RateLimiter(6, 2), handleSelect);
 
-	const addPrompt = (instance: Instance) => ensurePrompt(instance, "Відкрити", "Автобур");
+	const addPrompt = (instance: Instance) => ensurePrompt(instance, text("common.open"), text("drill.prompt"));
 	CollectionService.GetTagged(TAGS.DrillSite).forEach(addPrompt);
 	CollectionService.GetInstanceAddedSignal(TAGS.DrillSite).Connect(addPrompt);
 
@@ -132,7 +128,7 @@ export function startDrillService(): void {
 		}
 		const [produced] = tickDrills(data);
 		if (produced > 0) {
-			notify(player, `Поки тебе не було, бури добули ${produced} шт. руди.`, "success");
+			notify(player, text("drill.offline", { count: produced }), "success");
 		}
 	});
 

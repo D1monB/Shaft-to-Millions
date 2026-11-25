@@ -1,36 +1,50 @@
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
-import { TextService } from "@rbxts/services";
-import { Gloss } from "./effects";
-import { COLORS, DEPTH, FONTS, RADIUS, RAMPS, SPRINGS, STROKE, TEXT_SIZES, rampSequence } from "./theme";
+import {
+	ACCENTS,
+	Accent,
+	COLORS,
+	FONTS,
+	GLASS_TRANSPARENCY,
+	MIN_TOUCH,
+	RADIUS,
+	RAMPS,
+	SPRINGS,
+	STROKE,
+	TEXT_SIZES,
+	rampSequence,
+} from "./theme";
 
 export interface PanelProps extends React.PropsWithChildren {
 	readonly title: string;
 	readonly icon?: string;
+	/** Neon colour of the outline and title bar; the section's colour (pets pink, auras violet/teal...). */
+	readonly accent?: Accent;
+	/** Pinned under the scrolling content, always visible: THE main action (buy, open). */
+	readonly footer?: React.Element;
 	readonly onClose: () => void;
 }
 
-const MAX_SIZE = new Vector2(660, 740);
-const RIBBON_HEIGHT = 58;
-/** How far the title ribbon sticks out above the board. */
-const RIBBON_OVERHANG = 30;
-/** Where the content starts: below the part of the ribbon that hangs over the board. */
-const CONTENT_TOP = RIBBON_HEIGHT - RIBBON_OVERHANG + 20;
-const CLOSE_SIZE = 58;
+/** Wider than tall: card lists scroll left-right, so a landscape phone shows a whole row. */
+const MAX_SIZE = new Vector2(820, 520);
+const HEADER_HEIGHT = 46;
+const PADDING = 14;
 
 /**
- * A timber board in the middle of the screen with a gold ribbon title over its top edge and a big red close button.
- * It pops in with a small spring. The dim backdrop behind it closes the panel when tapped,
- * which is the gesture players expect on phones.
+ * A translucent graphite panel in the middle of the screen with a thin neon outline, a compact title on the left and
+ * a small close button on the right. It pops in with a small spring. The dim backdrop closes it when tapped, the
+ * gesture players expect on phones.
  */
 export function Panel(props: PanelProps) {
-	const [scale, scaleMotion] = useMotion(0.85);
+	const accent = ACCENTS[props.accent ?? "orange"];
+	const [scale, scaleMotion] = useMotion(0.9);
 	const [fade, fadeMotion] = useMotion(1);
 	useEffect(() => {
-		scaleMotion.spring(1, SPRINGS.bouncy);
-		fadeMotion.spring(0.45, SPRINGS.smooth);
+		scaleMotion.spring(1, SPRINGS.snappy);
+		fadeMotion.spring(0.55, SPRINGS.smooth);
 	}, [scaleMotion, fadeMotion]);
 
+	const title = props.icon !== undefined ? `${props.icon}  ${props.title}` : props.title;
 	return (
 		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 1, 0)} ZIndex={10}>
 			<textbutton
@@ -43,163 +57,155 @@ export function Panel(props: PanelProps) {
 			/>
 			<frame
 				AnchorPoint={new Vector2(0.5, 0.5)}
-				Position={new UDim2(0.5, 0, 0.5, RIBBON_OVERHANG / 2)}
-				Size={new UDim2(0.94, 0, 0.88, 0)}
+				Position={new UDim2(0.5, 0, 0.5, 0)}
+				Size={new UDim2(0.92, 0, 0.86, 0)}
 				BackgroundTransparency={1}
 			>
 				<uiscale Scale={scale} />
 				<uisizeconstraint MaxSize={MAX_SIZE} />
-				{/* The dark block under the board. */}
+				{/* A faint halo of the accent around the board: reads as a neon glow without images. */}
 				<frame
-					BackgroundColor3={COLORS.outline}
+					AnchorPoint={new Vector2(0.5, 0.5)}
+					Position={new UDim2(0.5, 0, 0.5, 0)}
+					Size={new UDim2(1, 10, 1, 10)}
+					BackgroundColor3={accent}
+					BackgroundTransparency={0.85}
 					BorderSizePixel={0}
-					Position={new UDim2(0, 0, 0, DEPTH.panel)}
+				>
+					<uicorner CornerRadius={new UDim(0, 22)} />
+				</frame>
+				{/* The glass. Separate from the outlined frame: a UIGradient also tints a sibling UIStroke. */}
+				<frame
+					BackgroundColor3={COLORS.white}
+					BackgroundTransparency={GLASS_TRANSPARENCY}
+					BorderSizePixel={0}
 					Size={new UDim2(1, 0, 1, 0)}
 				>
 					<uicorner CornerRadius={RADIUS.xlarge} />
-				</frame>
-				<frame BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={new UDim2(1, 0, 1, 0)}>
-					<uicorner CornerRadius={RADIUS.xlarge} />
-					<uistroke Color={COLORS.outline} Thickness={STROKE.heavy} />
 					<uigradient Rotation={90} Color={rampSequence(RAMPS.panel)} />
-					{/* A thin light line along the top edge: the board catches the light like in the reference. */}
-					<frame
-						BackgroundColor3={COLORS.white}
-						BackgroundTransparency={0.78}
-						BorderSizePixel={0}
-						Position={new UDim2(0, 18, 0, 4)}
-						Size={new UDim2(1, -36, 0, 3)}
-					>
-						<uicorner CornerRadius={RADIUS.round} />
-					</frame>
+				</frame>
+				<frame BackgroundTransparency={1} BorderSizePixel={0} Size={new UDim2(1, 0, 1, 0)}>
+					<uicorner CornerRadius={RADIUS.xlarge} />
+					<uistroke Color={accent} Thickness={STROKE.thick} Transparency={0.15} />
+					<uipadding
+						PaddingTop={new UDim(0, 8)}
+						PaddingBottom={new UDim(0, PADDING)}
+						PaddingLeft={new UDim(0, PADDING)}
+						PaddingRight={new UDim(0, PADDING)}
+					/>
+					<uilistlayout
+						FillDirection={Enum.FillDirection.Vertical}
+						Padding={new UDim(0, 8)}
+						SortOrder={Enum.SortOrder.LayoutOrder}
+					/>
+					<Header title={title} accent={accent} onClose={props.onClose} />
 					<scrollingframe
 						BackgroundTransparency={1}
 						BorderSizePixel={0}
-						Position={new UDim2(0, 0, 0, CONTENT_TOP)}
-						Size={new UDim2(1, 0, 1, -(CONTENT_TOP + 8))}
+						Size={new UDim2(1, 0, 0, 0)}
 						CanvasSize={new UDim2(0, 0, 0, 0)}
 						AutomaticCanvasSize={Enum.AutomaticSize.Y}
 						ScrollingDirection={Enum.ScrollingDirection.Y}
-						ScrollBarThickness={8}
-						ScrollBarImageColor3={COLORS.gold}
+						ScrollBarThickness={4}
+						ScrollBarImageColor3={accent}
+						LayoutOrder={2}
 					>
-						<uipadding
-							PaddingTop={new UDim(0, 6)}
-							PaddingBottom={new UDim(0, 18)}
-							PaddingLeft={new UDim(0, 18)}
-							PaddingRight={new UDim(0, 20)}
-						/>
-						<uilistlayout Padding={new UDim(0, 12)} SortOrder={Enum.SortOrder.LayoutOrder} />
+						{/* Takes all the height the header and the footer leave. */}
+						<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />
+						<uipadding PaddingRight={new UDim(0, 8)} PaddingBottom={new UDim(0, 4)} />
+						<uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
 						{props.children}
 					</scrollingframe>
+					{props.footer !== undefined && (
+						<frame
+							BackgroundTransparency={1}
+							Size={new UDim2(1, 0, 0, 0)}
+							AutomaticSize={Enum.AutomaticSize.Y}
+							LayoutOrder={3}
+						>
+							<uilistlayout Padding={new UDim(0, 6)} SortOrder={Enum.SortOrder.LayoutOrder} />
+							{props.footer}
+						</frame>
+					)}
 				</frame>
-				<Ribbon title={props.title} icon={props.icon} />
-				<CloseButton onClose={props.onClose} />
 			</frame>
 		</frame>
 	);
 }
 
-/** The gold title over the top edge. Its width is measured from the text so the block under it can match. */
-function Ribbon(props: { title: string; icon?: string }) {
-	const text = props.icon !== undefined ? `${props.icon}  ${props.title}` : props.title;
-	const textWidth = TextService.GetTextSize(text, TEXT_SIZES.title, FONTS.display, new Vector2(2000, 200)).X;
-	const width = textWidth + 64;
+/** Title on the left with an accent bar, close button on the right, a thin accent line under them. */
+function Header(props: { title: string; accent: Color3; onClose: () => void }) {
 	return (
-		<frame
-			AnchorPoint={new Vector2(0.5, 0)}
-			Position={new UDim2(0.5, 0, 0, -RIBBON_OVERHANG)}
-			Size={new UDim2(0, width, 0, RIBBON_HEIGHT + DEPTH.button)}
-			BackgroundTransparency={1}
-			ZIndex={5}
-		>
+		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, HEADER_HEIGHT)} LayoutOrder={1}>
 			<frame
-				BackgroundColor3={COLORS.outline}
+				AnchorPoint={new Vector2(0, 0.5)}
+				Position={new UDim2(0, 0, 0.5, -2)}
+				Size={new UDim2(0, 4, 0, 24)}
+				BackgroundColor3={props.accent}
 				BorderSizePixel={0}
-				Position={new UDim2(0, 0, 0, DEPTH.button)}
-				Size={new UDim2(1, 0, 0, RIBBON_HEIGHT)}
 			>
-				<uicorner CornerRadius={RADIUS.large} />
+				<uicorner CornerRadius={RADIUS.round} />
 			</frame>
-			<frame BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={new UDim2(1, 0, 0, RIBBON_HEIGHT)}>
-				<uicorner CornerRadius={RADIUS.large} />
-				<uistroke Color={COLORS.outline} Thickness={STROKE.thick} />
-				<uigradient Rotation={90} Color={rampSequence(RAMPS.ribbon)} />
-				<Gloss zIndex={2} />
-				<textlabel
-					BackgroundTransparency={1}
-					Size={new UDim2(1, 0, 1, 0)}
-					Font={FONTS.display}
-					Text={text}
-					TextSize={TEXT_SIZES.title}
-					TextColor3={COLORS.white}
-					ZIndex={3}
-				>
-					<uistroke Color={COLORS.outline} Thickness={2.5} />
-				</textlabel>
-			</frame>
+			<textlabel
+				BackgroundTransparency={1}
+				Position={new UDim2(0, 14, 0, 0)}
+				Size={new UDim2(1, -(14 + MIN_TOUCH + 8), 1, -4)}
+				Font={FONTS.display}
+				Text={props.title}
+				TextSize={TEXT_SIZES.title}
+				TextColor3={COLORS.text}
+				TextXAlignment={Enum.TextXAlignment.Left}
+				TextTruncate={Enum.TextTruncate.AtEnd}
+			/>
+			<CloseButton onClose={props.onClose} />
+			<frame
+				AnchorPoint={new Vector2(0, 1)}
+				Position={new UDim2(0, 0, 1, 0)}
+				Size={new UDim2(1, 0, 0, 1)}
+				BackgroundColor3={props.accent}
+				BackgroundTransparency={0.6}
+				BorderSizePixel={0}
+			/>
 		</frame>
 	);
 }
 
 function CloseButton(props: { onClose: () => void }) {
 	const [scale, scaleMotion] = useMotion(1);
+	const size = MIN_TOUCH - 6;
 	return (
-		<frame
-			AnchorPoint={new Vector2(1, 0)}
-			// Inside the board's right edge: on phones the board is almost as wide as the screen, and a button hanging
-			// outside it was cut off.
-			Position={new UDim2(1, -10, 0, -24)}
-			Size={new UDim2(0, CLOSE_SIZE, 0, CLOSE_SIZE + DEPTH.button)}
-			BackgroundTransparency={1}
-			ZIndex={6}
+		<textbutton
+			AnchorPoint={new Vector2(1, 0.5)}
+			Position={new UDim2(1, 0, 0.5, -2)}
+			Size={new UDim2(0, size, 0, size)}
+			AutoButtonColor={false}
+			BackgroundColor3={COLORS.woodLight}
+			BackgroundTransparency={0.2}
+			BorderSizePixel={0}
+			Text=""
+			Event={{
+				Activated: props.onClose,
+				MouseEnter: () => scaleMotion.spring(1.08, SPRINGS.bouncy),
+				MouseLeave: () => scaleMotion.spring(1, SPRINGS.bouncy),
+			}}
 		>
 			<uiscale Scale={scale} />
-			<frame
-				BackgroundColor3={COLORS.outline}
-				BorderSizePixel={0}
-				Position={new UDim2(0, 0, 0, DEPTH.button)}
-				Size={new UDim2(1, 0, 0, CLOSE_SIZE)}
-			>
-				<uicorner CornerRadius={RADIUS.medium} />
-			</frame>
-			<textbutton
-				AutoButtonColor={false}
-				BackgroundColor3={COLORS.white}
-				BorderSizePixel={0}
-				Size={new UDim2(1, 0, 0, CLOSE_SIZE)}
-				Text=""
-				Event={{
-					Activated: props.onClose,
-					MouseEnter: () => scaleMotion.spring(1.1, SPRINGS.bouncy),
-					MouseLeave: () => scaleMotion.spring(1, SPRINGS.bouncy),
-				}}
-			>
-				<uicorner CornerRadius={RADIUS.medium} />
-				<uistroke
-					Color={COLORS.outline}
-					Thickness={STROKE.thick}
-					ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
-				/>
-				<uigradient Rotation={90} Color={rampSequence(RAMPS.close)} />
-				<Gloss zIndex={2} />
-				{/* The cross is drawn with two bars: BuilderSans has no "✕" glyph and showed an empty box. */}
-				{[45, -45].map((angle) => (
-					<frame
-						key={`bar_${angle}`}
-						AnchorPoint={new Vector2(0.5, 0.5)}
-						Position={new UDim2(0.5, 0, 0.5, 0)}
-						Size={new UDim2(0, 30, 0, 8)}
-						Rotation={angle}
-						BackgroundColor3={COLORS.white}
-						BorderSizePixel={0}
-						ZIndex={3}
-					>
-						<uicorner CornerRadius={RADIUS.round} />
-						<uistroke Color={COLORS.outline} Thickness={2} />
-					</frame>
-				))}
-			</textbutton>
-		</frame>
+			<uicorner CornerRadius={RADIUS.round} />
+			<uistroke Color={COLORS.danger} Thickness={STROKE.thin} Transparency={0.3} />
+			{/* The cross is drawn with two bars: BuilderSans has no "✕" glyph and showed an empty box. */}
+			{[45, -45].map((angle) => (
+				<frame
+					key={`bar_${angle}`}
+					AnchorPoint={new Vector2(0.5, 0.5)}
+					Position={new UDim2(0.5, 0, 0.5, 0)}
+					Size={new UDim2(0, 16, 0, 3)}
+					Rotation={angle}
+					BackgroundColor3={COLORS.text}
+					BorderSizePixel={0}
+				>
+					<uicorner CornerRadius={RADIUS.round} />
+				</frame>
+			))}
+		</textbutton>
 	);
 }

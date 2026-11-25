@@ -14,7 +14,14 @@ export function PanelHost() {
 	}
 	// The key remounts the panel (and replays its pop-in) when a different panel opens.
 	return (
-		<Panel key={spec.key} title={spec.title} icon={spec.icon} onClose={closePanel}>
+		<Panel
+			key={spec.key}
+			title={spec.title}
+			icon={spec.icon}
+			accent={spec.accent}
+			footer={spec.footer?.()}
+			onClose={closePanel}
+		>
 			{spec.render()}
 		</Panel>
 	);

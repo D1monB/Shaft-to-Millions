@@ -36,7 +36,7 @@ function BlockFace(props: React.PropsWithChildren<{ size: number; radius: UDim }
 	);
 }
 
-export const STAT_TILE_SIZE = 72;
+export const STAT_TILE_SIZE = 60;
 
 export interface StatTileProps {
 	readonly icon: string;
@@ -93,7 +93,7 @@ export function StatTile(props: StatTileProps) {
 						Position={new UDim2(0, 0, 0, 5)}
 						Size={new UDim2(1, 0, 0, 36)}
 						Text={props.icon}
-						TextSize={30}
+						TextSize={25}
 						ZIndex={3}
 					/>
 					<textlabel
@@ -106,7 +106,7 @@ export function StatTile(props: StatTileProps) {
 						TextScaled={true}
 						ZIndex={3}
 					>
-						<uitextsizeconstraint MaxTextSize={18} MinTextSize={10} />
+						<uitextsizeconstraint MaxTextSize={15} MinTextSize={9} />
 						<uistroke Color={COLORS.outline} Thickness={2} />
 					</textlabel>
 				</textbutton>
@@ -140,7 +140,7 @@ export function StatTile(props: StatTileProps) {
 	);
 }
 
-export const MENU_BUTTON_SIZE = 88;
+export const MENU_BUTTON_SIZE = 68;
 
 export interface MenuButtonProps {
 	readonly icon: string;
@@ -194,7 +194,7 @@ export function MenuButton(props: MenuButtonProps) {
 						Position={new UDim2(0, 0, 0, 6)}
 						Size={new UDim2(1, 0, 0, 46)}
 						Text={props.icon}
-						TextSize={40}
+						TextSize={31}
 						ZIndex={3}
 					/>
 					<textlabel
@@ -207,7 +207,7 @@ export function MenuButton(props: MenuButtonProps) {
 						TextScaled={true}
 						ZIndex={3}
 					>
-						<uitextsizeconstraint MaxTextSize={18} MinTextSize={10} />
+						<uitextsizeconstraint MaxTextSize={15} MinTextSize={9} />
 						<uistroke Color={COLORS.outline} Thickness={2} />
 					</textlabel>
 				</textbutton>

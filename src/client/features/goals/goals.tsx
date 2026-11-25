@@ -1,15 +1,15 @@
 // "What next" hint: one clear goal in a capsule at the bottom of the screen, with a bar that fills as money comes in.
 // Features register where goals come from; the shared pickGoalInfo chooses exactly one.
+import { nameKeys } from "shared/features/i18n";
+import { t, tx } from "client/lib/i18n";
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
-import { MACHINE_IDS } from "shared/config/machines";
 import { ORES, ORE_IDS } from "shared/config/ores";
 import { PickaxeDef } from "shared/config/pickaxes";
-import { RESOURCES } from "shared/config/resources";
 import { bagCapacity, bagTotal } from "shared/features/bag";
 import { GoalCandidate, GoalInfo, pickGoalInfo } from "shared/features/goals";
 import { getPickaxe } from "shared/features/mining";
-import { GearSlot, missingMaterials, nextGearToBuy } from "shared/features/upgrades";
+import { GearSlot, nextGearToBuy } from "shared/features/upgrades";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
 import {
@@ -32,19 +32,13 @@ export function registerGoalSource(source: (view: PlayerView) => GoalCandidate[]
 	sources.push(source);
 }
 
-/** The next main-line item of a slot as a goal, with the first missing material if any. */
+/** The next main-line item of a slot as a goal. */
 function gearGoal(view: PlayerView, slot: GearSlot, priority: number): GoalCandidate | undefined {
 	const upcoming = nextGearToBuy(slot, view.gear, getPickaxe(view.gear.equipped.pickaxe).tier);
 	if (upcoming === undefined) {
 		return undefined;
 	}
-	const lack = missingMaterials(upcoming, view.warehouse)[0];
-	return {
-		label: upcoming.name,
-		price: upcoming.price,
-		priority,
-		missing: lack === undefined ? undefined : `${RESOURCES[lack.id].name} ${lack.have}/${lack.need}`,
-	};
+	return { label: nameKeys.gear(upcoming.id), price: upcoming.price, priority };
 }
 
 function gearGoals(view: PlayerView): GoalCandidate[] {
@@ -56,9 +50,9 @@ function gearGoals(view: PlayerView): GoalCandidate[] {
 		ORE_IDS.some((id) => ORES[id].requiredTier > current.tier && ORES[id].requiredTier <= upcoming.tier);
 	const pickaxe = gearGoal(view, "pickaxe", unlocksOre ? 0 : 2);
 	const bag = gearGoal(view, "bag", 1);
-	// Shoes only shorten trips, so they are hinted after the first machine. Earlier, the cheapest-goal rule would make
+	// Shoes only shorten trips, so they are hinted after the first line machine. Earlier, the cheapest-goal rule would make
 	// the cheap shoes the first target of a new player instead of the bag and the first pickaxe.
-	const ownsMachine = MACHINE_IDS.some((id) => view.machines[id] !== undefined);
+	const ownsMachine = view.line.machines.size() > 0;
 	const shoes = ownsMachine ? gearGoal(view, "shoes", 2) : undefined;
 	for (const goal of [pickaxe, bag, shoes]) {
 		if (goal !== undefined) {
@@ -85,9 +79,9 @@ export function startGoalsController(): void {
 	registerGoalSource(gearGoals);
 }
 
-const BANNER_WIDTH = 480;
-const BANNER_HEIGHT = 70;
-const BADGE_ROOM = 60;
+const BANNER_WIDTH = 420;
+const BANNER_HEIGHT = 56;
+const BADGE_ROOM = 50;
 
 /** Escapes text for RichText, so an item name can never break the markup. */
 function escapeRich(text: string): string {
@@ -105,7 +99,8 @@ function statusColor(info: GoalInfo): Color3 {
 export function GoalBanner() {
 	const view = useView();
 	const info = view === undefined ? undefined : currentGoal(view);
-	const key = info?.text;
+	// The words, not the object: a new object arrives on every render, the words change only with the goal.
+	const key = info !== undefined ? tx(info.text) : undefined;
 	const [scale, scaleMotion] = useMotion(1);
 	useEffect(() => {
 		if (key !== undefined) {
@@ -118,7 +113,8 @@ export function GoalBanner() {
 		return undefined;
 	}
 	const isPurchase = info.kind === "saving" || info.kind === "affordable";
-	const title = isPurchase ? `Ціль: <font color="#FCD34D">${escapeRich(info.title)}</font>` : escapeRich(info.title);
+	const name = escapeRich(tx(info.title));
+	const title = isPurchase ? t("goal.banner", { name: `<font color="#FCD34D">${name}</font>` }) : name;
 	return (
 		<frame
 			AnchorPoint={new Vector2(0.5, 1)}
@@ -139,7 +135,7 @@ export function GoalBanner() {
 				<uicorner CornerRadius={RADIUS.round} />
 				<uistroke Color={COLORS.gold} Thickness={STROKE.thick} />
 				<uigradient Rotation={90} Color={rampSequence(RAMPS.capsule)} />
-				<CapsuleBadge icon="🎯" ramp={RAMPS.close} size={52} round={true} />
+				<CapsuleBadge icon="🎯" ramp={RAMPS.close} size={44} round={true} />
 				<frame
 					BackgroundTransparency={1}
 					Position={new UDim2(0, BADGE_ROOM, 0, 10)}
@@ -164,7 +160,7 @@ export function GoalBanner() {
 						Position={new UDim2(1, 0, 0, 0)}
 						Size={new UDim2(0.38, 0, 0, 26)}
 						Font={FONTS.display}
-						Text={info.status}
+						Text={tx(info.status)}
 						TextSize={TEXT_SIZES.body - 2}
 						TextColor3={statusColor(info)}
 						TextXAlignment={Enum.TextXAlignment.Right}

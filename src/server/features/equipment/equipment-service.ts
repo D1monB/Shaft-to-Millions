@@ -1,5 +1,6 @@
 // Equipment: equip/unequip/sell requests, and the bonuses fed into selling, movement and mining.
 // Bonuses are always recomputed from saved data with the shared formula: nothing about them is trusted.
+import { text } from "shared/features/i18n";
 import { Players } from "@rbxts/services";
 import { ITEMS, ItemId, RARITY_COLORS } from "shared/config/items";
 import {
@@ -51,7 +52,7 @@ function handleEquip(player: Player, uid: string): void {
 	if (result.ok) {
 		markDirty(player);
 	} else if (result.reason === "pet-slots-full") {
-		notify(player, "Усі 3 місця для улюбленців зайняті. Зніми одного.", "error");
+		notify(player, text("equip.petsFull"), "error");
 	}
 }
 
@@ -72,7 +73,7 @@ function handleSellItem(player: Player, uid: string): void {
 		data.money += value;
 		data.stats.totalEarned += value;
 		markDirty(player);
-		notify(player, `Продано за ${formatMoney(value)}.`, "success");
+		notify(player, text("equip.soldFor", { money: formatMoney(value) }), "success");
 	}
 }
 

@@ -290,3 +290,133 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Machine-done is polled on the client:** production is timestamp based and the server sends no "done" event, so the
   client checks the queue once a second and plays the sound once per finished item.
 - **Why a pool:** many hits per second must not create or destroy `Sound` instances (mobile performance).
+
+## 027. Tycoon line instead of recipes (draft, check)
+
+- **Date:** 2026-11-25 (draft, check)
+- **Decision:** the factory becomes a tycoon line on the player's plot (one of `Map/Plots/Plot1..6`), built from the
+  friend's 12 machines `M01_HydroWasher` .. `M12_QuantumAssembler`. An item is "ore + stage" (stage 0 = raw ore,
+  stage 12 = reactor); each machine turns stage N into stage N + 1. There are no recipes and no ingots any more.
+- **Value:** `ore base value * stage multiplier * quality bonus of the machines passed`. The stage table grows about
+  x1.84 per stage, so a $10 ore becomes a ~$15 000 reactor (friend's target).
+- **Flow:** machines are bought in order; the player drops ore from the bag into the hopper (queue of the first machine);
+  the item leaves the last owned machine and is sold automatically. The server counts time and money; items on the
+  belts are only drawn by the client.
+- **Machine upgrades:** speed, double-output chance, quality (value bonus) and queue capacity (so a slow machine is a
+  bottleneck worth upgrading, not a silent loss).
+- **Ores:** the friend's 6 ores (copper, iron, gold, titanium, obsidian, etherium) on the 5 floors of his pit.
+- **Gear:** costs money only (no materials).
+- **Offline:** the line keeps running while the player is away at half speed, for at most 8 hours (tunable).
+- **Why:** matches the friend's map and the tycoon genre; one generic rule instead of a recipe per product, so a new
+  ore works on the whole line with one config entry.
+- **Schema v4 (step 2, ores):** removed ores and products (coal, quartz, silver, cobalt, silver ingot, silver contact)
+  are paid out at their old prices; removed recipes leave machine queues and are refunded; a drill on an ore that
+  moved to another layer switches to the layer ore and its buffer is paid out. The bump also raises the layer cap
+  from 3 to 5. Gear item ids are kept (saved in profiles); only display names changed (silver -> steel, the old
+  obsidian/cobalt pickaxes are now titanium/obsidian).
+- **Schema v5 (step 3, line state):** the furnace, the workbench and the warehouse are removed. Their price, every
+  upgrade level paid, the warehouse level, the stock and the queued and finished crafts are paid back at version 4
+  prices. The profile gets `line` (bought machines, levels, queues) and `lastSeen` (for the offline run). Drills now
+  deliver into the hopper of the line; without a line machine the ore waits in the drill buffer. The tags `Warehouse`,
+  `Machine` and the attribute `MachineId` are gone from the map contract (plot tags come with the line service).
+- **Plots (step 4b, developer's design 2026-11-25):** plots start empty; the map author's Factory is a template kept in
+  ServerStorage. A player claims a free plot by holding E on its sign; then the belt and the SellStation are built,
+  and each machine appears on its place only after it is bought (strictly in order). The belt always runs: ore is
+  dropped at the start of the belt (the first machine's place); with no machine raw ore sells at the SellStation, each
+  bought machine raises the value. New players appear on the first free plot, owners on their plot (an opened camp
+  still wins). The line state gained `intake` and `beltProgress` (v5 was not released, so no new schema version).
+- **Open:** AFK plot squatting (an idle owner keeps a plot until they leave); an idle timeout is a later task.
+- **Play-test on the friend's map (2026-11-25):** passed - plots claimed, belt and SellStation built, machine bought
+  and placed in its belt gap, ore dropped and sold (balance grew by the line price). Two fixes: the claim prompt moved
+  from the sign (50 studs up, unreachable) to a ground point at the plot spawn; players standing on a new machine are
+  moved aside. Not tested: save across sessions (Studio API access is off in the friend's experience).
+
+## 028. Faster walking, softer movement check (2026-11-25)
+
+- **What:** shoes now go from 20 (start) to 50 (best), was 16..30; the cap after a speed aura is 65 (50 x 1.3).
+  The movement check allows 1.8x the walk speed (was 1.5x), 8 studs of slack (was 4: the belt carries players) and
+  treats a single jump of 80+ studs over the allowance as a teleport (was 50). In Studio the check only warns and
+  never pulls back.
+- **Why:** the developer found walking too slow for a deep shaft, and the pull-back fought Studio tools (moving or
+  scaling a character during Play) and could catch players carried by the belt. Live servers still pull back.
+
+## 029. UI restyle: "dark glass + neon", left-right card rows (2026-11-25)
+
+- **What:** the timber "juicy" theme is replaced by translucent graphite panels with a thin neon outline in the
+  section colour (pets pink, pickaxe aura violet, speed aura teal, default orange), a compact title on the left and a
+  small close button. Cards are dark with the rarity colour glowing from the top. The UI is about 30% smaller on a PC
+  (design height 760 instead of 620, smaller text, strokes, depth and HUD); phones keep the 0.7 floor. Card lists
+  (chest odds, shop, equipment) are one row that scrolls left-right; the main action of a panel (open chest, equip
+  best) is pinned under the content (`PanelSpec.footer`) and never scrolls away.
+- **Why:** the developer found the UI bulky and the vertical grids awkward (opening a chest needed scrolling down),
+  and the brown timber clashed with the friend's map (light concrete, orange rocks, neon terminals).
+
+## 030. Movement check waits for server teleports to arrive (2026-11-25)
+
+- **What:** after the server moves a character (plot spawn, camp respawn, fast travel) the movement check gets the
+  target and skips samples until the character is within 12 studs of it (at most 2 s), then starts a new baseline
+  there. A character that does not arrive in time is put at the target (live servers; Studio only warns).
+  The wait is not a free pass (exploit review): a sample is accepted only near the target or within walking reach
+  of the spot the character was teleported from; anything else is put at the target at once. Server code moves
+  characters only through `teleportCharacter` (movement feature), which records that spot.
+- **Why:** the client owns its character, so for a few frames after a server teleport the server still saw the old
+  position; the check measured from it and flagged honest players on every join (would pull them back live).
+
+## 031. One ore per layer; silver and iridium replace obsidian and etherium (2026-11-25)
+
+- **What:** layers 1-5 hold copper, iron, silver, gold, titanium (one ore each); iridium grows only in the portal zone
+  at the bottom of layer 5 and is never drilled (`drillable: false`). Prices 5 / 12 / 30 / 70 / 150 / 400. Ore ids
+  match the map author's `ServerStorage.ItemTemplates/<ore>` folders. Schema v6 shifts every saved ore to the ore with
+  the same price, all at once: gold $30 -> silver, titanium $70 -> gold, obsidian $150 -> titanium, etherium $400 ->
+  iridium (bag, belt intake, machine queues, drills; an etherium drill moves to titanium, iridium is never drilled).
+  First version renamed only obsidian/etherium and would have repriced old gold and titanium 2x (security review).
+  Pickaxe and bag display names follow the ores (ids unchanged): tier 3 "Срібна", tier 4 "Золота", tier 5 "Титанова".
+  Ore blocks stay as before: any Part/Model tagged `OreNode` with an `OreId` attribute.
+- **Why:** the developer and the map author changed the design (each ore on its own layer, iridium only near the
+  portal); the earlier per-spawn ore tables were dropped. Renaming by price means no player loses value.
+- **Later:** the portal will lead to another location (another canyon and mine with other ores). Not in this stage.
+
+## 032. Balance pass after the ore shift (2026-11-25, balance-analyst, approved by the developer)
+
+- Plasma drill power 16 -> 25 (it was the same as the hand drill for 3x the price); hammer power 12 -> 13 (gold in
+  one hit, as described); light pickaxe $2,000 -> $1,200; steel pickaxe $4,000 -> $2,800 (wall before silver);
+  silver pickaxe $12,000 -> $8,000.
+- Late machines: M10 $650k -> $1.5M, M11 $1.6M -> $4M, M12 $4M -> $10M (deep-ore players paid them back in minutes).
+- Drills on layers 4 and 5 faster: 3.5 -> 2 and 3 -> 1.5 seconds per hardness. Drill names follow the layer names.
+- Numbers are first estimates; confirm in a play-test.
+
+## 033. Languages: English source, our own texts for en/uk/ru/pl, Roblox auto-translation for the rest (2026-11-25)
+
+- **What:** every player-visible text is a key in `src/shared/config/i18n/{en,uk,ru,pl}.ts` (English is the source;
+  the compiler and a test check that every language has every key and the same `{placeholders}`). Configs keep ids
+  only; names come from keys built from ids (`nameKeys`, e.g. `ore.copper`, `machine.M01`, `gear.pickaxe_iron`).
+  The server never picks a language: `notify` sends a key plus values (names as `@key` refs), world texts (prompts,
+  sign labels) carry the key as an attribute with tag `Localized`, and each client writes the words itself.
+- **Which language:** the menu choice (saved as profile `language`, `""` = automatic; no schema bump, the default
+  fills old saves), else the player's Roblox language (`Player.LocaleId`), else when Roblox is in English the country
+  Roblox reports (UA -> uk, PL -> pl, RU/BY/KZ/KG -> ru; asked on the client, never sent or stored), else English.
+  A Roblox language we do not have gets English with `AutoLocalize` on, so Roblox's automatic translation may
+  translate it (needs Automatic translation turned on for the experience in Creator Hub). Our own languages have
+  `AutoLocalize` off.
+- **Why:** the developer wants English first plus the players' own languages; own tables work in Studio, are tested,
+  and translate texts with numbers correctly, which Roblox's auto-capture does poorly.
+- **Notes:** texts avoid plural forms ("Ore sold: {count}") so one template fits every language. Studio-only tools
+  (devtools panel, placeholders) are plain English. Inventory cards now sort by item id, not by name.
+
+## 034. Ore blocks on the map author's spawn points; iridium near the portal (2026-11-25)
+
+- **What:** at server start, every BasePart in `Map/Mine/OreSpawns/Tier<N>` gets a 4-stud ore block of layer N's
+  main ore (copper, iron, silver, gold, titanium), tagged `OreNode` with `OreId`, so the mining service needs no
+  change. Points of the deepest layer within `PORTAL_ORE_RADIUS` (60 studs, ground plane) of
+  `Map/Mine/TunnelEntrance/Portal` grow iridium (`nearPortal` ore); on the current map that is 2 of 11 Tier5 points.
+  Blocks are plain coloured parts in `Workspace/MapOre` until the map author models ore blocks.
+- **Why:** the map author placed spawn points instead of tagged blocks; without this the live game had no ore.
+
+## 035. Belt route follows the pieces' direction of travel (2026-11-25, bug fix)
+
+- **What:** the item route joins belt pieces end to start using the map author's rules (`ConveyorFlow`, straight along
+  local X, quarter-turn arc on corners), walks back to the head of the belt, then forward. Replaces "nearest piece
+  centre" ordering.
+- **Why:** the old ordering started at machine 1, walked against the belt and covered only 19 of 89 pieces, so most
+  machine places collapsed onto two path points and items could not ride between them. Checked in Play on the
+  friend's map: no coverage warning, the 12 machine places follow each other along the path.

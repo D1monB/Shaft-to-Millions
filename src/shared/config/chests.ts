@@ -16,8 +16,6 @@ export interface RewardEntry {
 }
 
 export interface ChestDef {
-	readonly name: string;
-	readonly description: string;
 	readonly dollarPrice: number;
 	/**
 	 * Developer Product id for opening with Robux. Create the product on the Creator Dashboard and paste its
@@ -31,8 +29,6 @@ export interface ChestDef {
 
 export const CHESTS: { readonly [K in ChestId]: ChestDef } = {
 	pet_chest: {
-		name: "Скриня улюбленців",
-		description: "Улюбленці додають відсоток до ціни всього, що ти продаєш.",
 		dollarPrice: 1_500,
 		robuxProductId: undefined,
 		robuxPrice: 49,
@@ -45,8 +41,6 @@ export const CHESTS: { readonly [K in ChestId]: ChestDef } = {
 		],
 	},
 	speed_chest: {
-		name: "Скриня швидкості",
-		description: "Аура швидкості прискорює біг (разом із взуттям).",
 		dollarPrice: 1_000,
 		robuxProductId: undefined,
 		robuxPrice: 35,
@@ -59,8 +53,6 @@ export const CHESTS: { readonly [K in ChestId]: ChestDef } = {
 		],
 	},
 	pickaxe_chest: {
-		name: "Скриня кирки",
-		description: "Аура кирки дає шанс видобути більше руди з кожного блоку.",
 		dollarPrice: 2_000,
 		robuxProductId: undefined,
 		robuxPrice: 59,

@@ -1,8 +1,8 @@
-// Developer shortcuts for play-testing: money, max gear, gear materials, all layers open.
+// Developer shortcuts for play-testing: money, max gear, a bag of every ore, all layers open.
 // Pure rules only. The server service registers the remote ONLY in Roblox Studio (RunService.IsStudio()),
 // so on live servers this code is never reachable. Amounts are fixed presets, never a number sent by a client.
 import { LAYER_COUNT } from "shared/config/layers";
-import { RESOURCE_IDS } from "shared/config/resources";
+import { ORE_IDS } from "shared/config/ores";
 import { GEAR_BY_SLOT, GEAR_SLOTS } from "shared/features/upgrades";
 import { ProfileData, createDefaultProfileData } from "shared/features/profile";
 import { PlainTable } from "shared/lib/tables";
@@ -10,13 +10,13 @@ import { MAX_COUNTER } from "shared/lib/repair";
 
 export const DEV_MONEY_AMOUNTS: ReadonlyArray<number> = [1_000, 100_000, 10_000_000];
 
-/** Pieces of every ore and product, added by one "materials" command. */
-export const DEV_MATERIAL_AMOUNT = 30;
+/** Pieces of every ore put into the bag by one "ores" command (over the bag limit: it is a test shortcut). */
+export const DEV_ORE_AMOUNT = 30;
 
 export type DevCommand =
 	| { readonly kind: "money"; readonly amount: number }
 	| { readonly kind: "maxGear" }
-	| { readonly kind: "materials" }
+	| { readonly kind: "ores" }
 	| { readonly kind: "openLayers" }
 	| { readonly kind: "resetProfile" };
 
@@ -31,7 +31,7 @@ export function parseDevCommand(args: ReadonlyArray<unknown>): DevCommand | unde
 		return { kind: "money", amount };
 	}
 	if (
-		(kind === "maxGear" || kind === "materials" || kind === "openLayers" || kind === "resetProfile") &&
+		(kind === "maxGear" || kind === "ores" || kind === "openLayers" || kind === "resetProfile") &&
 		args.size() === 1
 	) {
 		return { kind };
@@ -57,10 +57,10 @@ export function applyDevCommand(data: ProfileData, command: DevCommand): void {
 			}
 			data.gear.equipped[slot] = items[items.size() - 1].id;
 		}
-	} else if (command.kind === "materials") {
-		// Every ore and product: enough to try the machines (ore) and the gear shop (ingots, parts) at once.
-		for (const id of RESOURCE_IDS) {
-			data.warehouse[id] = math.min((data.warehouse[id] ?? 0) + DEV_MATERIAL_AMOUNT, MAX_COUNTER);
+	} else if (command.kind === "ores") {
+		// Every ore: enough to fill the line hopper and try selling at once.
+		for (const id of ORE_IDS) {
+			data.bag[id] = math.min((data.bag[id] ?? 0) + DEV_ORE_AMOUNT, MAX_COUNTER);
 		}
 	} else if (command.kind === "resetProfile") {
 		resetProfile(data);

@@ -73,7 +73,7 @@ function releaseAll(player: Player): void {
 function style(rig: PetRig, itemId: ItemId): void {
 	const color = RARITY_COLORS[ITEMS[itemId].rarity];
 	rig.part.Color = Color3.fromRGB(color[0], color[1], color[2]);
-	rig.part.Name = ITEMS[itemId].name;
+	rig.part.Name = itemId;
 	rig.itemId = itemId;
 }
 

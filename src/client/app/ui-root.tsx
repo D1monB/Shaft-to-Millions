@@ -4,17 +4,17 @@ import { useViewport } from "@rbxts/pretty-react-hooks";
 import React from "@rbxts/react";
 import { createPortal, createRoot } from "@rbxts/react-roblox";
 import { Players } from "@rbxts/services";
-import { MachineBoards } from "client/features/factory";
 import { GoalBanner } from "client/features/goals";
 import { Hud } from "client/features/hud";
+import { useLanguageChoice } from "client/lib/i18n";
 import { PanelHost, ToastHost } from "client/lib/ui-kit";
 
 /**
  * The UI is designed at this screen height; smaller screens (phones) scale it down, big ones up.
- * Why 620 and not larger: the first play-test found the UI too small. A lower design height makes everything bigger on
- * every screen, and the floor of 0.7 keeps text readable on phones (it used to shrink to 0.6 and gave ~10 px text).
+ * 760 since the dark-glass restyle (decision 029): at 620 the UI was 1.4x on a PC screen and felt bulky. The floor of
+ * 0.7 keeps text readable on phones (it used to shrink to 0.6 and gave ~10 px text).
  */
-const DESIGN_HEIGHT = 620;
+const DESIGN_HEIGHT = 760;
 const MIN_SCALE = 0.7;
 const MAX_SCALE = 1.5;
 
@@ -25,8 +25,14 @@ function scaleFor(viewport: Vector2): number {
 function App() {
 	const viewport = useViewport();
 	const scale = viewport.map(scaleFor);
+	// A language change re-mounts the UI (the key), so every t() call during render picks up the new words.
+	const choice = useLanguageChoice();
 	return (
 		<screengui
+			key={choice.language}
+			// Our own languages are already translated; only English shown to players of other languages may be
+			// auto-translated by Roblox (decision 033).
+			AutoLocalize={choice.robloxTranslates}
 			ResetOnSpawn={false}
 			IgnoreGuiInset={false}
 			ZIndexBehavior={Enum.ZIndexBehavior.Sibling}
@@ -40,7 +46,6 @@ function App() {
 				<ToastHost />
 				<PanelHost />
 			</frame>
-			<MachineBoards />
 		</screengui>
 	);
 }

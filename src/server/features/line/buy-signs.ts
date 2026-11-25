@@ -1,0 +1,135 @@
+// The buy sign beside a machine place that is not bought yet: a post with a board showing the machine and its price.
+// Only the next machine's sign is active (orange glow); later ones are grey and say which machine comes first.
+// Built by code until the map author models a sign; the server owns it, the client only sees it.
+import { Players, Workspace } from "@rbxts/services";
+import { Text, nameKeys, ref, text } from "shared/features/i18n";
+import { localizeLabel } from "server/lib/localized";
+
+const POST_SIZE = new Vector3(0.5, 4.5, 0.5);
+const BOARD_SIZE = new Vector3(6, 3.4, 0.4);
+/** Pixels per stud on the board, so text stays sharp at any distance. */
+const PIXELS_PER_STUD = 50;
+
+const COLORS = {
+	post: Color3.fromRGB(52, 56, 66),
+	board: Color3.fromRGB(28, 31, 40),
+	active: Color3.fromRGB(255, 140, 40),
+	locked: Color3.fromRGB(120, 126, 140),
+	text: Color3.fromRGB(255, 246, 230),
+	muted: Color3.fromRGB(170, 176, 190),
+	price: Color3.fromRGB(255, 200, 70),
+};
+
+export interface SignInfo {
+	/** Machine id (M01..M12), for its name in each language. */
+	readonly machineId: string;
+	readonly price: string;
+	/** True only for the next machine in line. */
+	readonly active: boolean;
+	/** For a locked sign: the id of the machine that must be bought before this one. */
+	readonly requiresId?: string;
+}
+
+function part(name: string, size: Vector3, color: Color3, parent: Instance): Part {
+	const result = new Instance("Part");
+	result.Name = name;
+	result.Anchored = true;
+	result.CanCollide = false;
+	result.CanTouch = false;
+	result.Size = size;
+	result.Color = color;
+	result.Material = Enum.Material.SmoothPlastic;
+	result.TopSurface = Enum.SurfaceType.Smooth;
+	result.BottomSurface = Enum.SurfaceType.Smooth;
+	result.Parent = parent;
+	return result;
+}
+
+function label(
+	parent: Instance,
+	value: string | Text,
+	color: Color3,
+	y: number,
+	height: number,
+	font: Enum.Font,
+): void {
+	const line = new Instance("TextLabel");
+	line.BackgroundTransparency = 1;
+	line.Position = new UDim2(0.05, 0, y, 0);
+	line.Size = new UDim2(0.9, 0, height, 0);
+	if (typeIs(value, "string")) {
+		line.Text = value;
+	} else {
+		localizeLabel(line, value);
+	}
+	line.TextColor3 = color;
+	line.TextScaled = true;
+	line.Font = font;
+	line.TextStrokeTransparency = 0.6;
+	line.Parent = parent;
+}
+
+/** How far above and below the planned spot the floor is searched for (studs). */
+const FLOOR_SEARCH_UP = 10;
+const FLOOR_SEARCH_DOWN = 60;
+
+/**
+ * Moves `at` down (or up) onto the real floor under it. Why: the planned height comes from the plot spawn point,
+ * which stands above the floor on the map author's plots, so signs hung in the air (play-test 2026-11-25).
+ * Signs, characters and non-colliding parts are ignored; with no floor found the planned spot is kept.
+ */
+function onFloor(at: CFrame, ignore: Instance): CFrame {
+	const params = new RaycastParams();
+	params.FilterType = Enum.RaycastFilterType.Exclude;
+	const skip: Instance[] = [ignore];
+	for (const player of Players.GetPlayers()) {
+		if (player.Character !== undefined) {
+			skip.push(player.Character);
+		}
+	}
+	params.FilterDescendantsInstances = skip;
+	params.RespectCanCollide = true;
+	const origin = at.Position.add(new Vector3(0, FLOOR_SEARCH_UP, 0));
+	const hit = Workspace.Raycast(origin, new Vector3(0, -(FLOOR_SEARCH_UP + FLOOR_SEARCH_DOWN), 0), params);
+	return hit !== undefined ? at.add(new Vector3(0, hit.Position.Y - at.Position.Y, 0)) : at;
+}
+
+/**
+ * Builds a sign standing at `at` (its foot on the ground, front facing the walkway).
+ * Returns the model and its board, where the caller puts the buy prompt.
+ */
+export function buildSign(name: string, at: CFrame, info: SignInfo, parent: Instance): { model: Model; board: Part } {
+	const model = new Instance("Model");
+	model.Name = name;
+	at = onFloor(at, parent);
+	const accent = info.active ? COLORS.active : COLORS.locked;
+
+	const post = part("Post", POST_SIZE, COLORS.post, model);
+	post.CFrame = at.mul(new CFrame(0, POST_SIZE.Y / 2, 0));
+
+	const board = part("Board", BOARD_SIZE, COLORS.board, model);
+	board.CFrame = at.mul(new CFrame(0, POST_SIZE.Y + BOARD_SIZE.Y / 2 - 0.4, 0));
+
+	// A thin neon frame behind the board: the glow tells "buy me" from "later" at a glance.
+	const frame = part("Glow", BOARD_SIZE.add(new Vector3(0.3, 0.3, -0.2)), accent, model);
+	frame.Material = info.active ? Enum.Material.Neon : Enum.Material.SmoothPlastic;
+	frame.CFrame = board.CFrame.mul(new CFrame(0, 0, 0.15));
+
+	// CFrame.lookAt points -Z at the walkway, so the readable side is the board's Front face.
+	const gui = new Instance("SurfaceGui");
+	gui.Face = Enum.NormalId.Front;
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud;
+	gui.PixelsPerStud = PIXELS_PER_STUD;
+	gui.LightInfluence = 0;
+	gui.Parent = board;
+
+	label(gui, text(nameKeys.machine(info.machineId)), COLORS.text, 0.06, 0.3, Enum.Font.BuilderSansExtraBold);
+	label(gui, info.price, info.active ? COLORS.price : COLORS.muted, 0.38, 0.28, Enum.Font.BuilderSansExtraBold);
+	const requires = info.requiresId !== undefined ? nameKeys.machine(info.requiresId) : "line.prevMachine";
+	const hint = info.active ? text("line.signActive") : text("line.signRequires", { name: ref(requires) });
+	label(gui, hint, info.active ? accent : COLORS.muted, 0.7, 0.22, Enum.Font.BuilderSansBold);
+
+	model.PrimaryPart = board;
+	model.Parent = parent;
+	return { model, board };
+}

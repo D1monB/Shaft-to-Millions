@@ -2,7 +2,7 @@
 // Why: the developer can play-test every system before the map author delivers models, and as soon as a
 // real tagged model exists, its placeholder is no longer built. Nothing here ships to live servers.
 import { CollectionService, RunService, Workspace } from "@rbxts/services";
-import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
+import { ATTRIBUTES, PLOTS, PLOT_ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, OreId } from "shared/config/ores";
 
 let folder: Folder | undefined;
@@ -111,12 +111,7 @@ export function buildBasePlaceholders(): void {
 			color: Color3.fromRGB(90, 90, 95),
 			material: Enum.Material.Slate,
 		});
-		buildOreRow(new Vector3(10, 0, 20), [
-			["coal", 4],
-			["copper", 3],
-			["iron", 3],
-			["quartz", 1],
-		]);
+		buildOreRow(new Vector3(10, 0, 20), [["copper", 6]]);
 	}
 	if (needsPlaceholders(TAGS.SurfaceSpawn)) {
 		makePlaceholder({
@@ -125,7 +120,7 @@ export function buildBasePlaceholders(): void {
 			position: new Vector3(0, 0.5, -10),
 			color: Color3.fromRGB(120, 170, 255),
 			tag: TAGS.SurfaceSpawn,
-			label: "Поверхня (швидка подорож)",
+			label: "Surface (fast travel)",
 		});
 	}
 	if (needsPlaceholders(TAGS.Shop)) {
@@ -135,7 +130,7 @@ export function buildBasePlaceholders(): void {
 			position: new Vector3(-10, 4, -20),
 			color: Color3.fromRGB(240, 180, 60),
 			tag: TAGS.Shop,
-			label: "Магазин спорядження",
+			label: "Gear Shop",
 		});
 	}
 	if (needsPlaceholders(TAGS.SellZone)) {
@@ -145,39 +140,8 @@ export function buildBasePlaceholders(): void {
 			position: new Vector3(-10, 3, 0),
 			color: Color3.fromRGB(90, 200, 120),
 			tag: TAGS.SellZone,
-			label: "Скупка руди",
+			label: "Ore Buyer",
 			transparent: true,
-		});
-	}
-}
-
-/** Factory area on the surface: warehouse and one spot per machine. */
-export function buildFactoryPlaceholders(): void {
-	if (needsPlaceholders(TAGS.Warehouse)) {
-		makePlaceholder({
-			name: "Warehouse",
-			size: new Vector3(10, 8, 6),
-			position: new Vector3(-30, 4, -20),
-			color: Color3.fromRGB(150, 110, 70),
-			tag: TAGS.Warehouse,
-			label: "Склад",
-		});
-	}
-	if (needsPlaceholders(TAGS.Machine)) {
-		const machines: ReadonlyArray<[string, string, Color3]> = [
-			["furnace", "Горн", Color3.fromRGB(200, 80, 40)],
-			["workbench", "Верстат", Color3.fromRGB(110, 120, 140)],
-		];
-		machines.forEach(([machineId, label, color], index) => {
-			makePlaceholder({
-				name: `Machine_${machineId}`,
-				size: new Vector3(6, 6, 6),
-				position: new Vector3(-30 - index * 12, 3, 0),
-				color,
-				tag: TAGS.Machine,
-				attributes: { [ATTRIBUTES.MachineId]: machineId },
-				label,
-			});
 		});
 	}
 }
@@ -192,34 +156,35 @@ function makeCamp(layer: number, position: Vector3): void {
 	camp.Position = position;
 	camp.Color = Color3.fromRGB(80, 160, 255);
 	camp.SetAttribute(ATTRIBUTES.LayerId, layer);
-	makeLabel(camp, `Табір шару ${layer}`);
+	makeLabel(camp, `Layer ${layer} camp`);
 	camp.Parent = getFolder();
 	CollectionService.AddTag(camp, TAGS.CampSpawn);
 }
 
 /**
- * Test layers 2 and 3 next to layer 1 (in the real map they are deeper, here they are just further away),
- * with a camp per layer and a drill site per layer. Walk to camp 2, then camp 3, to open the layers.
+ * Test layers 2 to 5 next to layer 1 (in the real map they are deeper, here they are just further away),
+ * with a camp per layer and a drill site per layer. Walk to camp 2, then 3, 4 and 5, to open the layers.
  */
 export function buildLayerPlaceholders(): void {
 	if (needsPlaceholders(TAGS.CampSpawn)) {
 		makePlaceholder({
 			name: "DeepFloor",
-			size: new Vector3(160, 1, 80),
-			position: new Vector3(40, -0.5, 100),
+			size: new Vector3(160, 1, 200),
+			position: new Vector3(40, -0.5, 160),
 			color: Color3.fromRGB(70, 55, 50),
 			material: Enum.Material.Basalt,
 		});
 		makeCamp(1, new Vector3(0, 0.5, 40));
 		makeCamp(2, new Vector3(0, 0.5, 80));
 		makeCamp(3, new Vector3(0, 0.5, 120));
-		buildOreRow(new Vector3(10, 0, 80), [
-			["silver", 3],
-			["gold", 2],
-		]);
-		buildOreRow(new Vector3(10, 0, 120), [
-			["obsidian", 3],
-			["cobalt", 2],
+		makeCamp(4, new Vector3(0, 0.5, 160));
+		makeCamp(5, new Vector3(0, 0.5, 200));
+		buildOreRow(new Vector3(10, 0, 80), [["iron", 4]]);
+		buildOreRow(new Vector3(10, 0, 120), [["silver", 4]]);
+		buildOreRow(new Vector3(10, 0, 160), [["gold", 4]]);
+		buildOreRow(new Vector3(10, 0, 200), [
+			["titanium", 3],
+			["iridium", 1],
 		]);
 	}
 	if (needsPlaceholders(TAGS.DrillSite)) {
@@ -227,6 +192,8 @@ export function buildLayerPlaceholders(): void {
 			[1, 40],
 			[2, 80],
 			[3, 120],
+			[4, 160],
+			[5, 200],
 		] as const) {
 			makePlaceholder({
 				name: `DrillSite_${layer}`,
@@ -236,7 +203,7 @@ export function buildLayerPlaceholders(): void {
 				material: Enum.Material.DiamondPlate,
 				tag: TAGS.DrillSite,
 				attributes: { [ATTRIBUTES.LayerId]: layer },
-				label: `Автобур ${layer}`,
+				label: `Auto Drill ${layer}`,
 			});
 		}
 	}
@@ -248,9 +215,9 @@ export function buildChestPlaceholders(): void {
 		return;
 	}
 	const chests: ReadonlyArray<[string, string, Color3]> = [
-		["pet_chest", "Скриня улюбленців", Color3.fromRGB(255, 140, 180)],
-		["speed_chest", "Скриня швидкості", Color3.fromRGB(80, 200, 255)],
-		["pickaxe_chest", "Скриня кирки", Color3.fromRGB(255, 170, 60)],
+		["pet_chest", "Pet Chest", Color3.fromRGB(255, 140, 180)],
+		["speed_chest", "Speed Chest", Color3.fromRGB(80, 200, 255)],
+		["pickaxe_chest", "Pickaxe Chest", Color3.fromRGB(255, 170, 60)],
 	];
 	chests.forEach(([chestId, label, color], index) => {
 		makePlaceholder({
@@ -264,4 +231,85 @@ export function buildChestPlaceholders(): void {
 			label,
 		});
 	});
+}
+
+/** A grey-box machine: a Model with one labelled box, the Stage attribute and a primary part. */
+function makeMachineBox(parent: Instance, stage: number, position: Vector3): void {
+	const model = new Instance("Model");
+	model.Name = `${stage < 10 ? "0" : ""}${stage}_Machine`;
+	const box = new Instance("Part");
+	box.Name = "Frame";
+	box.Anchored = true;
+	box.Size = new Vector3(6, 6, 6);
+	box.Position = position;
+	box.Color = Color3.fromHSV(stage / 12, 0.5, 0.9);
+	box.Material = Enum.Material.SmoothPlastic;
+	box.Parent = model;
+	makeLabel(box, `Machine ${stage}`);
+	model.PrimaryPart = box;
+	model.SetAttribute(PLOT_ATTRIBUTES.Stage, stage);
+	model.Parent = parent;
+}
+
+/** A plot like the map author's: Base, Factory/Machines (12 boxes) and Factory/Conveyors, or only a Base. */
+function makePlot(plotsFolder: Folder, index: number, origin: Vector3, withFactory: boolean): void {
+	const plot = new Instance("Model");
+	plot.Name = `Plot${index}`;
+	plot.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
+	plot.SetAttribute(PLOT_ATTRIBUTES.PlotIndex, index);
+	const base = new Instance("Part");
+	base.Name = PLOTS.Base;
+	base.Anchored = true;
+	base.Size = new Vector3(90, 1, 30);
+	base.Position = origin;
+	base.Color = Color3.fromRGB(120, 90, 70);
+	base.Parent = plot;
+	plot.PrimaryPart = base;
+	if (withFactory) {
+		const factory = new Instance("Folder");
+		factory.Name = PLOTS.Factory;
+		const machines = new Instance("Folder");
+		machines.Name = PLOTS.Machines;
+		machines.Parent = factory;
+		const conveyors = new Instance("Folder");
+		conveyors.Name = PLOTS.Conveyors;
+		conveyors.Parent = factory;
+		for (let stage = 1; stage <= 12; stage++) {
+			makeMachineBox(machines, stage, origin.add(new Vector3(-41 + (stage - 1) * 7.5, 3.5, 0)));
+		}
+		const belt = new Instance("Part");
+		belt.Name = "Conveyor_Straight";
+		belt.Anchored = true;
+		belt.Size = new Vector3(86, 0.4, 3);
+		belt.Position = origin.add(new Vector3(0, 0.7, 6));
+		belt.Color = Color3.fromRGB(60, 60, 65);
+		belt.SetAttribute("ConveyorFlow", 1);
+		belt.Parent = conveyors;
+		factory.Parent = plot;
+	}
+	plot.Parent = plotsFolder;
+}
+
+/**
+ * Two test plots when the place has no Map/Plots (our own test place): the first with a full grey-box factory, the
+ * second with only a Base, so the runtime copy of the factory is tested too.
+ */
+export function buildPlotPlaceholders(): void {
+	if (
+		!RunService.IsStudio() ||
+		Workspace.FindFirstChild(PLOTS.MapFolder)?.FindFirstChild(PLOTS.PlotsFolder) !== undefined
+	) {
+		return;
+	}
+	let map = Workspace.FindFirstChild(PLOTS.MapFolder);
+	if (map === undefined) {
+		map = new Instance("Folder");
+		map.Name = PLOTS.MapFolder;
+		map.Parent = Workspace;
+	}
+	const plotsFolder = new Instance("Folder");
+	plotsFolder.Name = PLOTS.PlotsFolder;
+	plotsFolder.Parent = map;
+	makePlot(plotsFolder, 1, new Vector3(-80, 0.5, -60), true);
+	makePlot(plotsFolder, 2, new Vector3(-80, 0.5, -100), false);
 }

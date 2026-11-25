@@ -1,10 +1,11 @@
 // Fast travel: the player picks the surface or an opened camp, the SERVER checks everything and moves the character.
 // The client only sends the destination number. Going up is free; a pause between trips keeps the descent meaningful.
+import { text } from "shared/features/i18n";
 import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { SURFACE, TRAVEL_REMOTE, canTravelTo, isTravelDestination, travelCooldownLeft } from "shared/features/travel";
 import { RateLimiter } from "shared/lib/rate-limiter";
-import { resetMovementBaseline } from "server/features/movement";
+import { teleportCharacter } from "server/features/movement";
 import { getProfileData } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
@@ -49,21 +50,20 @@ function handleTravel(player: Player, args: Array<unknown>): void {
 	}
 	const wait = travelCooldownLeft(os.clock(), lastTravelAt.get(player));
 	if (wait > 0) {
-		notify(player, `Подорож ще не готова: зачекай ${math.ceil(wait)} с.`, "info");
+		notify(player, text("travel.notReady", { seconds: math.ceil(wait) }), "info");
 		return;
 	}
 	const point = findDestinationPoint(destination);
 	const position = point === undefined ? undefined : getInstancePosition(point);
 	if (position === undefined) {
-		notify(player, "Це місце ще не готове на карті.", "error");
+		notify(player, text("travel.placeMissing"), "error");
 		return;
 	}
 
 	// Start the pause only after a successful trip, so a missing map point never costs the player 30 s.
 	lastTravelAt.set(player, os.clock());
-	character.PivotTo(new CFrame(position.add(new Vector3(0, 4, 0))));
-	// Our own move must not look like a teleport to the movement check.
-	resetMovementBaseline(player);
+	// Through movement, so our own move does not look like a teleport to the check.
+	teleportCharacter(player, position.add(new Vector3(0, 4, 0)));
 }
 
 export function startTravelService(): void {

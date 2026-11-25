@@ -1,15 +1,13 @@
 import { Assert, Test } from "@rbxts/lunit";
-import { LAYERS, LAYER_COUNT, oresOfLayer } from "shared/config/layers";
+import { LAYER_COUNT, oresOfLayer } from "shared/config/layers";
 import { MIN_SECONDS_BETWEEN_UNLOCKS, isLayerOpen, reachLayer, unlockCooldownLeft } from "./layers";
 
 class LayersTests {
 	@Test
-	public everyLayerHasANameAndOre() {
+	public everyLayerHasOre() {
 		for (let layer = 1; layer <= LAYER_COUNT; layer++) {
-			Assert.notUndefined(LAYERS[layer]);
 			Assert.true(oresOfLayer(layer).size() > 0, `layer ${layer} has no ore`);
 		}
-		Assert.equal(LAYERS[1]?.name, "Сірі Пласти");
 	}
 
 	@Test

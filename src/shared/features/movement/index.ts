@@ -4,3 +4,5 @@ export { shoesFor, walkSpeedFor } from "./speed";
 export { beginMoveState, checkMove } from "./move-check";
 export type { MoveResult, MoveSample, MoveState, MoveVerdict } from "./move-check";
 export { CHECK_INTERVAL } from "./tuning";
+export { beginSettle, settle } from "./teleport-settle";
+export type { PendingTeleport, Point, SettleVerdict } from "./teleport-settle";

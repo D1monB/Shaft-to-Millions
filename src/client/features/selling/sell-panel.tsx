@@ -1,5 +1,7 @@
 // Sell panel: every line of the bag, the bonus and the exact total BEFORE the player sells,
 // plus room for other features to add context (e.g. "worth more if processed in the factory").
+import { nameKeys } from "shared/features/i18n";
+import { t } from "client/lib/i18n";
 import React from "@rbxts/react";
 import { TAGS } from "shared/config/map-contract";
 import { ORES, ORE_IDS } from "shared/config/ores";
@@ -28,11 +30,11 @@ export function registerSellPanelExtra(render: (view: PlayerView) => React.Eleme
 function SellPanel() {
 	const view = useView();
 	if (view === undefined) {
-		return <Label text="Завантаження..." tone="muted" />;
+		return <Label text={t("common.loading")} tone="muted" />;
 	}
 	const preview = previewSale(view.bag, ORE_IDS, ORES, multiplierOf(view));
 	if (preview.itemCount === 0) {
-		return <Label text="Сумка порожня. Повертайся з рудою! ⛏️" tone="muted" align="center" />;
+		return <Label text={t("sell.empty")} tone="muted" align="center" />;
 	}
 
 	const extraBlocks: React.Element[] = [];
@@ -63,7 +65,7 @@ function SellPanel() {
 						Size={new UDim2(1, 0, 0, 22)}
 						LayoutOrder={index}
 					>
-						<Label text={`${line.name}  ×${line.count}`} width={new UDim(0.6, 0)} />
+						<Label text={`${t(nameKeys.ore(line.id))}  ×${line.count}`} width={new UDim(0.6, 0)} />
 						<textlabel
 							BackgroundTransparency={1}
 							AnchorPoint={new Vector2(1, 0)}
@@ -77,16 +79,16 @@ function SellPanel() {
 						/>
 					</frame>
 				))}
-				<Label text={`Без бонусів: ${formatMoney(preview.baseTotal)}`} tone="muted" order={100} />
+				<Label text={t("sell.base", { money: formatMoney(preview.baseTotal) })} tone="muted" order={100} />
 				{preview.multiplier > 1 && (
 					<Label
-						text={`🐾 Бонус улюбленців: +${formatPercent(preview.multiplier - 1)}`}
+						text={t("sell.petBonus", { percent: formatPercent(preview.multiplier - 1) })}
 						tone="success"
 						order={101}
 					/>
 				)}
 				<Label
-					text={`Отримаєш: ${formatMoney(preview.total)}`}
+					text={t("sell.total", { money: formatMoney(preview.total) })}
 					display={true}
 					size={TEXT_SIZES.large + 3}
 					tone="gold"
@@ -94,7 +96,7 @@ function SellPanel() {
 				/>
 			</Card>
 			<Button
-				text={`💰 Продати все за ${formatMoney(preview.total)}`}
+				text={t("sell.button", { money: formatMoney(preview.total) })}
 				onClick={() => sendToServer(SELL_BAG_REMOTE)}
 				order={2}
 				height={52}
@@ -107,6 +109,6 @@ function SellPanel() {
 
 export function startSellController(): void {
 	onPromptForTag(TAGS.SellZone, () =>
-		openPanel({ key: "sell", title: "Скупка руди", icon: "💰", render: () => <SellPanel /> }),
+		openPanel({ key: "sell", title: t("sell.title"), icon: "💰", render: () => <SellPanel /> }),
 	);
 }

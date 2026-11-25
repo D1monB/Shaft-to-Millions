@@ -20,7 +20,7 @@ export function Gloss(props: { zIndex?: number; height?: number }) {
 			<uigradient
 				Rotation={90}
 				Transparency={
-					new NumberSequence([new NumberSequenceKeypoint(0, 0.55), new NumberSequenceKeypoint(1, 0.95)])
+					new NumberSequence([new NumberSequenceKeypoint(0, 0.82), new NumberSequenceKeypoint(1, 1)])
 				}
 			/>
 		</frame>

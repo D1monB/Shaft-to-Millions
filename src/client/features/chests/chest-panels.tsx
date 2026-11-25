@@ -4,7 +4,9 @@ import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
 import { MarketplaceService, Players } from "@rbxts/services";
 import { CHESTS, ChestId, isChestId } from "shared/config/chests";
-import { INVENTORY_LIMIT, ITEMS, ItemId, KIND_NAMES, RARITY_NAMES, isItemId } from "shared/config/items";
+import { INVENTORY_LIMIT, ITEMS, ItemId, isItemId } from "shared/config/items";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "client/lib/i18n";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import {
 	CHEST_RESULT_REMOTE,
@@ -15,7 +17,7 @@ import {
 import { formatCount, formatPercent } from "shared/lib/format";
 import { registerHudStat } from "client/features/hud";
 import { useView } from "client/features/profile";
-import { ITEM_CARD_HEIGHT, ItemCard } from "client/lib/item-card";
+import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, ItemCard } from "client/lib/item-card";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText, rarityColor } from "client/lib/item-display";
 import { closePanel, openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
@@ -25,16 +27,19 @@ import { toast } from "client/lib/toasts";
 import {
 	BuyButton,
 	Button,
+	ButtonRow,
 	COLORS,
-	Card,
+	CardStrip,
 	FONTS,
 	Label,
 	ProgressBar,
 	RADIUS,
 	STROKE,
+	StripSlot,
 	Sunburst,
 	TEXT_SIZES,
 	rampSequence,
+	rowItemWidth,
 } from "client/lib/ui-kit";
 
 /** Robux is offered only when the server says so (fail closed, same as the server). */
@@ -42,15 +47,15 @@ function robuxAllowed(): boolean {
 	return Players.LocalPlayer.GetAttribute(ROBUX_CHESTS_ALLOWED_ATTRIBUTE) === true;
 }
 
-/** "🎁 Предметів у сховищі: 14 / 60" with a small bar, centred like in the reference. */
+/** "🎁 Items in storage: 14 / 60" with a small bar, centred like in the reference. */
 function StoragePill(props: { count: number; order: number }) {
 	const full = props.count >= INVENTORY_LIMIT;
 	return (
-		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 40)} LayoutOrder={props.order}>
+		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 30)} LayoutOrder={props.order}>
 			<frame
 				AnchorPoint={new Vector2(0.5, 0.5)}
 				Position={new UDim2(0.5, 0, 0.5, 0)}
-				Size={new UDim2(0, 0, 0, 40)}
+				Size={new UDim2(0, 0, 0, 30)}
 				AutomaticSize={Enum.AutomaticSize.X}
 				BackgroundColor3={COLORS.well}
 			>
@@ -69,7 +74,7 @@ function StoragePill(props: { count: number; order: number }) {
 					AutomaticSize={Enum.AutomaticSize.X}
 					Font={FONTS.display}
 					RichText={true}
-					Text={`🎁  Предметів у сховищі: <font color="#FCD34D">${formatCount(props.count, INVENTORY_LIMIT)}</font>${full ? "  · повне" : ""}`}
+					Text={`🎁  ${t("chest.storage")} <font color="#FCD34D">${formatCount(props.count, INVENTORY_LIMIT)}</font>${full ? `  · ${t("chest.full")}` : ""}`}
 					TextSize={TEXT_SIZES.small + 1}
 					TextColor3={COLORS.text}
 					LayoutOrder={1}
@@ -86,10 +91,42 @@ function StoragePill(props: { count: number; order: number }) {
 	);
 }
 
+/** The odds: every reward as a card with its chance, in one row that scrolls left-right. */
 function ChestPanel(props: { chestId: ChestId }) {
 	const view = useView();
 	if (view === undefined) {
-		return <Label text="Завантаження..." tone="muted" />;
+		return <Label text={t("common.loading")} tone="muted" />;
+	}
+	return (
+		<>
+			<Label
+				text={t("chest.whatDrops", { description: t(nameKeys.chestDescription(props.chestId)) })}
+				tone="muted"
+				size={TEXT_SIZES.small}
+				order={1}
+			/>
+			<CardStrip cardWidth={ITEM_CARD_WIDTH} cardHeight={ITEM_CARD_HEIGHT} order={2}>
+				{chestOdds(props.chestId).map((line, index) => (
+					<StripSlot key={`odds_${index}`} width={ITEM_CARD_WIDTH} height={ITEM_CARD_HEIGHT} order={index}>
+						<ItemCard
+							item={line.item}
+							topRight={{
+								text: formatPercent(line.chance),
+								color: RARITY_LIGHT[ITEMS[line.item].rarity],
+							}}
+						/>
+					</StripSlot>
+				))}
+			</CardStrip>
+		</>
+	);
+}
+
+/** Pinned under the odds, never scrolled away: storage, the open button and the Robux line. */
+function ChestFooter(props: { chestId: ChestId }) {
+	const view = useView();
+	if (view === undefined) {
+		return <></>;
 	}
 	const chest = CHESTS[props.chestId];
 	const full = view.inventory.size() >= INVENTORY_LIMIT;
@@ -97,80 +134,35 @@ function ChestPanel(props: { chestId: ChestId }) {
 
 	let robux: React.Element;
 	if (productId === undefined) {
-		robux = (
-			<Label
-				text="💎 Гра повністю проходиться без Robux · Відкриття за Robux у розробці"
-				tone="muted"
-				size={TEXT_SIZES.small}
-				align="center"
-				order={6}
-			/>
-		);
+		robux = <Label text={t("chest.robuxSoon")} tone="muted" size={TEXT_SIZES.small} align="center" order={6} />;
 	} else if (!robuxAllowed()) {
-		robux = (
-			<Label
-				text="💎 Гра повністю проходиться без Robux · Відкриття за Robux недоступне для твого акаунта"
-				tone="muted"
-				size={TEXT_SIZES.small}
-				align="center"
-				order={6}
-			/>
-		);
+		robux = <Label text={t("chest.robuxBlocked")} tone="muted" size={TEXT_SIZES.small} align="center" order={6} />;
 	} else {
 		robux = (
 			<>
 				<Button
-					text={`💎  Відкрити за R$ ${chest.robuxPrice}`}
+					text={t("chest.openRobux", { price: chest.robuxPrice })}
 					variant="crystal"
 					onClick={() => MarketplaceService.PromptProductPurchase(Players.LocalPlayer, productId)}
 					disabled={full}
 					order={6}
 				/>
-				<Label
-					text="💎 Гра повністю проходиться без Robux"
-					tone="muted"
-					size={TEXT_SIZES.small}
-					align="center"
-					order={7}
-				/>
+				<Label text={t("chest.noRobux")} tone="muted" size={TEXT_SIZES.small} align="center" order={7} />
 			</>
 		);
 	}
 
 	return (
 		<>
-			<Label text="✨ Що може випасти (шанси):" display={true} size={TEXT_SIZES.large} order={1} />
-			<Label text={chest.description} tone="muted" size={TEXT_SIZES.small + 1} order={2} />
-			<Card order={3}>
-				<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 0)} AutomaticSize={Enum.AutomaticSize.Y}>
-					<uigridlayout
-						CellSize={new UDim2(1 / 3, -8, 0, ITEM_CARD_HEIGHT)}
-						CellPadding={new UDim2(0, 12, 0, 14)}
-						HorizontalAlignment={Enum.HorizontalAlignment.Center}
-						SortOrder={Enum.SortOrder.LayoutOrder}
-					/>
-					{chestOdds(props.chestId).map((line, index) => (
-						<ItemCard
-							key={`odds_${index}`}
-							item={line.item}
-							topRight={{
-								text: formatPercent(line.chance),
-								color: RARITY_LIGHT[ITEMS[line.item].rarity],
-							}}
-							order={index}
-						/>
-					))}
-				</frame>
-			</Card>
 			<StoragePill count={view.inventory.size()} order={4} />
 			<BuyButton
 				price={chest.dollarPrice}
 				money={view.money}
-				verb="Відкрити"
+				verb={t("common.open")}
 				icon="✨"
 				blocked={full}
-				height={66}
-				textSize={TEXT_SIZES.title - 2}
+				height={52}
+				textSize={TEXT_SIZES.large}
 				onClick={() => sendToServer(OPEN_CHEST_REMOTE, props.chestId)}
 				order={5}
 			/>
@@ -179,17 +171,26 @@ function ChestPanel(props: { chestId: ChestId }) {
 	);
 }
 
+/** The terminal colour of each chest on the friend's map: pets pink, pickaxe aura violet, speed aura teal. */
+const CHEST_ACCENTS = { pet_chest: "pets", pickaxe_chest: "pickaxeAura", speed_chest: "speedAura" } as const;
+
 function openChest(chestId: ChestId): void {
 	openPanel({
 		key: `chest_${chestId}`,
-		title: CHESTS[chestId].name,
+		title: t(nameKeys.chest(chestId)),
 		icon: "🎁",
+		accent: CHEST_ACCENTS[chestId],
 		render: () => <ChestPanel chestId={chestId} />,
+		footer: () => <ChestFooter chestId={chestId} />,
 	});
 }
 
-/** The reveal: the item tile bounces in over turning light rays, like the reference reward popup. */
-function ChestResult(props: { item: ItemId; chestId: ChestId }) {
+/**
+ * The reveal: the item tile bounces in over turning light rays on the left, its name and effect on the right.
+ * Side by side so it fits a landscape phone without scrolling (developer's feedback 2026-11-25); the buttons are in
+ * the pinned footer.
+ */
+function ChestResult(props: { item: ItemId }) {
 	const def = ITEMS[props.item];
 	const color = rarityColor(props.item);
 	const [scale, scaleMotion] = useMotion(0.3);
@@ -198,13 +199,13 @@ function ChestResult(props: { item: ItemId; chestId: ChestId }) {
 	}, [scaleMotion]);
 
 	return (
-		<>
-			<canvasgroup BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 230)} LayoutOrder={1}>
+		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 190)} LayoutOrder={1}>
+			<canvasgroup BackgroundTransparency={1} Size={new UDim2(0, 190, 0, 190)}>
 				<Sunburst zIndex={1} />
 				<frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={new UDim2(0.5, 0, 0.5, 0)}
-					Size={new UDim2(0, 150, 0, 150)}
+					Size={new UDim2(0, 120, 0, 120)}
 					BackgroundColor3={COLORS.white}
 					ZIndex={2}
 				>
@@ -216,38 +217,55 @@ function ChestResult(props: { item: ItemId; chestId: ChestId }) {
 						BackgroundTransparency={1}
 						Size={new UDim2(1, 0, 1, 0)}
 						Text={KIND_ICONS[def.kind]}
-						TextSize={84}
+						TextSize={68}
 						ZIndex={3}
 					/>
 				</frame>
 			</canvasgroup>
-			<Label
-				text={`${def.name} · ${RARITY_NAMES[def.rarity]}`}
-				display={true}
-				size={TEXT_SIZES.huge - 6}
-				color={color}
-				align="center"
+			<frame BackgroundTransparency={1} Position={new UDim2(0, 206, 0, 0)} Size={new UDim2(1, -206, 1, 0)}>
+				<uilistlayout
+					Padding={new UDim(0, 6)}
+					SortOrder={Enum.SortOrder.LayoutOrder}
+					VerticalAlignment={Enum.VerticalAlignment.Center}
+				/>
+				<Label
+					text={t(nameKeys.item(props.item))}
+					display={true}
+					size={TEXT_SIZES.huge - 6}
+					color={color}
+					order={1}
+				/>
+				<Label
+					text={`${t(nameKeys.rarity(def.rarity))} · ${t(nameKeys.kind(def.kind))}`}
+					tone="muted"
+					order={2}
+				/>
+				<Label
+					text={effectText(def.kind, def.bonus)}
+					display={true}
+					size={TEXT_SIZES.large}
+					tone="gold"
+					order={3}
+				/>
+				<Label text={t("chest.alreadyOwned")} tone="muted" size={TEXT_SIZES.small} order={4} />
+			</frame>
+		</frame>
+	);
+}
+
+/** Pinned under the reveal: take it, or open the same chest again. */
+function ChestResultFooter(props: { chestId: ChestId }) {
+	return (
+		<ButtonRow count={2} order={1}>
+			<Button text={t("chest.take")} onClick={closePanel} width={rowItemWidth(2)} order={1} />
+			<Button
+				text={t("chest.again")}
+				variant="secondary"
+				onClick={() => openChest(props.chestId)}
+				width={rowItemWidth(2)}
 				order={2}
 			/>
-			<Label text={KIND_NAMES[def.kind]} tone="muted" align="center" order={3} />
-			<Label
-				text={effectText(def.kind, def.bonus)}
-				display={true}
-				size={TEXT_SIZES.large}
-				tone="gold"
-				align="center"
-				order={4}
-			/>
-			<Label
-				text="Предмет уже в інвентарі. Надінь його в меню «Речі»."
-				tone="muted"
-				size={TEXT_SIZES.small + 1}
-				align="center"
-				order={5}
-			/>
-			<Button text="Забрати!" onClick={closePanel} height={60} textSize={TEXT_SIZES.large} order={6} />
-			<Button text="Ще раз" variant="secondary" onClick={() => openChest(props.chestId)} order={7} />
-		</>
+		</ButtonRow>
 	);
 }
 
@@ -266,12 +284,14 @@ export function startChestsController(): void {
 				playSound("chestRare");
 			}
 			// "info", not "success": the chest has its own sound, a third one on top would be noise.
-			toast(`Випало: ${ITEMS[item].name}!`, "info", 4);
+			toast(t("chest.dropped", { item: t(nameKeys.item(item)) }), "info", 4);
 			openPanel({
 				key: `chest_result_${item}_${os.clock()}`,
-				title: "Новий предмет!",
+				title: t("chest.newItem"),
 				icon: "🎉",
-				render: () => <ChestResult item={item} chestId={chestId} />,
+				accent: CHEST_ACCENTS[chestId],
+				render: () => <ChestResult item={item} />,
+				footer: () => <ChestResultFooter chestId={chestId} />,
 			});
 		}
 	});
@@ -279,7 +299,7 @@ export function startChestsController(): void {
 		view.inventory.size() > 0
 			? {
 					icon: "🎁",
-					text: `Предметів у сховищі: ${formatCount(view.inventory.size(), INVENTORY_LIMIT)}`,
+					text: t("hud.storage", { count: formatCount(view.inventory.size(), INVENTORY_LIMIT) }),
 					short: formatCount(view.inventory.size(), INVENTORY_LIMIT),
 				}
 			: undefined,

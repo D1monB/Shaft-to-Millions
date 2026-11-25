@@ -105,3 +105,56 @@ export function rowItemWidth(count: number): UDim {
 	const safe = math.max(1, count);
 	return new UDim(1 / safe, -(ROW_GAP * (safe - 1)) / safe);
 }
+
+export interface CardStripProps extends React.PropsWithChildren {
+	/** Height of every card (plus room for the scroll bar). */
+	readonly cardHeight: number;
+	/** Width of every card. */
+	readonly cardWidth: number;
+	readonly order?: number;
+	readonly gap?: number;
+}
+
+/**
+ * A row of cards that scrolls left-right (developer's request 2026-11-25: vertical grids were awkward, the chest
+ * odds needed scrolling down to the open button). Each child must have the size cardWidth x cardHeight.
+ */
+export function CardStrip(props: CardStripProps) {
+	const bar = 6;
+	return (
+		<scrollingframe
+			BackgroundTransparency={1}
+			BorderSizePixel={0}
+			Size={new UDim2(1, 0, 0, props.cardHeight + bar + 10)}
+			CanvasSize={new UDim2(0, 0, 0, 0)}
+			AutomaticCanvasSize={Enum.AutomaticSize.X}
+			ScrollingDirection={Enum.ScrollingDirection.X}
+			ScrollBarThickness={bar}
+			ScrollBarImageColor3={COLORS.textMuted}
+			HorizontalScrollBarInset={Enum.ScrollBarInset.None}
+			ElasticBehavior={Enum.ElasticBehavior.Always}
+			LayoutOrder={props.order ?? 0}
+		>
+			<uipadding PaddingTop={new UDim(0, 4)} PaddingLeft={new UDim(0, 2)} PaddingRight={new UDim(0, 2)} />
+			<uilistlayout
+				FillDirection={Enum.FillDirection.Horizontal}
+				Padding={new UDim(0, props.gap ?? 10)}
+				SortOrder={Enum.SortOrder.LayoutOrder}
+			/>
+			{props.children}
+		</scrollingframe>
+	);
+}
+
+/** One fixed-size slot in a CardStrip (an ItemCard fills its parent). */
+export function StripSlot(props: React.PropsWithChildren<{ width: number; height: number; order?: number }>) {
+	return (
+		<frame
+			BackgroundTransparency={1}
+			Size={new UDim2(0, props.width, 0, props.height)}
+			LayoutOrder={props.order ?? 0}
+		>
+			{props.children}
+		</frame>
+	);
+}

@@ -1,5 +1,7 @@
+import { decodeText } from "shared/features/i18n";
 import { PlayerView } from "shared/features/profile";
 import { NOTIFY_REMOTE, NotifyKind, STATE_UPDATE_REMOTE } from "shared/lib/remote-names";
+import { tx } from "client/lib/i18n";
 import { onServerMessage } from "client/lib/remotes";
 import { Store, useStore } from "client/lib/store";
 import { toast } from "client/lib/toasts";
@@ -38,9 +40,10 @@ export function startProfileController(): void {
 			viewStore.set(incoming as PlayerView);
 		}
 	});
-	onServerMessage(NOTIFY_REMOTE, (text, kind) => {
-		if (typeIs(text, "string")) {
-			toast(text, (typeIs(kind, "string") && NOTIFY_KINDS.has(kind) ? kind : "info") as NotifyKind);
+	onServerMessage(NOTIFY_REMOTE, (key, params, kind) => {
+		const message = decodeText(key, params);
+		if (message !== undefined) {
+			toast(tx(message), (typeIs(kind, "string") && NOTIFY_KINDS.has(kind) ? kind : "info") as NotifyKind);
 		}
 	});
 }

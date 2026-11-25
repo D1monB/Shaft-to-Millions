@@ -1,4 +1,4 @@
-// upgrades feature (shared): shop gear (pickaxes, bags, shoes) bought for money and materials, owned and equipped.
+// upgrades feature (shared): shop gear (pickaxes, bags, shoes) bought for money, owned and equipped.
 // Public API of this feature. Other code imports only from this file.
 export {
 	GEAR_BY_SLOT,
@@ -8,12 +8,8 @@ export {
 	findGear,
 	gearCardState,
 	isGearSlot,
-	isReachableWithTier,
-	materialList,
-	missingMaterials,
 	nextGearToBuy,
 	starterOf,
-	tierNeeded,
 	tryBuyGear,
 	tryEquipGear,
 } from "./upgrades";
@@ -25,7 +21,5 @@ export type {
 	GearCardState,
 	GearSlot,
 	GearState,
-	MaterialStock,
-	MissingMaterial,
 } from "./upgrades";
 export { BUY_GEAR_REMOTE, EQUIP_GEAR_REMOTE, SHOP_DISTANCE } from "./network";

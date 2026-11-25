@@ -1,14 +1,17 @@
 // "What should I do next?" - one clear hint for the HUD (CLAUDE.md: one hint, gradual unlocks).
-// Pure: every feature contributes candidate goals, this file only picks the one to show.
+// Pure: every feature contributes candidate goals, this file only picks the one to show. Texts are keys (decision
+// 033): the HUD shows them in the player's language.
+import { StringKey } from "shared/config/i18n";
+import { SOURCE_LANGUAGE, Text, ref, text, translateText } from "shared/features/i18n";
 
 export interface GoalCandidate {
-	/** Short name of the thing to buy, e.g. "Сталева кирка". */
-	readonly label: string;
+	/** Name key of the thing to buy, e.g. "gear.pickaxe_silver". */
+	readonly label: StringKey;
 	readonly price: number;
 	/** Lower = more important at the same price range. Unlocking new ore beats a bigger bag. */
 	readonly priority: number;
-	/** Something other than money is still missing, e.g. "Мідний злиток 2/5". Such a goal is never "affordable". */
-	readonly missing?: string;
+	/** Name key of something other than money that is still missing. Such a goal is never "affordable". */
+	readonly missing?: StringKey;
 }
 
 export interface GoalState {
@@ -23,13 +26,13 @@ export type GoalKind = "bag-full" | "affordable" | "saving" | "start" | "deeper"
 export interface GoalInfo {
 	readonly kind: GoalKind;
 	/** Short title: the thing to buy, or what to do. */
-	readonly title: string;
-	/** Short status on the right of the banner, e.g. "Бракує $150" or "Готово!". */
-	readonly status: string;
+	readonly title: Text;
+	/** Short status on the right of the banner, e.g. "Need $150". */
+	readonly status: Text;
 	/** 0..1 for the bar under the title. */
 	readonly progress: number;
 	/** The whole hint as one sentence (used where there is room for only one line). */
-	readonly text: string;
+	readonly text: Text;
 }
 
 function safeMoney(money: number): number {
@@ -47,10 +50,10 @@ export function pickGoalInfo(state: GoalState, candidates: ReadonlyArray<GoalCan
 	if (state.bagCapacity > 0 && state.bagUsed >= state.bagCapacity) {
 		return {
 			kind: "bag-full",
-			title: "Сумка повна",
-			status: "Продай руду",
+			title: text("goal.bagFull.title"),
+			status: text("goal.bagFull.status"),
 			progress: 1,
-			text: "Сумка повна: продай руду або віднеси на склад.",
+			text: text("goal.bagFull.text"),
 		};
 	}
 	const money = safeMoney(state.money);
@@ -62,10 +65,10 @@ export function pickGoalInfo(state: GoalState, candidates: ReadonlyArray<GoalCan
 		)[0];
 		return {
 			kind: "affordable",
-			title: best.label,
-			status: "Можна купити!",
+			title: text(best.label),
+			status: text("goal.affordable.status"),
 			progress: 1,
-			text: `Можна купити: ${best.label}!`,
+			text: text("goal.affordable.text", { name: ref(best.label) }),
 		};
 	}
 	if (valid.size() > 0) {
@@ -75,41 +78,41 @@ export function pickGoalInfo(state: GoalState, candidates: ReadonlyArray<GoalCan
 		if (cheapest.missing !== undefined && money >= cheapest.price) {
 			return {
 				kind: "saving",
-				title: cheapest.label,
-				status: cheapest.missing,
+				title: text(cheapest.label),
+				status: text(cheapest.missing),
 				progress: 1,
-				text: `Ціль: ${cheapest.label}. Потрібно: ${cheapest.missing}.`,
+				text: text("goal.saving.textOther", { name: ref(cheapest.label), missing: ref(cheapest.missing) }),
 			};
 		}
 		const missing = math.ceil(cheapest.price - money);
 		return {
 			kind: "saving",
-			title: cheapest.label,
-			status: `Бракує $${missing}`,
+			title: text(cheapest.label),
+			status: text("goal.saving.missing", { money: missing }),
 			// A price of 0 is always affordable, so here the price is above 0 and the division is safe.
 			progress: math.clamp(money / cheapest.price, 0, 1),
-			text: `Ціль: ${cheapest.label}. Бракує $${missing}.`,
+			text: text("goal.saving.text", { name: ref(cheapest.label), money: missing }),
 		};
 	}
 	if (state.bagUsed === 0) {
 		return {
 			kind: "start",
-			title: "Добувай руду",
-			status: "Клікай по блоках",
+			title: text("goal.start.title"),
+			status: text("goal.start.status"),
 			progress: 0,
-			text: "Клікай по блоках руди, щоб добувати.",
+			text: text("goal.start.text"),
 		};
 	}
 	return {
 		kind: "deeper",
-		title: "Спускайся глибше",
-		status: "Там дорожча руда",
+		title: text("goal.deeper.title"),
+		status: text("goal.deeper.status"),
 		progress: 1,
-		text: "Добувай глибше: там дорожча руда.",
+		text: text("goal.deeper.text"),
 	};
 }
 
-/** The hint as one sentence. */
+/** The hint as one English sentence (tests and logs; the HUD translates GoalInfo itself). */
 export function pickGoal(state: GoalState, candidates: ReadonlyArray<GoalCandidate>): string {
-	return pickGoalInfo(state, candidates).text;
+	return translateText(SOURCE_LANGUAGE, pickGoalInfo(state, candidates).text);
 }

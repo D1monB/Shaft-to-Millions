@@ -1,12 +1,13 @@
-// Every ore in the game. A new ore is a new entry here, not new code.
+// Every ore in the game (decisions 031): one ore per layer of the pit, plus iridium, found only in the portal zone at
+// the bottom of layer 5. Ids match the map author's ItemTemplates/<ore> folders. A new ore is a new entry here.
 // Balance notes: price grows faster than hardness, so deeper ore is worth the trip;
 // `requiredTier` locks ore behind a better pickaxe (see pickaxes.ts) so progress is visible.
+// `price` is the raw-ore value; the tycoon line multiplies it by the stage it reaches (config/line.ts).
 
-export type OreId = "coal" | "copper" | "iron" | "quartz" | "silver" | "gold" | "obsidian" | "cobalt";
+export type OreId = "copper" | "iron" | "silver" | "gold" | "titanium" | "iridium";
 
 export interface OreDef {
-	readonly name: string;
-	/** Sell price of one piece, in dollars. */
+	/** Sell price of one piece of raw ore, in dollars. */
 	readonly price: number;
 	/** Damage needed to break one node. Hits = ceil(hardness / pickaxe power). */
 	readonly hardness: number;
@@ -16,89 +17,71 @@ export interface OreDef {
 	readonly respawnSeconds: number;
 	/** Layer where this ore is found (see layers.ts). */
 	readonly layer: number;
+	/** False: auto drills never mine it (iridium grows only in the portal zone, it must be mined by hand). */
+	readonly drillable?: boolean;
+	/** True: grows only at ore spawn points near the portal (decision 034), never at the layer's other points. */
+	readonly nearPortal?: true;
 	/** RGB 0-255. Plain numbers, not Color3, so this file also runs in headless tests. */
 	readonly color: readonly [number, number, number];
 }
 
 export const ORES: { readonly [K in OreId]: OreDef } = {
-	coal: { name: "Вугілля", price: 2, hardness: 2, requiredTier: 1, respawnSeconds: 6, layer: 1, color: [45, 45, 50] },
 	copper: {
-		name: "Мідь",
 		price: 5,
 		hardness: 3,
 		requiredTier: 1,
 		respawnSeconds: 8,
 		layer: 1,
-		color: [200, 110, 60],
+		color: [214, 120, 52],
 	},
 	iron: {
-		name: "Залізо",
-		price: 9,
-		hardness: 5,
-		requiredTier: 1,
-		respawnSeconds: 10,
-		layer: 1,
-		color: [170, 160, 150],
-	},
-	// A rare vein on layer 1 that the starter pickaxe cannot break: the first visible goal.
-	quartz: {
-		name: "Кварц",
-		price: 25,
+		price: 12,
 		hardness: 6,
 		requiredTier: 2,
-		respawnSeconds: 20,
-		layer: 1,
-		color: [235, 225, 255],
+		respawnSeconds: 10,
+		layer: 2,
+		color: [150, 152, 158],
 	},
 	silver: {
-		name: "Срібло",
-		price: 20,
-		hardness: 6,
-		requiredTier: 2,
-		respawnSeconds: 12,
-		layer: 2,
-		color: [210, 215, 225],
-	},
-	gold: {
-		name: "Золото",
-		price: 45,
+		price: 30,
 		hardness: 9,
 		requiredTier: 3,
-		respawnSeconds: 16,
-		layer: 2,
+		respawnSeconds: 14,
+		layer: 3,
+		color: [222, 226, 236],
+	},
+	// Gold and titanium keep their ids; their layer and price moved (decisions 031), so old drills follow sanitize.
+	gold: {
+		price: 70,
+		hardness: 13,
+		requiredTier: 4,
+		respawnSeconds: 18,
+		layer: 4,
 		color: [245, 200, 60],
 	},
-	obsidian: {
-		name: "Обсидіан",
-		price: 80,
-		hardness: 12,
-		requiredTier: 3,
-		respawnSeconds: 18,
-		layer: 3,
-		color: [40, 20, 60],
-	},
-	cobalt: {
-		name: "Кобальт",
+	titanium: {
 		price: 150,
-		hardness: 16,
-		requiredTier: 4,
-		respawnSeconds: 24,
-		layer: 3,
-		color: [40, 90, 220],
+		hardness: 18,
+		requiredTier: 5,
+		respawnSeconds: 22,
+		layer: 5,
+		color: [110, 190, 240],
+	},
+	// The jackpot: only in the portal zone at the bottom of layer 5, hard and slow to come back, never drilled.
+	iridium: {
+		price: 400,
+		hardness: 24,
+		requiredTier: 5,
+		respawnSeconds: 45,
+		layer: 5,
+		drillable: false,
+		nearPortal: true,
+		color: [170, 100, 240],
 	},
 };
 
 /** Ids in display order (cheap to expensive). */
-export const ORE_IDS: ReadonlyArray<OreId> = [
-	"coal",
-	"copper",
-	"iron",
-	"quartz",
-	"silver",
-	"gold",
-	"obsidian",
-	"cobalt",
-];
+export const ORE_IDS: ReadonlyArray<OreId> = ["copper", "iron", "silver", "gold", "titanium", "iridium"];
 
 export function isOreId(value: unknown): value is OreId {
 	return typeIs(value, "string") && (ORES as Record<string, OreDef | undefined>)[value] !== undefined;

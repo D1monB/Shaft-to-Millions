@@ -30,24 +30,23 @@ class MiningTests {
 
 	@Test
 	public layerOneStartsWithCheapMinableOre() {
-		// Decision 002: coal, copper, iron on layer 1, all minable with the starter pickaxe.
-		for (const id of ["coal", "copper", "iron"] as const) {
-			Assert.equal(ORES[id].layer, 1);
-			Assert.true(canMineTier(ORES[id], IRON_PICK));
+		// Decision 027: copper on layer 1, minable with the starter pickaxe.
+		const layerOne = ORE_IDS.filter((id) => ORES[id].layer === 1);
+		Assert.true(layerOne.size() > 0);
+		for (const id of layerOne) {
+			Assert.true(canMineTier(ORES[id], IRON_PICK), `${id} needs a better pickaxe than the starter`);
 		}
-		Assert.equal(hitsRequired(ORES.coal.hardness, IRON_PICK.power), 2);
 		Assert.equal(hitsRequired(ORES.copper.hardness, IRON_PICK.power), 3);
-		Assert.equal(hitsRequired(ORES.iron.hardness, IRON_PICK.power), 5);
 	}
 
 	// ---- tool tiers ----
 
 	@Test
 	public weakPickaxeCannotMineLockedOre() {
-		Assert.false(canMineTier(ORES.quartz, IRON_PICK));
-		Assert.true(canMineTier(ORES.quartz, STEEL_PICK));
+		Assert.false(canMineTier(ORES.iron, IRON_PICK));
+		Assert.true(canMineTier(ORES.iron, STEEL_PICK));
 		const session = new MiningSession<string>();
-		const result = session.hit("q", ORES.quartz, IRON_PICK, 0);
+		const result = session.hit("q", ORES.iron, IRON_PICK, 0);
 		Assert.equal(result.kind, "locked");
 		if (result.kind === "locked") {
 			Assert.equal(result.requiredTier, 2);
@@ -97,8 +96,8 @@ class MiningTests {
 	@Test
 	public nodesAreIndependent() {
 		const session = new MiningSession<string>();
-		session.hit("a", ORES.coal, IRON_PICK, 0);
-		const other = session.hit("b", ORES.coal, IRON_PICK, 1);
+		session.hit("a", ORES.copper, IRON_PICK, 0);
+		const other = session.hit("b", ORES.copper, IRON_PICK, 1);
 		Assert.equal(other.kind, "progress");
 	}
 
@@ -107,11 +106,11 @@ class MiningTests {
 		// Player A breaking a node must not deplete it for player B.
 		const a = new MiningSession<string>();
 		const b = new MiningSession<string>();
-		a.hit("n", ORES.coal, IRON_PICK, 0);
-		a.hit("n", ORES.coal, IRON_PICK, 1);
+		a.hit("n", ORES.copper, STEEL_PICK, 0);
+		a.hit("n", ORES.copper, STEEL_PICK, 1);
 		Assert.true(a.isDepleted("n", 1.5));
 		Assert.false(b.isDepleted("n", 1.5));
-		Assert.equal(b.hit("n", ORES.coal, IRON_PICK, 1.5).kind, "progress");
+		Assert.equal(b.hit("n", ORES.copper, STEEL_PICK, 1.5).kind, "progress");
 	}
 
 	// ---- anti-cheat: spam and clocks ----
@@ -122,7 +121,7 @@ class MiningTests {
 		let counted = 0;
 		// 1000 clicks within one second.
 		for (let i = 0; i < 1000; i++) {
-			const result = session.hit("n", ORES.iron, IRON_PICK, i / 1000);
+			const result = session.hit("n", ORES.copper, IRON_PICK, i / 1000);
 			if (result.kind !== "cooldown") {
 				counted += 1;
 			}
@@ -134,16 +133,16 @@ class MiningTests {
 	@Test
 	public backwardsClockGivesNoFreeHits() {
 		const session = new MiningSession<string>();
-		session.hit("n", ORES.iron, IRON_PICK, 100);
-		Assert.equal(session.hit("n", ORES.iron, IRON_PICK, 50).kind, "cooldown");
+		session.hit("n", ORES.copper, IRON_PICK, 100);
+		Assert.equal(session.hit("n", ORES.copper, IRON_PICK, 50).kind, "cooldown");
 	}
 
 	@Test
 	public lockedOreDoesNotConsumeTheSwing() {
 		// Clicking a locked node by mistake must not delay the next real hit.
 		const session = new MiningSession<string>();
-		session.hit("q", ORES.quartz, IRON_PICK, 0);
-		Assert.equal(session.hit("c", ORES.coal, IRON_PICK, 0).kind, "progress");
+		session.hit("q", ORES.iron, IRON_PICK, 0);
+		Assert.equal(session.hit("c", ORES.copper, IRON_PICK, 0).kind, "progress");
 	}
 
 	// ---- yield ----
@@ -177,9 +176,9 @@ class MiningTests {
 		const light = getPickaxe("pickaxe_light");
 		Assert.true(hammer.swingSeconds > light.swingSeconds);
 		const session = new MiningSession<string>();
-		Assert.equal(session.hit("a", ORES.coal, hammer, 10).kind, "broken");
-		Assert.equal(session.hit("b", ORES.coal, light, 10 + light.swingSeconds * 0.5).kind, "cooldown");
-		Assert.notEqual(session.hit("b", ORES.coal, light, 10 + light.swingSeconds).kind, "cooldown");
+		Assert.equal(session.hit("a", ORES.copper, hammer, 10).kind, "broken");
+		Assert.equal(session.hit("b", ORES.copper, light, 10 + light.swingSeconds * 0.5).kind, "cooldown");
+		Assert.notEqual(session.hit("b", ORES.copper, light, 10 + light.swingSeconds).kind, "cooldown");
 	}
 }
 

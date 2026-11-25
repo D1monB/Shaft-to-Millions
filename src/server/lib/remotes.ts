@@ -30,6 +30,22 @@ export function remoteEvent(name: string): RemoteEvent {
 }
 
 /**
+ * Creates (once, at startup) an UnreliableRemoteEvent the server fires to clients. Only for visuals that may be lost
+ * (items riding a belt): it is cheaper than a RemoteEvent, and a lost message changes nothing that matters.
+ */
+export function declareUnreliableClientEvent(name: string): UnreliableRemoteEvent {
+	const parent = getFolder();
+	const existing = parent.FindFirstChild(name);
+	if (existing !== undefined && existing.IsA("UnreliableRemoteEvent")) {
+		return existing;
+	}
+	const created = new Instance("UnreliableRemoteEvent");
+	created.Name = name;
+	created.Parent = parent;
+	return created;
+}
+
+/**
  * Creates a RemoteEvent that only the server fires (server -> client) at startup, before any player joins.
  * Created lazily on the first FireClient instead, a client would still be waiting for it (an "Infinite yield" warning)
  * and could connect its handler only AFTER the first message, losing exactly that message.

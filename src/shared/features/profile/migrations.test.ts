@@ -222,6 +222,228 @@ class MigrationsTests {
 			}
 		}
 	}
+
+	// ---- version 4: new ores (decisions 027) ----
+
+	private migrateV4(data: PlainTable): PlainTable {
+		data.schemaVersion = 3;
+		const result = migrate(data, MIGRATIONS, 4);
+		Assert.true(result.ok);
+		return result.ok ? result.data : {};
+	}
+
+	@Test
+	public version4PaysForRemovedOresAndProducts() {
+		const data = this.migrateV4({
+			money: 100,
+			bag: { coal: 10, quartz: 2, iron: 3 },
+			warehouse: { silver: 1, cobalt: 1, silver_ingot: 2, silver_contact: 1, copper_ingot: 4 },
+		});
+		// 10x2 + 2x25 + 20 + 150 + 2x65 + 230
+		Assert.equal(data.money, 100 + 20 + 50 + 20 + 150 + 130 + 230);
+		Assert.deepEqual(data.bag, { iron: 3 });
+		Assert.deepEqual(data.warehouse, { copper_ingot: 4 });
+	}
+
+	@Test
+	public version4RemovesDeadRecipesAndRefundsThem() {
+		const data = this.migrateV4({
+			money: 0,
+			machines: {
+				furnace: { queue: ["smelt_silver", "smelt_copper", "smelt_gold"], ready: { silver_ingot: 1 } },
+				workbench: { queue: ["make_contact", "make_circuit", 7, "unknown_recipe"], ready: {} },
+			},
+		});
+		// smelt_silver 42 + smelt_gold 2 + ready silver ingot 65 + make_contact 145 + make_circuit 25
+		Assert.equal(data.money, 42 + 2 + 65 + 145 + 25);
+		const machines = data.machines as { [id: string]: { queue: string[] } };
+		Assert.deepEqual(machines.furnace.queue, ["smelt_copper", "smelt_gold"]);
+		Assert.deepEqual(machines.workbench.queue, ["make_circuit", "unknown_recipe"]);
+	}
+
+	@Test
+	public version4PaysNothingForCraftsSanitizeWouldDrop() {
+		const longQueue: string[] = [];
+		for (let i = 0; i < 100; i++) {
+			longQueue.push("smelt_silver");
+		}
+		const data = this.migrateV4({
+			money: 0,
+			machines: {
+				workbench: { queue: ["smelt_silver", "smelt_gold"], ready: {} }, // furnace recipes on the wrong machine
+				furnace: { queue: longQueue, ready: {} },
+			},
+		});
+		// Only the first 30 (the old queue cap) furnace crafts count.
+		Assert.equal(data.money, 30 * 42);
+	}
+
+	@Test
+	public version4MovesDrillsToTheirLayerOre() {
+		const data = this.migrateV4({
+			money: 0,
+			drills: {
+				layer1: { oreId: "coal", buffer: 10, progress: 3 },
+				layer2: { oreId: "iron", buffer: 5, progress: 1 },
+				layer3: { oreId: "gold", buffer: 2, progress: 1 },
+				layer9: { oreId: "coal", buffer: 99 },
+			},
+		});
+		const drills = data.drills as { [key: string]: { oreId: string; buffer: number } };
+		Assert.equal(drills.layer1.oreId, "copper");
+		Assert.equal(drills.layer1.buffer, 0);
+		Assert.equal(drills.layer2.buffer, 5, "iron is still the layer 2 ore");
+		Assert.equal(drills.layer3.buffer, 2);
+		Assert.equal(drills.layer9.buffer, 99, "an unknown layer is left to sanitize");
+		Assert.equal(data.money, 10 * 2);
+	}
+
+	// ---- version 5: the tycoon line replaces the recipe factory (decisions 027) ----
+
+	private migrateV5(data: PlainTable): PlainTable {
+		data.schemaVersion = 4;
+		const result = migrate(data, MIGRATIONS, 5);
+		Assert.true(result.ok);
+		return result.ok ? result.data : {};
+	}
+
+	@Test
+	public version5PaysBackMachinesUpgradesAndStock() {
+		const data = this.migrateV5({
+			money: 10,
+			levels: { warehouse: 4 },
+			warehouse: { copper: 10, gold_circuit: 1, unknown_thing: 50 },
+			machines: {
+				furnace: { speedLevel: 4, queueLevel: 1, queue: ["smelt_gold"], ready: { gold_ingot: 2 } },
+				workbench: { speedLevel: 1, queueLevel: 2, queue: [], ready: {} },
+			},
+		});
+		const warehouse = 10 * 5 + 520 + (2_000 + 10_000 + 50_000);
+		const furnace = 400 + (1_500 + 6_000 + 25_000) + 60 + 2 * 140;
+		const workbench = 3_000 + 5_000;
+		Assert.equal(data.money, 10 + warehouse + furnace + workbench);
+		Assert.undefined(data.warehouse);
+		Assert.undefined(data.machines);
+		Assert.undefined(data.levels);
+	}
+
+	@Test
+	public migrationsNeverPayForMoreThanTheOldGameAllowed() {
+		// Regression (security review): a save broken by an old dupe must not be laundered into money.
+		const v4 = this.migrateV4({ money: 0, bag: { coal: 1e9 }, warehouse: { silver_contact: 1e9 } });
+		Assert.equal(v4.money, 800 * 2 + 8_000 * 230);
+		const v5 = this.migrateV5({
+			money: 0,
+			warehouse: { gold_circuit: 1e9, copper: 1e9 },
+			machines: { furnace: { ready: { gold_ingot: 1e9 } } },
+		});
+		// The best pieces first: 8 000 circuits fill the warehouse cap, copper gets nothing; 30 ingots in the furnace.
+		Assert.equal(v5.money, 8_000 * 520 + 400 + 30 * 140);
+	}
+
+	@Test
+	public version5WithoutAFactoryPaysNothing() {
+		const data = this.migrateV5({ money: 77 });
+		Assert.equal(data.money, 77);
+	}
+
+	@Test
+	public version5SurvivesBrokenData() {
+		const broken = [
+			{ money: 0 / 0, levels: "x", warehouse: 5, machines: "y" },
+			{ levels: { warehouse: math.huge }, machines: { furnace: { speedLevel: 0 / 0, queue: "x", ready: 3 } } },
+			{ machines: { furnace: "x", laser: { speedLevel: 4 } }, warehouse: { copper: -5, gold: 0 / 0 } },
+		];
+		for (const save of broken) {
+			const data = this.migrateV5(save as unknown as PlainTable);
+			const money = data.money as number;
+			Assert.true(money === money && money >= 0 && money < math.huge, `money ${money}`);
+		}
+		// An infinite warehouse level is broken data: it counts as level 1 (nothing paid), never as infinite money.
+		const top = this.migrateV5({ money: 0, levels: { warehouse: math.huge } });
+		Assert.equal(top.money, 0);
+	}
+
+	@Test
+	public version4SurvivesBrokenData() {
+		const broken = [
+			{ money: 0 / 0, bag: "x", warehouse: 5, machines: "y", drills: 3 },
+			{ bag: { coal: -5, quartz: 0 / 0, silver: math.huge }, machines: { furnace: { queue: "nope" } } },
+			{ drills: { layer1: { oreId: 5, buffer: -3 } }, machines: { furnace: "x" } },
+		];
+		for (const save of broken) {
+			const data = this.migrateV4(save as unknown as PlainTable);
+			const money = data.money as number;
+			Assert.true(money === money && money >= 0 && money < math.huge, `money ${money}`);
+		}
+	}
+
+	private migrateV6(data: PlainTable): PlainTable {
+		data.schemaVersion = 5;
+		const result = migrate(data, MIGRATIONS, 6);
+		Assert.true(result.ok);
+		return result.ok ? result.data : {};
+	}
+
+	@Test
+	public version6ShiftsEveryOreToTheSamePrice() {
+		// Regression (security review 2026-11-25): only renaming obsidian/etherium repriced old gold and titanium 2x.
+		const data = this.migrateV6({
+			bag: { copper: 1, iron: 2, gold: 3, titanium: 4, obsidian: 5, etherium: 6, silver: 999, iridium: 999 },
+			line: {
+				intake: ["copper", "gold", "titanium", "obsidian", "etherium"],
+				beltProgress: 0,
+				machines: [{ queue: ["etherium", "iron"] }, { queue: ["gold"] }],
+			},
+			drills: {
+				layer3: { oreId: "gold" },
+				layer4: { oreId: "titanium" },
+				layer5: { oreId: "etherium", buffer: 4 },
+				layer2: { oreId: "iron" },
+			},
+		});
+		const bag = data.bag as PlainTable;
+		Assert.equal(bag.copper, 1);
+		Assert.equal(bag.iron, 2);
+		Assert.equal(bag.silver, 3); // old gold ($30), the stray "silver: 999" was junk and is gone
+		Assert.equal(bag.gold, 4); // old titanium ($70)
+		Assert.equal(bag.titanium, 5); // old obsidian ($150)
+		Assert.equal(bag.iridium, 6); // old etherium ($400), the stray "iridium: 999" is gone
+		Assert.undefined(bag.obsidian);
+		Assert.undefined(bag.etherium);
+		const line = data.line as PlainTable;
+		Assert.deepEqual(line.intake, ["copper", "silver", "gold", "titanium", "iridium"]);
+		const machines = line.machines as PlainTable[];
+		Assert.deepEqual(machines[0].queue, ["iridium", "iron"]);
+		Assert.deepEqual(machines[1].queue, ["silver"]);
+		const drills = data.drills as PlainTable;
+		Assert.equal((drills.layer3 as PlainTable).oreId, "silver");
+		Assert.equal((drills.layer4 as PlainTable).oreId, "gold");
+		// Iridium is never drilled: an etherium drill moves to titanium.
+		Assert.equal((drills.layer5 as PlainTable).oreId, "titanium");
+		Assert.equal((drills.layer2 as PlainTable).oreId, "iron");
+	}
+
+	@Test
+	public version6SurvivesBrokenData() {
+		const broken = [
+			{ bag: "x", line: 5, drills: "y" },
+			{ bag: { obsidian: 0 / 0, etherium: -3 }, line: { intake: "nope", machines: [5, { queue: 3 }] } },
+			{ bag: { obsidian: math.huge }, drills: { layer5: { oreId: 7 }, layer1: "x" } },
+		];
+		for (const save of broken) {
+			const data = this.migrateV6(save as unknown as PlainTable);
+			const bag = data.bag;
+			if (typeIs(bag, "table")) {
+				const titanium = (bag as PlainTable).titanium;
+				Assert.true(
+					titanium === undefined || (typeIs(titanium, "number") && titanium === titanium),
+					"bad titanium",
+				);
+				Assert.undefined((bag as PlainTable).obsidian);
+			}
+		}
+	}
 }
 
 export = MigrationsTests;

@@ -24,7 +24,7 @@ class BagTests {
 	@Test
 	public addsUntilFull() {
 		const bag: OreCounts = {};
-		Assert.equal(addToBag(bag, "coal", 3, 5), 3);
+		Assert.equal(addToBag(bag, "titanium", 3, 5), 3);
 		Assert.equal(addToBag(bag, "iron", 3, 5), 2);
 		Assert.equal(addToBag(bag, "iron", 1, 5), 0);
 		Assert.equal(bagTotal(bag), 5);
@@ -34,26 +34,26 @@ class BagTests {
 	@Test
 	public rejectsBadAmounts() {
 		const bag: OreCounts = {};
-		Assert.equal(addToBag(bag, "coal", -3, 10), 0);
-		Assert.equal(addToBag(bag, "coal", 0, 10), 0);
-		Assert.equal(addToBag(bag, "coal", 0 / 0, 10), 0);
-		Assert.equal(addToBag(bag, "coal", math.huge, 10), 0);
-		Assert.equal(addToBag(bag, "coal", 2.9, 10), 2);
+		Assert.equal(addToBag(bag, "titanium", -3, 10), 0);
+		Assert.equal(addToBag(bag, "titanium", 0, 10), 0);
+		Assert.equal(addToBag(bag, "titanium", 0 / 0, 10), 0);
+		Assert.equal(addToBag(bag, "titanium", math.huge, 10), 0);
+		Assert.equal(addToBag(bag, "titanium", 2.9, 10), 2);
 		Assert.equal(bagTotal(bag), 2);
 	}
 
 	@Test
 	public unknownKeysDoNotCount() {
-		const bag = { coal: 2, junk: 1000 } as unknown as OreCounts;
+		const bag = { titanium: 2, junk: 1000 } as unknown as OreCounts;
 		Assert.equal(bagTotal(bag), 2);
 	}
 
 	@Test
 	public smallerCapacityThanContentsMeansNoFreeSpace() {
 		// Can happen if a capacity is lowered in a balance patch: no negative space, no crash.
-		const bag: OreCounts = { coal: 30 };
+		const bag: OreCounts = { titanium: 30 };
 		Assert.equal(bagFreeSpace(bag, 25), 0);
-		Assert.equal(addToBag(bag, "coal", 1, 25), 0);
+		Assert.equal(addToBag(bag, "titanium", 1, 25), 0);
 	}
 }
 

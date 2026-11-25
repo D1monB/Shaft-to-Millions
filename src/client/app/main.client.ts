@@ -5,9 +5,10 @@ import { startChestsController } from "client/features/chests";
 import { startDevtoolsController } from "client/features/devtools";
 import { startDrillController } from "client/features/drill";
 import { startEquipmentController } from "client/features/equipment";
-import { startFactoryController } from "client/features/factory";
 import { startGoalsController } from "client/features/goals";
+import { startI18nController } from "client/features/i18n";
 import { startLeaderboardController } from "client/features/leaderboard";
+import { startBeltVisuals } from "client/features/line";
 import { startMiningController } from "client/features/mining";
 import { startPetsController } from "client/features/pets";
 import { startProfileController } from "client/features/profile";
@@ -16,11 +17,12 @@ import { startTravelController } from "client/features/travel";
 import { startShopController } from "client/features/upgrades";
 import { mountUi } from "./ui-root";
 
+// Language first: every later controller and the UI read their words from it.
+startI18nController();
 startMiningController();
 startShopController();
 startSellController();
 startGoalsController();
-startFactoryController();
 startDrillController();
 startTravelController();
 startLeaderboardController();
@@ -28,6 +30,7 @@ startChestsController();
 startEquipmentController();
 startPetsController();
 startDevtoolsController();
+startBeltVisuals();
 
 mountUi();
 startProfileController();

@@ -1,15 +1,19 @@
 // The coloured card: an icon, the name, a pill and a one-line effect; optional corner pills and a footer for buttons.
 // RarityCard is the generic card (the shop uses it for gear); ItemCard fills it from a chest item.
 import React from "@rbxts/react";
-import { ITEMS, ItemId, RARITY_NAMES } from "shared/config/items";
+import { ITEMS, ItemId } from "shared/config/items";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "./i18n";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText } from "./item-display";
 import { COLORS, FONTS, RADIUS, Ramp, STROKE, Sunburst, TEXT_SIZES, rampSequence } from "./ui-kit";
 
 /** Height of the card without a footer. */
-export const ITEM_CARD_HEIGHT = 200;
+export const ITEM_CARD_HEIGHT = 170;
 /** Extra height a footer with one row of buttons needs. */
-export const ITEM_CARD_FOOTER = 66;
-const CARD_DEPTH = 5;
+export const ITEM_CARD_FOOTER = 56;
+/** Width of a card in a left-right strip (CardStrip). */
+export const ITEM_CARD_WIDTH = 148;
+const CARD_DEPTH = 3;
 
 export interface CornerPill {
 	readonly text: string;
@@ -19,7 +23,7 @@ export interface CornerPill {
 interface CardDecor {
 	/** Top-right pill, e.g. the chance "45%" or the count "×3". */
 	readonly topRight?: CornerPill;
-	/** Top-left pill, e.g. "✅ НАДІТО". */
+	/** Top-left pill, e.g. "✅ EQUIPPED". */
 	readonly topLeft?: CornerPill;
 	/** Green outline: the item is in use. */
 	readonly highlighted?: boolean;
@@ -40,7 +44,7 @@ export interface RarityCardProps extends CardDecor {
 	readonly light: Color3;
 	readonly icon: string;
 	readonly name: string;
-	/** Middle pill, e.g. "ЛЕГЕНДАРНИЙ" or "РІВЕНЬ 3". */
+	/** Middle pill, e.g. "LEGENDARY" or "LEVEL 3". */
 	readonly pill: string;
 	readonly effect: string;
 	/** Light rays behind the content: the best card of a set. */
@@ -54,7 +58,7 @@ function Pill(props: { pill: CornerPill; left: boolean }) {
 		<frame
 			AnchorPoint={new Vector2(props.left ? 0 : 1, 0)}
 			Position={new UDim2(props.left ? 0 : 1, props.left ? 8 : -8, 0, 8)}
-			Size={new UDim2(0, 0, 0, 26)}
+			Size={new UDim2(0, 0, 0, 22)}
 			AutomaticSize={Enum.AutomaticSize.X}
 			BackgroundColor3={COLORS.outline}
 			BackgroundTransparency={0.15}
@@ -84,29 +88,29 @@ function Content(props: RarityCardProps) {
 			<textlabel
 				AnchorPoint={new Vector2(0.5, 0)}
 				BackgroundTransparency={1}
-				Position={new UDim2(0.5, 0, 0, 30)}
-				Size={new UDim2(0, 80, 0, 58)}
+				Position={new UDim2(0.5, 0, 0, 22)}
+				Size={new UDim2(0, 70, 0, 50)}
 				Text={props.icon}
-				TextSize={48}
+				TextSize={40}
 				ZIndex={3}
 			/>
 			<textlabel
 				BackgroundTransparency={1}
-				Position={new UDim2(0, 6, 0, 92)}
-				Size={new UDim2(1, -12, 0, 26)}
+				Position={new UDim2(0, 6, 0, 74)}
+				Size={new UDim2(1, -12, 0, 22)}
 				Font={FONTS.display}
 				Text={props.name}
 				TextColor3={COLORS.white}
 				TextScaled={true}
 				ZIndex={3}
 			>
-				<uitextsizeconstraint MaxTextSize={21} MinTextSize={14} />
+				<uitextsizeconstraint MaxTextSize={18} MinTextSize={12} />
 				<uistroke Color={COLORS.outline} Thickness={2} />
 			</textlabel>
 			<frame
 				AnchorPoint={new Vector2(0.5, 0)}
-				Position={new UDim2(0.5, 0, 0, 120)}
-				Size={new UDim2(0, 0, 0, 22)}
+				Position={new UDim2(0.5, 0, 0, 99)}
+				Size={new UDim2(0, 0, 0, 20)}
 				AutomaticSize={Enum.AutomaticSize.X}
 				BackgroundColor3={COLORS.outline}
 				BackgroundTransparency={0.25}
@@ -120,7 +124,7 @@ function Content(props: RarityCardProps) {
 					AutomaticSize={Enum.AutomaticSize.X}
 					Font={FONTS.display}
 					Text={props.pill}
-					TextSize={15}
+					TextSize={13}
 					TextColor3={props.light}
 					ZIndex={4}
 				/>
@@ -129,22 +133,21 @@ function Content(props: RarityCardProps) {
 				BackgroundColor3={COLORS.black}
 				BackgroundTransparency={0.8}
 				BorderSizePixel={0}
-				Position={new UDim2(0, 10, 0, 150)}
-				Size={new UDim2(1, -20, 0, 2)}
+				Position={new UDim2(0, 10, 0, 125)}
+				Size={new UDim2(1, -20, 0, 1)}
 				ZIndex={3}
 			/>
 			<textlabel
 				BackgroundTransparency={1}
-				Position={new UDim2(0, 6, 0, 154)}
-				Size={new UDim2(1, -12, 0, 38)}
+				Position={new UDim2(0, 6, 0, 129)}
+				Size={new UDim2(1, -12, 0, 34)}
 				Font={FONTS.display}
 				Text={props.effect}
 				TextColor3={COLORS.white}
-				TextScaled={true}
+				TextSize={TEXT_SIZES.small}
 				TextWrapped={true}
 				ZIndex={3}
 			>
-				<uitextsizeconstraint MaxTextSize={16} MinTextSize={12} />
 				<uistroke Color={COLORS.outline} Thickness={1.5} />
 			</textlabel>
 			{props.dimmed === true && (
@@ -171,29 +174,45 @@ function Content(props: RarityCardProps) {
 	);
 }
 
+/** The rarity colour as a glow over the top of the dark card, fading out toward the middle. */
+function RarityGlow(props: { ramp: Ramp }) {
+	return (
+		<frame BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={new UDim2(1, 0, 0.62, 0)} ZIndex={1}>
+			<uicorner CornerRadius={RADIUS.large} />
+			<uigradient
+				Rotation={90}
+				Color={rampSequence(props.ramp)}
+				Transparency={
+					new NumberSequence([new NumberSequenceKeypoint(0, 0.15), new NumberSequenceKeypoint(1, 1)])
+				}
+			/>
+		</frame>
+	);
+}
+
 /**
- * One card. Fills its parent cell (give the grid cell ITEM_CARD_HEIGHT, plus ITEM_CARD_FOOTER with a footer).
- * Rays need a CanvasGroup to be clipped to the card.
+ * One card: dark glass with the rarity colour glowing from the top and a rarity-coloured outline ("dark glass +
+ * neon", decision 029). Fills its parent (a StripSlot or a grid cell). Rays need a CanvasGroup to be clipped.
  */
 export function RarityCard(props: RarityCardProps) {
 	const faceSize = new UDim2(1, 0, 1, -CARD_DEPTH);
 	const face =
 		props.rays === true ? (
-			<canvasgroup BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={faceSize}>
+			<canvasgroup BackgroundColor3={COLORS.wood} BorderSizePixel={0} Size={faceSize}>
 				<uicorner CornerRadius={RADIUS.large} />
-				<uigradient Rotation={90} Color={rampSequence(props.ramp)} />
+				<RarityGlow ramp={props.ramp} />
 				<Sunburst zIndex={1} />
 				<Content {...props} />
 			</canvasgroup>
 		) : (
-			<frame BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={faceSize}>
+			<frame BackgroundColor3={COLORS.wood} BorderSizePixel={0} Size={faceSize}>
 				<uicorner CornerRadius={RADIUS.large} />
-				<uigradient Rotation={90} Color={rampSequence(props.ramp)} />
+				<RarityGlow ramp={props.ramp} />
 				<Content {...props} />
 			</frame>
 		);
 	return (
-		<frame BackgroundTransparency={1} LayoutOrder={props.order ?? 0}>
+		<frame BackgroundTransparency={1} Size={UDim2.fromScale(1, 1)} LayoutOrder={props.order ?? 0}>
 			<frame
 				BackgroundColor3={COLORS.outline}
 				BorderSizePixel={0}
@@ -207,8 +226,9 @@ export function RarityCard(props: RarityCardProps) {
 			<frame BackgroundTransparency={1} Size={faceSize} ZIndex={5}>
 				<uicorner CornerRadius={RADIUS.large} />
 				<uistroke
-					Color={props.highlighted === true ? COLORS.success : COLORS.outline}
-					Thickness={props.highlighted === true ? STROKE.heavy + 1 : STROKE.thick}
+					Color={props.highlighted === true ? COLORS.success : props.light}
+					Thickness={props.highlighted === true ? STROKE.heavy + 0.5 : STROKE.thin}
+					Transparency={props.highlighted === true ? 0 : 0.25}
 				/>
 			</frame>
 		</frame>
@@ -224,8 +244,8 @@ export function ItemCard(props: ItemCardProps) {
 			ramp={RARITY_RAMPS[def.rarity]}
 			light={RARITY_LIGHT[def.rarity]}
 			icon={KIND_ICONS[def.kind]}
-			name={def.name}
-			pill={RARITY_NAMES[def.rarity].upper()}
+			name={t(nameKeys.item(props.item))}
+			pill={t(nameKeys.rarity(def.rarity))}
 			effect={effectText(def.kind, def.bonus)}
 			rays={def.rarity === "legendary"}
 		/>

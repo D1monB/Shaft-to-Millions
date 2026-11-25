@@ -1,3 +1,4 @@
+import { text } from "shared/features/i18n";
 import { CollectionService } from "@rbxts/services";
 import { TAGS } from "shared/config/map-contract";
 import { ORES, ORE_IDS } from "shared/config/ores";
@@ -36,7 +37,7 @@ function handleSell(player: Player, args: Array<unknown>): void {
 	}
 	const preview = previewSale(data.bag, ORE_IDS, ORES, sellMultiplierOf(player));
 	if (preview.itemCount === 0) {
-		notify(player, "Сумка порожня.", "info");
+		notify(player, text("sell.bagEmpty"), "info");
 		return;
 	}
 	// Empty the bag and pay in the same frame, with no yield in between: the sale is atomic.
@@ -46,12 +47,12 @@ function handleSell(player: Player, args: Array<unknown>): void {
 	data.money += preview.total;
 	data.stats.totalEarned += preview.total;
 	markDirty(player);
-	notify(player, `Продано ${preview.itemCount} шт. за ${formatMoney(preview.total)}!`, "success");
+	notify(player, text("sell.sold", { count: preview.itemCount, money: formatMoney(preview.total) }), "success");
 }
 
 export function startSellingService(): void {
 	onClientRequest(SELL_BAG_REMOTE, new RateLimiter(3, 1), handleSell);
-	const addPrompt = (zone: Instance) => ensurePrompt(zone, "Продати", "Скупка руди");
+	const addPrompt = (zone: Instance) => ensurePrompt(zone, text("common.sell"), text("sell.title"));
 	CollectionService.GetTagged(TAGS.SellZone).forEach(addPrompt);
 	CollectionService.GetInstanceAddedSignal(TAGS.SellZone).Connect(addPrompt);
 }

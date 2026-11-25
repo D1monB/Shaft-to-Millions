@@ -12,6 +12,16 @@ export function sendToServer(name: string, ...args: Array<unknown>): void {
 	task.spawn(() => getRemote(name).FireServer(...args));
 }
 
+/** Listens for visual-only messages from the server (an UnreliableRemoteEvent: some may never arrive). */
+export function onServerUnreliable(name: string, callback: (...args: Array<unknown>) => void): void {
+	task.spawn(() => {
+		const remote = ReplicatedStorage.WaitForChild(REMOTES_FOLDER_NAME).WaitForChild(name);
+		if (remote.IsA("UnreliableRemoteEvent")) {
+			remote.OnClientEvent.Connect(callback);
+		}
+	});
+}
+
 /** Listens for messages from the server. */
 export function onServerMessage(name: string, callback: (...args: Array<unknown>) => void): void {
 	task.spawn(() => {

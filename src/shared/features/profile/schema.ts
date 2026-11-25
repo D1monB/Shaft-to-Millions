@@ -1,10 +1,9 @@
 import { t } from "@rbxts/t";
-import { MachineId } from "shared/config/machines";
 import { OreId } from "shared/config/ores";
 import type { OwnedItem } from "shared/features/chests";
 import type { DrillState } from "shared/features/drill";
 import type { Equipped } from "shared/features/equipment";
-import type { Counts, MachineState } from "shared/features/factory";
+import { LineState, newLineState } from "shared/features/line";
 import { GearState, createStarterGear } from "shared/features/upgrades";
 
 /**
@@ -14,7 +13,7 @@ import { GearState, createStarterGear } from "shared/features/upgrades";
  * Also bump (with an empty migration) when you RAISE a cap in sanitize.ts, otherwise an older server
  * still running during an update clamps the new value and saves it over the player's data.
  */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 /** Lifetime counters. Used for the hint system and later for leaderboards. */
 export interface ProfileStats {
@@ -35,12 +34,10 @@ export interface ProfileData {
 	bag: Partial<Record<OreId, number>>;
 	/** Shop gear: owned item ids and the equipped one per slot (see config/pickaxes.ts, bags.ts, shoes.ts). */
 	gear: GearState;
-	/** Building levels, 1-based. */
-	levels: ProfileLevels;
-	/** Base storage on the surface (ore and products). */
-	warehouse: Counts;
-	/** Owned machines. A machine is owned when its entry exists. */
-	machines: Partial<Record<MachineId, MachineState>>;
+	/** The tycoon production line on the player's plot (decisions 027): bought machines, levels and queues. */
+	line: LineState;
+	/** Unix time the profile was last active, for the offline run of the line. 0 = never. */
+	lastSeen: number;
 	/** Deepest layer whose camp the player reached. Drives drill unlocks and the depth leaderboard later. */
 	deepestLayer: number;
 	/** Deepest point the player stood on, in game meters below the surface. Breaks ties on the depth board. */
@@ -53,13 +50,10 @@ export interface ProfileData {
 	nextUid: number;
 	/** Granted Robux receipts (PurchaseId). Private: never sent to the client. */
 	purchaseIds: string[];
+	/** The language chosen in the game menu (decision 033), "" = automatic (Roblox language, then country). */
+	language: string;
 	/** Equipped item uids (from `inventory`). */
 	equipped: Equipped;
-}
-
-export interface ProfileLevels {
-	/** Warehouse capacity level (see WAREHOUSE_LEVELS). */
-	warehouse: number;
 }
 
 export function createDefaultProfileData(): ProfileData {
@@ -69,7 +63,6 @@ export function createDefaultProfileData(): ProfileData {
 		stats: { totalEarned: 0, oresMined: 0 },
 		bag: {},
 		gear: createStarterGear(),
-		levels: { warehouse: 1 },
 		deepestLayer: 1,
 		deepestMeters: 0,
 		drills: {},
@@ -77,14 +70,15 @@ export function createDefaultProfileData(): ProfileData {
 		nextUid: 1,
 		purchaseIds: [],
 		equipped: { pets: [] },
-		warehouse: {},
-		machines: {},
+		line: newLineState(),
+		lastSeen: 0,
+		language: "",
 	};
 }
 
 // Structure check only. Value ranges are enforced by sanitize.ts before this runs.
 // `interface` (not strictInterface) allows extra keys, so data from a newer feature is not rejected.
-// Id-keyed maps (bag, warehouse, drills, machines) are only checked to be tables: sanitize.ts repairs every KNOWN
+// Id-keyed maps (bag, drills) are only checked to be tables: sanitize.ts repairs every KNOWN
 // key, and an unknown key from a newer server must never make the whole save unloadable.
 const profileDataShape = t.interface({
 	schemaVersion: t.integer,
@@ -95,12 +89,25 @@ const profileDataShape = t.interface({
 		owned: t.array(t.string),
 		equipped: t.interface({ pickaxe: t.string, bag: t.string, shoes: t.string }),
 	}),
-	levels: t.interface({ warehouse: t.integer }),
 	deepestLayer: t.integer,
 	deepestMeters: t.integer,
 	drills: t.table,
-	warehouse: t.table,
-	machines: t.table,
+	line: t.interface({
+		intake: t.array(t.string),
+		beltProgress: t.number,
+		machines: t.array(
+			t.interface({
+				speed: t.integer,
+				duplicate: t.integer,
+				quality: t.integer,
+				capacity: t.integer,
+				progress: t.number,
+				queue: t.array(t.string),
+			}),
+		),
+	}),
+	lastSeen: t.number,
+	language: t.string,
 	inventory: t.array(t.interface({ uid: t.string, item: t.string })),
 	nextUid: t.integer,
 	purchaseIds: t.array(t.string),

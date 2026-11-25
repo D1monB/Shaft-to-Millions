@@ -4,11 +4,11 @@
 // Camps are NOT Roblox spawn points (SpawnLocation.Enabled = false or a plain Part): Roblox would otherwise spawn
 // new players at random camps, including locked deep ones. The server moves the character itself instead.
 import { CollectionService, Players } from "@rbxts/services";
-import { LAYERS } from "shared/config/layers";
+import { nameKeys, ref, text } from "shared/features/i18n";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { reachLayer, unlockCooldownLeft } from "shared/features/layers";
 import { RateLimiter } from "shared/lib/rate-limiter";
-import { resetMovementBaseline } from "server/features/movement";
+import { teleportCharacter } from "server/features/movement";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition } from "server/lib/proximity";
@@ -38,19 +38,25 @@ function onCampTouched(camp: Instance, hit: BasePart): void {
 		const wait = unlockCooldownLeft(os.clock(), lastUnlockAt.get(player) ?? 0);
 		if (wait > 0) {
 			if (waitNoticeLimiter.tryTake(player.UserId, os.clock())) {
-				notify(player, `Табір ще не готовий: зачекай ${math.ceil(wait)} с і торкнись знову.`, "info");
+				notify(player, text("layers.campNotReady", { seconds: math.ceil(wait) }), "info");
 			}
 			return;
 		}
 		lastUnlockAt.set(player, os.clock());
 		data.deepestLayer = reached;
 		markDirty(player);
-		notify(player, `Відкрито новий шар: ${LAYERS[reached]?.name ?? reached}!`, "success");
+		notify(player, text("layers.opened", { layer: ref(nameKeys.layer(reached)) }), "success");
 	}
 	// Only an opened camp becomes the respawn point: a locked one would be a free teleport down.
 	if (layer <= data.deepestLayer) {
 		respawnCamp.set(player, camp);
 	}
+}
+
+/** True when the player has an opened camp to respawn at (then the camp, not the plot, is their spawn). */
+export function hasRespawnCamp(player: Player): boolean {
+	const camp = respawnCamp.get(player);
+	return camp !== undefined && camp.IsDescendantOf(game.Workspace);
 }
 
 /** After a respawn, moves the new character to the player's camp (if they have one). */
@@ -66,9 +72,8 @@ function onCharacterAdded(player: Player, character: Model): void {
 	// Wait one frame so the default spawn finishes before we move the character.
 	task.defer(() => {
 		if (character.Parent !== undefined) {
-			character.PivotTo(new CFrame(position.add(new Vector3(0, 4, 0))));
-			// Our own move must not look like a teleport to the movement check.
-			resetMovementBaseline(player);
+			// Through movement, so our own move does not look like a teleport to the check.
+			teleportCharacter(player, position.add(new Vector3(0, 4, 0)));
 		}
 	});
 }
