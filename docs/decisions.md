@@ -411,3 +411,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   `Map/Mine/TunnelEntrance/Portal` grow iridium (`nearPortal` ore); on the current map that is 2 of 11 Tier5 points.
   Blocks are plain coloured parts in `Workspace/MapOre` until the map author models ore blocks.
 - **Why:** the map author placed spawn points instead of tagged blocks; without this the live game had no ore.
+
+## 035. Belt route follows the pieces' direction of travel (2026-11-25, bug fix)
+
+- **What:** the item route joins belt pieces end to start using the map author's rules (`ConveyorFlow`, straight along
+  local X, quarter-turn arc on corners), walks back to the head of the belt, then forward. Replaces "nearest piece
+  centre" ordering.
+- **Why:** the old ordering started at machine 1, walked against the belt and covered only 19 of 89 pieces, so most
+  machine places collapsed onto two path points and items could not ride between them. Checked in Play on the
+  friend's map: no coverage warning, the 12 machine places follow each other along the path.

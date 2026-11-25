@@ -103,3 +103,17 @@ Workspace
   is the block's bottom. Points may be invisible; their name does not matter.
 - `Workspace/Map/Mine/TunnelEntrance/Portal` (BasePart): Tier5 points within 60 studs of it grow iridium.
 - More points or a new tier folder need no code change (a new tier needs a layer and an ore in the config).
+
+### Як код будує маршрут предметів по стрічці
+
+Предмети на стрічці їдуть по маршруту, який сервер складає із шматків `Factory/Conveyors`. Для цього шматки мають
+відповідати тим самим правилам, що й у скрипті `ConveyorAnimator`:
+
+- кожен шматок стрічки має атрибут `ConveyorFlow` (+1 або -1); частини без нього в маршрут не входять;
+- прямий шматок: рух уздовж локальної осі X, довжина дорівнює `Size.X`;
+- кут (у назві є `Corner`): чверть кола радіусом 12 із центром у локальній точці (7.657, -7.657); при +1 рух
+  від кінця з боку -X до кінця з боку +Z. Ці числа записані в `src/shared/features/line/tuning.ts`;
+- кінці сусідніх шматків сходяться (пропуск не більше 8 студів).
+
+Якщо змінити форму чи розмір кута, треба оновити числа в коді. Якщо маршрут зламаний, в Output з'явиться
+попередження `[line] belt path ...`.

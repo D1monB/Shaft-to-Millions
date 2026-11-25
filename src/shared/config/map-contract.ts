@@ -67,6 +67,7 @@ export const PLOT_ATTRIBUTES = {
 	Bought: "Bought",
 	/** On a conveyor part: false stops the belt animation (read by the map author's ConveyorAnimator). */
 	ConveyorOn: "ConveyorOn",
+	ConveyorFlow: "ConveyorFlow",
 } as const;
 
 /**

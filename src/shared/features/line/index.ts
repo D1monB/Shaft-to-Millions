@@ -41,5 +41,15 @@ export {
 } from "./network";
 export { gapAround, splitStretch } from "./belt-gap";
 export type { Span } from "./belt-gap";
-export { nearestIndex, orderChain, parseBeltPath, pathBetween, routeFor } from "./belt-path";
+export type { BeltPiece } from "./belt-path";
+export {
+	chainPoints,
+	cornerPiece,
+	nearestIndex,
+	orderPieces,
+	parseBeltPath,
+	pathBetween,
+	routeFor,
+	straightPiece,
+} from "./belt-path";
 export type { BeltRoute, StoredBeltPath, Vec3 } from "./belt-path";

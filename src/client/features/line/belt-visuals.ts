@@ -42,6 +42,8 @@ interface Ride {
 	/** Seconds before the item appears (see ITEM_GAP_SECONDS). */
 	wait: number;
 	travelled: number;
+	/** Index of the path point the item is heading to; it only moves forward. */
+	segment: number;
 }
 
 interface CachedPath {
@@ -197,6 +199,7 @@ function startRide(ore: OreId, stage: number, points: ReadonlyArray<Vector3>, wa
 		speed: math.max(ITEM_SPEED, total / MAX_RIDE_SECONDS),
 		wait,
 		travelled: 0,
+		segment: 1,
 	});
 }
 
@@ -214,10 +217,10 @@ function stepRide(ride: Ride, dt: number): boolean {
 	if (ride.travelled >= total) {
 		return false;
 	}
-	let segment = 1;
-	while (segment < ride.lengths.size() - 1 && ride.lengths[segment] < ride.travelled) {
-		segment++;
+	while (ride.segment < ride.lengths.size() - 1 && ride.lengths[ride.segment] < ride.travelled) {
+		ride.segment++;
 	}
+	const segment = ride.segment;
 	const from = ride.points[segment - 1];
 	const to = ride.points[segment];
 	const span = ride.lengths[segment] - ride.lengths[segment - 1];

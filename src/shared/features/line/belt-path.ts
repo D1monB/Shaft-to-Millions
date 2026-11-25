@@ -1,6 +1,8 @@
 // The belt as one ordered path, for the visuals of items riding it. Pure math on plain numbers, so it runs under
-// Lune: the server passes the centres of the belt pieces, gets back their order from the start of the line to its
-// end, and where each machine and the SellStation sit on that order.
+// Lune: the server describes each belt piece, gets back their order from the start of the line to its end,
+// and where each machine and the SellStation sit on that order.
+
+import { CORNER_CENTER_X, CORNER_CENTER_Z, CORNER_RADIUS, CORNER_SEGMENTS } from "./tuning";
 
 export interface Vec3 {
 	readonly x: number;
@@ -43,39 +45,142 @@ export function nearestIndex(points: ReadonlyArray<Vec3>, target: Vec3): number 
 	return best;
 }
 
+/** One belt piece as the points an item passes on it, in travel order (the first is where it gets on). */
+export interface BeltPiece {
+	readonly points: ReadonlyArray<Vec3>;
+}
+
+function along(origin: Vec3, axis: Vec3, distance: number): Vec3 {
+	return { x: origin.x + axis.x * distance, y: origin.y + axis.y * distance, z: origin.z + axis.z * distance };
+}
+
 /**
- * Orders belt piece centres into one chain: starts at the piece nearest `start`, then repeatedly steps to the nearest
- * unused piece no farther than `maxLink`. Stops when no piece is close enough (the end of the belt). Pieces not on
- * the chain (a stray decoration) are left out. Returns indexes into `points`.
+ * A straight piece. The map author's contract: items move along the part's local X axis, ConveyorFlow (+1 / -1)
+ * gives the sense. `center` is the middle of the belt surface, `xAxis` a unit vector. Undefined for bad input.
  */
-export function orderChain(points: ReadonlyArray<Vec3>, start: Vec3, maxLink: number): number[] {
-	const first = nearestIndex(points, start);
-	if (first < 0 || !isFiniteNumber(maxLink) || maxLink <= 0) {
+export function straightPiece(center: Vec3, xAxis: Vec3, length: number, flow: number): BeltPiece | undefined {
+	if (!isFiniteVec(center) || !isFiniteVec(xAxis) || !isFiniteNumber(length) || length <= 0) {
+		return undefined;
+	}
+	if (flow !== 1 && flow !== -1) {
+		return undefined;
+	}
+	const half = (length / 2) * flow;
+	return { points: [along(center, xAxis, -half), along(center, xAxis, half)] };
+}
+
+/**
+ * A quarter-turn piece (the map author's contract): an arc of CORNER_RADIUS around CORNER_CENTER_X / _Z in the
+ * part's local space, running from the end on its -X side to the end on its +Z side when ConveyorFlow is +1.
+ */
+export function cornerPiece(center: Vec3, xAxis: Vec3, zAxis: Vec3, flow: number): BeltPiece | undefined {
+	if (!isFiniteVec(center) || !isFiniteVec(xAxis) || !isFiniteVec(zAxis) || (flow !== 1 && flow !== -1)) {
+		return undefined;
+	}
+	const points: Vec3[] = [];
+	for (let i = 0; i <= CORNER_SEGMENTS; i++) {
+		const step = flow === 1 ? i : CORNER_SEGMENTS - i;
+		const angle = (step / CORNER_SEGMENTS) * (math.pi / 2);
+		const localX = CORNER_CENTER_X - CORNER_RADIUS * math.cos(angle);
+		const localZ = CORNER_CENTER_Z + CORNER_RADIUS * math.sin(angle);
+		points.push(along(along(center, xAxis, localX), zAxis, localZ));
+	}
+	return { points };
+}
+
+function entryOf(piece: BeltPiece): Vec3 {
+	return piece.points[0];
+}
+
+function exitOf(piece: BeltPiece): Vec3 {
+	return piece.points[piece.points.size() - 1];
+}
+
+/** The unused piece whose joint (given by `jointOf`) is nearest to `at` and no farther than `maxGap`, or -1. */
+function neighbour(
+	pieces: ReadonlyArray<BeltPiece>,
+	at: Vec3,
+	jointOf: (piece: BeltPiece) => Vec3,
+	maxGap: number,
+	used: Set<number>,
+): number {
+	let best = -1;
+	let bestDistance = maxGap;
+	for (let i = 0; i < pieces.size(); i++) {
+		if (used.has(i) || pieces[i].points.size() < 2) {
+			continue;
+		}
+		const joint = jointOf(pieces[i]);
+		const distance = isFiniteVec(joint) ? flatDistance(joint, at) : math.huge;
+		if (distance <= bestDistance) {
+			bestDistance = distance;
+			best = i;
+		}
+	}
+	return best;
+}
+
+/**
+ * Orders belt pieces from the head of the belt to its end, following the direction of travel. Starts at the piece
+ * nearest `near`, walks back while some piece ends where the current one begins, then walks forward from that head.
+ * Joints may be up to `maxGap` apart. Pieces not on this belt are left out. Returns indexes into `pieces`.
+ */
+export function orderPieces(pieces: ReadonlyArray<BeltPiece>, near: Vec3, maxGap: number): number[] {
+	if (!isFiniteVec(near) || !isFiniteNumber(maxGap) || maxGap <= 0) {
 		return [];
 	}
-	const used = new Set<number>([first]);
-	const chain = [first];
-	let current = points[first];
-	for (;;) {
-		let best = -1;
-		let bestDistance = maxLink;
-		for (let i = 0; i < points.size(); i++) {
-			if (used.has(i) || !isFiniteVec(points[i])) {
-				continue;
-			}
-			const distance = flatDistance(points[i], current);
-			if (distance <= bestDistance) {
-				bestDistance = distance;
-				best = i;
+	let first = -1;
+	let firstDistance = math.huge;
+	for (let i = 0; i < pieces.size(); i++) {
+		if (pieces[i].points.size() < 2) {
+			continue;
+		}
+		for (const point of pieces[i].points) {
+			const distance = isFiniteVec(point) ? flatDistance(point, near) : math.huge;
+			if (distance < firstDistance) {
+				firstDistance = distance;
+				first = i;
 			}
 		}
-		if (best < 0) {
+	}
+	if (first < 0) {
+		return [];
+	}
+	// `visited` also ends the backward walk on a closed loop.
+	const visited = new Set<number>([first]);
+	let head = first;
+	for (;;) {
+		const previous = neighbour(pieces, entryOf(pieces[head]), exitOf, maxGap, visited);
+		if (previous < 0) {
+			break;
+		}
+		visited.add(previous);
+		head = previous;
+	}
+	const used = new Set<number>([head]);
+	const chain = [head];
+	for (;;) {
+		const following = neighbour(pieces, exitOf(pieces[chain[chain.size() - 1]]), entryOf, maxGap, used);
+		if (following < 0) {
 			return chain;
 		}
-		used.add(best);
-		chain.push(best);
-		current = points[best];
+		used.add(following);
+		chain.push(following);
 	}
+}
+
+/** The points of the ordered pieces as one path; points closer than `minStep` to the previous one are merged. */
+export function chainPoints(pieces: ReadonlyArray<BeltPiece>, order: ReadonlyArray<number>, minStep: number): Vec3[] {
+	const result: Vec3[] = [];
+	for (const index of order) {
+		for (const point of pieces[index]?.points ?? []) {
+			const last = result.size() > 0 ? result[result.size() - 1] : undefined;
+			if (last === undefined || flatDistance(last, point) >= minStep) {
+				result.push(point);
+			}
+		}
+	}
+	return result;
 }
 
 /** The points of the path from chain position `from` to `to` (inclusive), in travel order. Empty for bad input. */
