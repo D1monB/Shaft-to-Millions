@@ -2,6 +2,8 @@
 // from the warehouse, kept forever, and the player equips any owned item of a slot.
 import { BAGS } from "shared/config/bags";
 import { GearBase, GearMaterials } from "shared/config/gear";
+import { RECIPES, RECIPE_IDS } from "shared/config/machines";
+import { ORES, isOreId } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
 import { RESOURCE_IDS, ResourceId } from "shared/config/resources";
 import { SHOES } from "shared/config/shoes";
@@ -163,7 +165,61 @@ export function tryEquipGear(id: unknown, gear: GearState): EquipGearResult {
 	return { ok: true, slot: found.slot };
 }
 
-/** The first item of the slot, in shop order, that the player does not own: the "what next" goal. */
-export function nextGearToBuy(slot: GearSlot, gear: GearState): GearBase | undefined {
-	return GEAR_BY_SLOT[slot].find((def) => def.special === undefined && !gear.owned.includes(def.id));
+/**
+ * The pickaxe tier needed to get a resource: an ore needs its own tier, a product needs the best input it is made of.
+ * `math.huge` when nothing produces it.
+ */
+export function tierNeeded(id: ResourceId, depth = 0): number {
+	if (isOreId(id)) {
+		return ORES[id].requiredTier;
+	}
+	// Depth guard: a recipe loop in the config must not hang the game.
+	const recipeId = depth > 8 ? undefined : RECIPE_IDS.find((entry) => RECIPES[entry].outputs[id] !== undefined);
+	if (recipeId === undefined) {
+		return math.huge;
+	}
+	let tier = 1;
+	for (const [input] of pairs(RECIPES[recipeId].inputs)) {
+		tier = math.max(tier, tierNeeded(input as ResourceId, depth + 1));
+	}
+	return tier;
+}
+
+/** True when every material of the item can be obtained with a pickaxe of this tier. */
+export function isReachableWithTier(def: GearBase, pickaxeTier: number): boolean {
+	for (const entry of materialList(def.materials)) {
+		if (!(tierNeeded(entry.id) <= pickaxeTier)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * The "what next" goal: the first item of the slot, in shop order, that the player does not own.
+ * With `pickaxeTier`, items whose materials the player cannot get yet are skipped, so the hint never points at an
+ * item behind a wall. If the main line is fully behind a wall, the first reachable side item is the way through
+ * (e.g. the hammer opens tier 3 ore).
+ */
+export function nextGearToBuy(slot: GearSlot, gear: GearState, pickaxeTier?: number): GearBase | undefined {
+	const reachable = (def: GearBase) => pickaxeTier === undefined || isReachableWithTier(def, pickaxeTier);
+	const candidates = GEAR_BY_SLOT[slot].filter((def) => !gear.owned.includes(def.id) && reachable(def));
+	const mainLine = candidates.find((def) => def.special === undefined);
+	if (pickaxeTier === undefined) {
+		return mainLine;
+	}
+	// A side pickaxe of a higher tier can be the cheaper way through a wall (the hammer at $15K vs the drill at $200K).
+	let breakthrough: GearBase | undefined;
+	for (const def of candidates) {
+		const tier = PICKAXES.find((pickaxe) => pickaxe.id === def.id)?.tier;
+		if (def.special !== undefined && tier !== undefined && tier > pickaxeTier) {
+			if (breakthrough === undefined || def.price < breakthrough.price) {
+				breakthrough = def;
+			}
+		}
+	}
+	if (mainLine === undefined) {
+		return breakthrough ?? candidates[0];
+	}
+	return breakthrough !== undefined && breakthrough.price < mainLine.price ? breakthrough : mainLine;
 }

@@ -34,7 +34,7 @@ export function registerGoalSource(source: (view: PlayerView) => GoalCandidate[]
 
 /** The next main-line item of a slot as a goal, with the first missing material if any. */
 function gearGoal(view: PlayerView, slot: GearSlot, priority: number): GoalCandidate | undefined {
-	const upcoming = nextGearToBuy(slot, view.gear);
+	const upcoming = nextGearToBuy(slot, view.gear, getPickaxe(view.gear.equipped.pickaxe).tier);
 	if (upcoming === undefined) {
 		return undefined;
 	}
@@ -50,7 +50,7 @@ function gearGoal(view: PlayerView, slot: GearSlot, priority: number): GoalCandi
 function gearGoals(view: PlayerView): GoalCandidate[] {
 	const goals: GoalCandidate[] = [];
 	const current = getPickaxe(view.gear.equipped.pickaxe);
-	const upcoming = nextGearToBuy("pickaxe", view.gear) as PickaxeDef | undefined;
+	const upcoming = nextGearToBuy("pickaxe", view.gear, current.tier) as PickaxeDef | undefined;
 	const unlocksOre =
 		upcoming !== undefined &&
 		ORE_IDS.some((id) => ORES[id].requiredTier > current.tier && ORES[id].requiredTier <= upcoming.tier);

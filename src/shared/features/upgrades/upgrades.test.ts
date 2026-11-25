@@ -1,7 +1,6 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { BAGS } from "shared/config/bags";
-import { RECIPES, RECIPE_IDS } from "shared/config/machines";
-import { ORES, isOreId } from "shared/config/ores";
+import { GearBase } from "shared/config/gear";
 import { PICKAXES } from "shared/config/pickaxes";
 import { RESOURCES, ResourceId } from "shared/config/resources";
 import { SHOES } from "shared/config/shoes";
@@ -17,26 +16,12 @@ import {
 	isGearSlot,
 	materialList,
 	missingMaterials,
+	isReachableWithTier,
 	nextGearToBuy,
+	tierNeeded,
 	tryBuyGear,
 	tryEquipGear,
 } from "./upgrades";
-
-/** The pickaxe tier needed to get a resource: ore needs its own tier, a product needs the best input it is made of. */
-function tierNeeded(id: ResourceId): number {
-	if (isOreId(id)) {
-		return ORES[id].requiredTier;
-	}
-	const recipeId = RECIPE_IDS.find((entry) => RECIPES[entry].outputs[id] !== undefined);
-	if (recipeId === undefined) {
-		return math.huge;
-	}
-	let tier = 1;
-	for (const [input] of pairs(RECIPES[recipeId].inputs)) {
-		tier = math.max(tier, tierNeeded(input as ResourceId));
-	}
-	return tier;
-}
 
 const STONE = PICKAXES[1]; // money only
 const COPPER = PICKAXES[2]; // money + copper ingots
@@ -238,6 +223,38 @@ class UpgradesTests {
 			gear.owned.push(def.id);
 		}
 		Assert.undefined(nextGearToBuy("pickaxe", gear));
+	}
+
+	@Test
+	public hintSkipsItemsBehindAWall() {
+		const gear = createStarterGear();
+		for (const def of PICKAXES) {
+			if (def.tier <= 2) {
+				gear.owned.push(def.id);
+			}
+		}
+		// Everything of tier 1-2 is owned. Gold and obsidian need tier 3 materials; the drill is reachable but costs $200K:
+		// the cheaper way through the wall is the hammer, a side item.
+		const hint = nextGearToBuy("pickaxe", gear, 2);
+		Assert.notUndefined(hint);
+		Assert.true(isReachableWithTier(hint as GearBase, 2));
+		Assert.equal(hint?.id, "pickaxe_hammer");
+		gear.owned.push("pickaxe_hammer");
+		Assert.equal(nextGearToBuy("pickaxe", gear, 3)?.id, "pickaxe_gold");
+	}
+
+	@Test
+	public hintWithoutTierKeepsTheOldBehaviour() {
+		const gear = createStarterGear();
+		Assert.equal(nextGearToBuy("pickaxe", gear)?.id, STONE.id);
+		Assert.equal(nextGearToBuy("pickaxe", gear, 1)?.id, STONE.id);
+	}
+
+	@Test
+	public tierNeededHandlesUnknownAndBadInput() {
+		Assert.equal(tierNeeded("nope" as ResourceId), math.huge);
+		Assert.false(isReachableWithTier(PICKAXES[6], 0 / 0));
+		Assert.false(isReachableWithTier(PICKAXES[6], 2));
 	}
 
 	@Test

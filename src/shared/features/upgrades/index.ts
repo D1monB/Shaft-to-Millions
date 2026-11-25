@@ -8,10 +8,12 @@ export {
 	findGear,
 	gearCardState,
 	isGearSlot,
+	isReachableWithTier,
 	materialList,
 	missingMaterials,
 	nextGearToBuy,
 	starterOf,
+	tierNeeded,
 	tryBuyGear,
 	tryEquipGear,
 } from "./upgrades";
