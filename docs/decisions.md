@@ -350,3 +350,11 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   best) is pinned under the content (`PanelSpec.footer`) and never scrolls away.
 - **Why:** the developer found the UI bulky and the vertical grids awkward (opening a chest needed scrolling down),
   and the brown timber clashed with the friend's map (light concrete, orange rocks, neon terminals).
+
+## 030. Movement check waits for server teleports to arrive (2026-11-25)
+
+- **What:** after the server moves a character (plot spawn, camp respawn, fast travel) the movement check gets the
+  target and skips samples until the character is within 12 studs of it (at most 2 s), then starts a new baseline
+  there. A character that does not arrive in time is put at the target (live servers; Studio only warns).
+- **Why:** the client owns its character, so for a few frames after a server teleport the server still saw the old
+  position; the check measured from it and flagged honest players on every join (would pull them back live).

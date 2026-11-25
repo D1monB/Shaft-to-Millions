@@ -61,9 +61,10 @@ function handleTravel(player: Player, args: Array<unknown>): void {
 
 	// Start the pause only after a successful trip, so a missing map point never costs the player 30 s.
 	lastTravelAt.set(player, os.clock());
-	character.PivotTo(new CFrame(position.add(new Vector3(0, 4, 0))));
+	const target = position.add(new Vector3(0, 4, 0));
+	character.PivotTo(new CFrame(target));
 	// Our own move must not look like a teleport to the movement check.
-	resetMovementBaseline(player);
+	resetMovementBaseline(player, target);
 }
 
 export function startTravelService(): void {

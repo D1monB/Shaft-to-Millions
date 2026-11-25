@@ -1,7 +1,16 @@
 // Movement on the server: applies WalkSpeed from shoes (and later a speed aura) and checks that the character
 // really moves that fast. The server owns WalkSpeed; the check pulls back a client that teleports or outruns it.
 import { Players, RunService } from "@rbxts/services";
-import { beginMoveState, checkMove, CHECK_INTERVAL, MoveState, walkSpeedFor } from "shared/features/movement";
+import {
+	beginMoveState,
+	beginSettle,
+	checkMove,
+	CHECK_INTERVAL,
+	MoveState,
+	PendingTeleport,
+	settle,
+	walkSpeedFor,
+} from "shared/features/movement";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { getLoadedPlayers, getProfileData } from "server/features/profile";
 
@@ -9,6 +18,9 @@ let speedBonusOf: (player: Player) => number = () => 0;
 
 /** Last honest position per player. No entry means "start tracking from the next sample". */
 const states = new Map<Player, MoveState>();
+
+/** Server teleports the check is waiting to see arrive (see teleport-settle.ts). */
+const pending = new Map<Player, PendingTeleport>();
 
 /** Log at most a few pull-backs per player, so a cheater cannot flood the output. */
 const logLimiter = new RateLimiter(2, 1 / 30);
@@ -29,11 +41,25 @@ export function setSpeedBonusProvider(provider: (player: Player) => number): voi
 }
 
 /**
- * Call right AFTER the server itself moves a character (camp respawn, later elevator or fast travel).
+ * Call right AFTER the server itself moves a character (plot spawn, camp respawn, fast travel) with the position it
+ * was moved to. The check then waits for the character to arrive there before measuring again.
  * Why: otherwise the jump looks like a teleport and an honest player would be pulled back.
  */
-export function resetMovementBaseline(player: Player): void {
+export function resetMovementBaseline(player: Player, target: Vector3): void {
 	states.delete(player);
+	const settling = beginSettle(target.X, target.Y, target.Z, os.clock());
+	if (settling !== undefined) {
+		pending.set(player, settling);
+	} else {
+		pending.delete(player);
+	}
+}
+
+/** Moves the character to a spot keeping where it faces, and stops any speed the client built up. */
+function putAt(character: Model, root: BasePart, position: Vector3): void {
+	const pivot = character.GetPivot();
+	character.PivotTo(pivot.sub(pivot.Position).add(position));
+	root.AssemblyLinearVelocity = Vector3.zero;
 }
 
 function walkSpeedOf(player: Player): number | undefined {
@@ -77,6 +103,29 @@ function checkPosition(player: Player): void {
 
 	const position = root.Position;
 	const sample = { x: position.X, y: position.Y, z: position.Z, time: os.clock() };
+
+	// Right after a server teleport: wait for the client to report the new spot, then start over from there.
+	const settling = pending.get(player);
+	if (settling !== undefined) {
+		const verdict = settle(settling, sample.x, sample.y, sample.z, sample.time);
+		if (verdict === "wait") {
+			return;
+		}
+		pending.delete(player);
+		if (verdict === "timeout") {
+			const target = new Vector3(settling.x, settling.y, settling.z);
+			// Studio only warns, like the speed check (decision 028): Studio tools may move the character.
+			if (!RunService.IsStudio()) {
+				putAt(character, root, target);
+			}
+			states.set(player, { x: target.X, y: target.Y, z: target.Z, time: sample.time, strikes: 0 });
+			if (logLimiter.tryTake(player.UserId, os.clock())) {
+				warn(`[movement] user ${player.UserId} did not arrive at a server teleport target, put there`);
+			}
+			return;
+		}
+		states.delete(player);
+	}
 	const state = states.get(player);
 	if (state === undefined) {
 		const started = beginMoveState(sample);
@@ -105,11 +154,8 @@ function checkPosition(player: Player): void {
 		states.set(player, { x: position.X, y: position.Y, z: position.Z, time: sample.time, strikes: 0 });
 		return;
 	}
-	// Move back to the last honest spot (keeping where the player faces) and stop any speed the client built up.
-	const back = new Vector3(result.state.x, result.state.y, result.state.z);
-	const pivot = character.GetPivot();
-	character.PivotTo(pivot.sub(pivot.Position).add(back));
-	root.AssemblyLinearVelocity = Vector3.zero;
+	// Move back to the last honest spot.
+	putAt(character, root, new Vector3(result.state.x, result.state.y, result.state.z));
 	if (logLimiter.tryTake(player.UserId, os.clock())) {
 		warn(`[movement] user ${player.UserId} pulled back (moved faster than allowed)`);
 	}
@@ -117,12 +163,18 @@ function checkPosition(player: Player): void {
 
 function forget(player: Player): void {
 	states.delete(player);
+	pending.delete(player);
 	logLimiter.forget(player.UserId);
 }
 
 export function startMovementService(): void {
 	// A new character starts a new baseline: the spawn point is far from where the old one died.
-	const track = (player: Player) => player.CharacterAdded.Connect(() => states.delete(player));
+	// A respawn is not a server teleport: drop any wait too, the new body starts its own baseline.
+	const track = (player: Player) =>
+		player.CharacterAdded.Connect(() => {
+			states.delete(player);
+			pending.delete(player);
+		});
 	Players.PlayerAdded.Connect(track);
 	Players.GetPlayers().forEach(track);
 	Players.PlayerRemoving.Connect(forget);

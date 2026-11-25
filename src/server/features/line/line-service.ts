@@ -83,7 +83,7 @@ function teleport(player: Player, position: Vector3): void {
 		return;
 	}
 	character.PivotTo(new CFrame(position));
-	resetMovementBaseline(player);
+	resetMovementBaseline(player, position);
 }
 
 /**

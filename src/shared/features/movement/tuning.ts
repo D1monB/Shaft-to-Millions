@@ -42,3 +42,12 @@ export const MAX_RISE_SPEED = 50;
  * It only stops "teleport 1000 studs down" in one step. TODO: confirm the real fall speed in a Studio play-test.
  */
 export const MAX_FALL_SPEED = 700;
+
+/**
+ * After the server moves a character (spawn on a plot, camp, fast travel) the client keeps sending its old position
+ * for a few frames. The check waits up to this many seconds for the character to show up at the target.
+ */
+export const TELEPORT_SETTLE_SECONDS = 2;
+
+/** A character this close to the server's target counts as arrived (studs; spawn height and falling included). */
+export const TELEPORT_ARRIVAL_STUDS = 12;

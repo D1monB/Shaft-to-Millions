@@ -72,9 +72,10 @@ function onCharacterAdded(player: Player, character: Model): void {
 	// Wait one frame so the default spawn finishes before we move the character.
 	task.defer(() => {
 		if (character.Parent !== undefined) {
-			character.PivotTo(new CFrame(position.add(new Vector3(0, 4, 0))));
+			const target = position.add(new Vector3(0, 4, 0));
+			character.PivotTo(new CFrame(target));
 			// Our own move must not look like a teleport to the movement check.
-			resetMovementBaseline(player);
+			resetMovementBaseline(player, target);
 		}
 	});
 }
