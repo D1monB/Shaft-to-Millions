@@ -22,6 +22,9 @@ export function Tabs(props: TabsProps) {
 	const count = props.items.size();
 	return (
 		<frame
+			// The key becomes the instance name: a stable one lets automated UI checks find a tab by path
+			// (Tabs.<key>), while React's default numeric names collide with sibling layout objects.
+			key="Tabs"
 			BackgroundTransparency={1}
 			Size={new UDim2(1, 0, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.Y}
