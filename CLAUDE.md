@@ -196,6 +196,10 @@ Details: `docs/architecture.md`, numbers: `docs/economy.md`.
 - A hook formats edited files with Prettier automatically; do not spend turns on formatting.
 - Subagents: `security-reviewer` (read-only; run after changes to remotes, player data, inventory, currency,
   mining, production or chests, and before a PR) and `test-writer` (lunit tests incl. bad input for pure logic).
+  Also: `exploit-hunter` (cheater mindset, before PRs on value/movement), `balance-analyst` (after price/config changes),
+  `game-designer` (ideas only), `ui-reviewer` (after any src/client/**/*.tsx change: phone fit, touch, glyphs, ui-kit),
+  `studio-verifier` (when Studio is open: Rojo sync, Output errors, screenshots; read-only MCP),
+  `playtest-planner` (the Ukrainian "what to check in Studio" list after each step), `docs-keeper` (updates docs/ only, after a feature).
 
 ## Roblox / roblox-ts pitfalls
 
