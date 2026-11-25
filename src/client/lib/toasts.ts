@@ -1,5 +1,6 @@
 // Short messages at the top of the screen ("+1 Coal", "Bag is full").
 import { NotifyKind } from "shared/lib/remote-names";
+import { playSound } from "./sounds";
 import { Store, useStore } from "./store";
 
 export interface ToastEntry {
@@ -21,6 +22,10 @@ export function toast(text: string, kind: NotifyKind = "info", seconds = 3): voi
 	const kept = current.size() >= MAX_TOASTS ? current.filter((_, index) => index > 0) : [...current];
 	kept.push({ id, text, kind });
 	toastStore.set(kept);
+	// Info toasts ("+1 Coal") are frequent and stay quiet; only results the player cares about make a sound.
+	if (kind === "success" || kind === "error") {
+		playSound(kind);
+	}
 	task.delay(seconds, () => toastStore.set(toastStore.get().filter((entry) => entry.id !== id)));
 }
 

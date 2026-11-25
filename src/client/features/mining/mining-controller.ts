@@ -17,6 +17,7 @@ import { formatMoney } from "shared/lib/format";
 import { registerHudStat } from "client/features/hud";
 import { getView, onViewChanged } from "client/features/profile";
 import { onServerMessage } from "client/lib/remotes";
+import { playSound } from "client/lib/sounds";
 import { COLORS, FONTS } from "client/lib/ui-kit";
 
 function anchorPart(node: Instance): BasePart | undefined {
@@ -254,6 +255,7 @@ export function startMiningController(): void {
 	onServerMessage(MINE_PROGRESS_REMOTE, (node, damage, hardness) => {
 		if (typeIs(node, "Instance") && typeIs(damage, "number") && typeIs(hardness, "number")) {
 			showProgress(node, damage, hardness);
+			playSound("hit");
 		}
 	});
 	onServerMessage(NODE_BROKEN_REMOTE, (node, respawnSeconds, oreId, amount) => {
@@ -264,6 +266,7 @@ export function startMiningController(): void {
 		if (part !== undefined && typeIs(amount, "number") && amount > 0) {
 			showPopup(part, `+${amount} ${ORES[oreId].name}`);
 		}
+		playSound("oreBreak");
 		bars.get(node)?.gui.Destroy();
 		bars.delete(node);
 		hideNode(node, respawnSeconds);
