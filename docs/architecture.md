@@ -5,13 +5,13 @@
 ## Шари коду
 
 ```
-src/shared/config/      ДАНІ: руди, кирки, сумки, взуття, шари, машини, рецепти, бури, скрині, предмети, теги карти
+src/shared/config/      ДАНІ: руди, кирки, сумки, взуття, шари, машини, рецепти, бури, скрині, предмети, звуки (`sounds.ts`), теги карти
 src/shared/lib/         загальні помічники: rate limiter, валідація, ремонт даних, форматування чисел, deepCopy
 src/shared/features/    ЧИСТА ЛОГІКА кожної фічі (без Roblox API) + *.test.ts поруч
 src/server/features/    сервіси: remote-обробники, перевірки, збереження, тіки
 src/server/lib/         remote-обгортка (rate limit, pcall, лог зловживань), перевірки «гравець поруч», notify
 src/client/features/    React-панелі, внески в HUD, ефекти у світі
-src/client/lib/         ui-kit (React-компоненти й тема), плитки ресурсів (`resource-tile.tsx`), картка предмета, сховища стану (панель, тости), хуки, ProximityPrompt-маршрутизатор
+src/client/lib/         ui-kit (React-компоненти й тема), плитки ресурсів (`resource-tile.tsx`), картка предмета, сховища стану (панель, тости), хуки, ProximityPrompt-маршрутизатор, звуки (`sounds.ts`: пул із 3 Sound на звук, ліміт `minGap`, `playSound` / `playOreBreak`)
 src/*/app/              лише запуск сервісів і контролерів у фіксованому порядку
 ```
 

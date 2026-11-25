@@ -273,3 +273,20 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why a memory store in Studio:** Studio test sessions must not write test scores to the live ordered stores.
 - **Open:** a ban list (cheaters stay on the board until removed by hand); bumping the store version (`_v2`) to reset
   the boards.
+
+## 026. Sounds: licensed only, silent by default (draft, check)
+
+- **Date:** 2026-11-25 (draft, check)
+- **Decision:** sound ids live in `src/shared/config/sounds.ts` (`SOUNDS`, `ORE_BREAK_SOUNDS`). The client keeps a pool of 3
+  `Sound` instances per sound with a `minGap` rate limit (`src/client/lib/sounds.ts`, `playSound` / `playOreBreak`). Sounds
+  play on mining hit and ore break, toasts (success, error), chest open and the rare-drop fanfare, machine enqueue, done
+  and collect.
+- **Licensing rule:** only sounds from licensed Creator Store libraries (now ProSoundEffects and RBLXEssentials) are used.
+  Nothing from outside, no ripped or unknown-origin audio.
+- **Silent = empty `assetId`:** an empty id means no sound is played. The error sound is silent for now, because no
+  licensed one was found. A sound can be added later by filling in the id, with no code change.
+- **Per-ore sound via pitch:** every ore uses the same file at a different `speed`, so each ore sounds distinct without
+  needing many licensed files.
+- **Machine-done is polled on the client:** production is timestamp based and the server sends no "done" event, so the
+  client checks the queue once a second and plays the sound once per finished item.
+- **Why a pool:** many hits per second must not create or destroy `Sound` instances (mobile performance).
