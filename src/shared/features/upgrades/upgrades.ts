@@ -54,3 +54,20 @@ export function tryBuyUpgrade(track: UpgradeTrack, money: number, current: numbe
 	}
 	return { ok: true, money: money - upcoming.price, level: current + 1, price: upcoming.price };
 }
+
+/** How one level of a track looks in the shop catalogue. */
+export type LevelState = "replaced" | "current" | "next" | "locked";
+
+/**
+ * The state of `level` for a player who has `current`. Levels below the current one were bought and replaced
+ * by a better one, only the level right after the current one can be bought, the rest wait for it.
+ */
+export function levelState(level: number, current: number): LevelState {
+	if (level < current) {
+		return "replaced";
+	}
+	if (level === current) {
+		return "current";
+	}
+	return level === current + 1 ? "next" : "locked";
+}

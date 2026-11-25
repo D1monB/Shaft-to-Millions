@@ -1,9 +1,9 @@
-// The rarity card of a chest item, used by the chest odds grid and by the inventory.
-// Coloured by rarity, with an icon, the name, a rarity pill and the effect; optional corner pills and a footer for buttons.
+// The coloured card: an icon, the name, a pill and a one-line effect; optional corner pills and a footer for buttons.
+// RarityCard is the generic card (the shop uses it for gear); ItemCard fills it from a chest item.
 import React from "@rbxts/react";
 import { ITEMS, ItemId, RARITY_NAMES } from "shared/config/items";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText } from "./item-display";
-import { COLORS, FONTS, RADIUS, STROKE, Sunburst, rampSequence } from "./ui-kit";
+import { COLORS, FONTS, RADIUS, Ramp, STROKE, Sunburst, rampSequence } from "./ui-kit";
 
 /** Height of the card without a footer. */
 export const ITEM_CARD_HEIGHT = 200;
@@ -16,8 +16,7 @@ export interface CornerPill {
 	readonly color: Color3;
 }
 
-export interface ItemCardProps {
-	readonly item: ItemId;
+interface CardDecor {
 	/** Top-right pill, e.g. the chance "45%" or the count "×3". */
 	readonly topRight?: CornerPill;
 	/** Top-left pill, e.g. "✔ НАДІТО". */
@@ -27,6 +26,25 @@ export interface ItemCardProps {
 	/** Buttons under the effect; the parent grid must make the cell ITEM_CARD_FOOTER taller. */
 	readonly footer?: React.Element;
 	readonly order?: number;
+}
+
+export interface ItemCardProps extends CardDecor {
+	readonly item: ItemId;
+}
+
+export interface RarityCardProps extends CardDecor {
+	readonly ramp: Ramp;
+	/** Text colour of the middle pill. */
+	readonly light: Color3;
+	readonly icon: string;
+	readonly name: string;
+	/** Middle pill, e.g. "ЛЕГЕНДАРНИЙ" or "РІВЕНЬ 3". */
+	readonly pill: string;
+	readonly effect: string;
+	/** Light rays behind the content: the best card of a set. */
+	readonly rays?: boolean;
+	/** Darkened: not available yet. The footer stays bright so its hint is readable. */
+	readonly dimmed?: boolean;
 }
 
 function Pill(props: { pill: CornerPill; left: boolean }) {
@@ -56,9 +74,7 @@ function Pill(props: { pill: CornerPill; left: boolean }) {
 	);
 }
 
-function Content(props: ItemCardProps) {
-	const def = ITEMS[props.item];
-	const light = RARITY_LIGHT[def.rarity];
+function Content(props: RarityCardProps) {
 	return (
 		<>
 			{props.topLeft !== undefined && <Pill pill={props.topLeft} left={true} />}
@@ -68,7 +84,7 @@ function Content(props: ItemCardProps) {
 				BackgroundTransparency={1}
 				Position={new UDim2(0.5, 0, 0, 30)}
 				Size={new UDim2(0, 80, 0, 58)}
-				Text={KIND_ICONS[def.kind]}
+				Text={props.icon}
 				TextSize={48}
 				ZIndex={3}
 			/>
@@ -77,7 +93,7 @@ function Content(props: ItemCardProps) {
 				Position={new UDim2(0, 6, 0, 92)}
 				Size={new UDim2(1, -12, 0, 26)}
 				Font={FONTS.display}
-				Text={def.name}
+				Text={props.name}
 				TextColor3={COLORS.white}
 				TextScaled={true}
 				ZIndex={3}
@@ -101,9 +117,9 @@ function Content(props: ItemCardProps) {
 					Size={new UDim2(0, 0, 1, 0)}
 					AutomaticSize={Enum.AutomaticSize.X}
 					Font={FONTS.display}
-					Text={RARITY_NAMES[def.rarity].upper()}
+					Text={props.pill}
 					TextSize={13}
-					TextColor3={light}
+					TextColor3={props.light}
 					ZIndex={4}
 				/>
 			</frame>
@@ -120,7 +136,7 @@ function Content(props: ItemCardProps) {
 				Position={new UDim2(0, 6, 0, 154)}
 				Size={new UDim2(1, -12, 0, 38)}
 				Font={FONTS.display}
-				Text={effectText(def.kind, def.bonus)}
+				Text={props.effect}
 				TextColor3={COLORS.white}
 				TextScaled={true}
 				TextWrapped={true}
@@ -129,12 +145,22 @@ function Content(props: ItemCardProps) {
 				<uitextsizeconstraint MaxTextSize={15} MinTextSize={10} />
 				<uistroke Color={COLORS.outline} Thickness={1.5} />
 			</textlabel>
+			{props.dimmed === true && (
+				<frame
+					BackgroundColor3={COLORS.black}
+					BackgroundTransparency={0.45}
+					Size={UDim2.fromScale(1, 1)}
+					ZIndex={6}
+				>
+					<uicorner CornerRadius={RADIUS.large} />
+				</frame>
+			)}
 			{props.footer !== undefined && (
 				<frame
 					BackgroundTransparency={1}
 					Position={new UDim2(0, 8, 0, ITEM_CARD_HEIGHT - 4)}
 					Size={new UDim2(1, -16, 0, ITEM_CARD_FOOTER - 6)}
-					ZIndex={4}
+					ZIndex={7}
 				>
 					{props.footer}
 				</frame>
@@ -144,25 +170,23 @@ function Content(props: ItemCardProps) {
 }
 
 /**
- * One item as a card. Fills its parent cell (give the grid cell ITEM_CARD_HEIGHT, plus ITEM_CARD_FOOTER with a footer).
- * The legendary card turns light rays behind its content; rays need a CanvasGroup to be clipped to the card.
+ * One card. Fills its parent cell (give the grid cell ITEM_CARD_HEIGHT, plus ITEM_CARD_FOOTER with a footer).
+ * Rays need a CanvasGroup to be clipped to the card.
  */
-export function ItemCard(props: ItemCardProps) {
-	const rarity = ITEMS[props.item].rarity;
-	const ramp = RARITY_RAMPS[rarity];
+export function RarityCard(props: RarityCardProps) {
 	const faceSize = new UDim2(1, 0, 1, -CARD_DEPTH);
 	const face =
-		rarity === "legendary" ? (
+		props.rays === true ? (
 			<canvasgroup BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={faceSize}>
 				<uicorner CornerRadius={RADIUS.large} />
-				<uigradient Rotation={90} Color={rampSequence(ramp)} />
+				<uigradient Rotation={90} Color={rampSequence(props.ramp)} />
 				<Sunburst zIndex={1} />
 				<Content {...props} />
 			</canvasgroup>
 		) : (
 			<frame BackgroundColor3={COLORS.white} BorderSizePixel={0} Size={faceSize}>
 				<uicorner CornerRadius={RADIUS.large} />
-				<uigradient Rotation={90} Color={rampSequence(ramp)} />
+				<uigradient Rotation={90} Color={rampSequence(props.ramp)} />
 				<Content {...props} />
 			</frame>
 		);
@@ -186,5 +210,22 @@ export function ItemCard(props: ItemCardProps) {
 				/>
 			</frame>
 		</frame>
+	);
+}
+
+/** A chest item as a rarity card; the legendary one turns light rays. */
+export function ItemCard(props: ItemCardProps) {
+	const def = ITEMS[props.item];
+	return (
+		<RarityCard
+			{...props}
+			ramp={RARITY_RAMPS[def.rarity]}
+			light={RARITY_LIGHT[def.rarity]}
+			icon={KIND_ICONS[def.kind]}
+			name={def.name}
+			pill={RARITY_NAMES[def.rarity].upper()}
+			effect={effectText(def.kind, def.bonus)}
+			rays={def.rarity === "legendary"}
+		/>
 	);
 }

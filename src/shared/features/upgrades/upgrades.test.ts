@@ -1,6 +1,6 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { PICKAXES } from "shared/config/pickaxes";
-import { isUpgradeTrack, maxLevel, nextLevelDef, tryBuyUpgrade } from "./upgrades";
+import { isUpgradeTrack, levelState, maxLevel, nextLevelDef, tryBuyUpgrade } from "./upgrades";
 
 class UpgradesTests {
 	@Test
@@ -64,6 +64,31 @@ class UpgradesTests {
 		Assert.true(isUpgradeTrack("bag"));
 		Assert.false(isUpgradeTrack("rocket"));
 		Assert.false(isUpgradeTrack(3));
+	}
+
+	@Test
+	public levelStatesAroundTheCurrentLevel() {
+		Assert.equal(levelState(1, 3), "replaced");
+		Assert.equal(levelState(2, 3), "replaced");
+		Assert.equal(levelState(3, 3), "current");
+		Assert.equal(levelState(4, 3), "next");
+		Assert.equal(levelState(5, 3), "locked");
+	}
+
+	@Test
+	public starterLevelHasNothingReplaced() {
+		Assert.equal(levelState(1, 1), "current");
+		Assert.equal(levelState(2, 1), "next");
+		Assert.equal(levelState(6, 1), "locked");
+	}
+
+	@Test
+	public maxLevelHasNoNext() {
+		const top = maxLevel("bag");
+		for (let level = 1; level < top; level++) {
+			Assert.equal(levelState(level, top), "replaced");
+		}
+		Assert.equal(levelState(top, top), "current");
 	}
 }
 
