@@ -12,4 +12,6 @@ export {
 	wealthScore,
 } from "./leaderboard";
 export type { BoardId, BoardRow, DepthRecord } from "./leaderboard";
-export { LEADERBOARD_SIZE, REFRESH_INTERVAL, WRITE_INTERVAL } from "./tuning";
+export { LEADERBOARD_SIZE, SYNC_INTERVAL } from "./tuning";
+export { LEADERBOARD_REMOTE } from "./network";
+export type { LeaderboardRow, LeaderboardSnapshot } from "./network";

@@ -3,11 +3,11 @@
 /** Rows shown per board. */
 export const LEADERBOARD_SIZE = 10;
 
-/** Seconds between two writes of one player's scores (and the write on leave). DataStore budget is small. */
-export const WRITE_INTERVAL = 60;
-
-/** Seconds between two reads of the top rows. Every server reads on its own, so keep this slow. */
-export const REFRESH_INTERVAL = 60;
+/**
+ * Seconds between two sync rounds: write every player's grown scores, then read the top rows.
+ * Every server reads on its own and the DataStore budget is small, so keep this slow.
+ */
+export const SYNC_INTERVAL = 60;
 
 /**
  * Game meters per stud. Roblox's own conversion is 0.28 m per stud; we round it up a bit so depth numbers feel

@@ -6,6 +6,7 @@ export {
 	getProfileData,
 	markDirty,
 	onProfileLoaded,
+	onProfileReleasing,
 	saveProfileNow,
 	startProfileService,
 } from "./profile-service";

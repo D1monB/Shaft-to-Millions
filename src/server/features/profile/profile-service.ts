@@ -18,6 +18,17 @@ export function onProfileLoaded(callback: (player: Player) => void): void {
 	loadedListeners.push(callback);
 }
 
+const releasingListeners: Array<(player: Player) => void> = [];
+
+/**
+ * Runs `callback` when a player leaves, while their data is still readable (just before it is released).
+ * Why: the order of separate PlayerRemoving handlers is not guaranteed, so a feature reading data there
+ * could find it already gone. The callback must not yield.
+ */
+export function onProfileReleasing(callback: (player: Player) => void): void {
+	releasingListeners.push(callback);
+}
+
 // Players whose view must be re-sent. Many changes in one frame produce one network message.
 const dirty = new Set<Player>();
 
@@ -61,6 +72,12 @@ export function startProfileService(): void {
 	Players.PlayerAdded.Connect((player) => created.playerAdded(player.UserId));
 	Players.PlayerRemoving.Connect((player) => {
 		dirty.delete(player);
+		if (getProfileData(player) !== undefined) {
+			for (const listener of releasingListeners) {
+				// pcall: one feature's bug must never stop the profile from being released and saved.
+				pcall(listener, player);
+			}
+		}
 		created.playerRemoving(player.UserId);
 	});
 
