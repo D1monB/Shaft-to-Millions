@@ -118,6 +118,16 @@ export function buildBasePlaceholders(): void {
 			["quartz", 1],
 		]);
 	}
+	if (needsPlaceholders(TAGS.SurfaceSpawn)) {
+		makePlaceholder({
+			name: "SurfaceSpawn",
+			size: new Vector3(6, 1, 6),
+			position: new Vector3(0, 0.5, -10),
+			color: Color3.fromRGB(120, 170, 255),
+			tag: TAGS.SurfaceSpawn,
+			label: "Поверхня (швидка подорож)",
+		});
+	}
 	if (needsPlaceholders(TAGS.Shop)) {
 		makePlaceholder({
 			name: "Shop",

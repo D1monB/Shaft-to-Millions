@@ -12,6 +12,7 @@ import { startMiningService } from "server/features/mining";
 import { startMovementService } from "server/features/movement";
 import { startProfileService } from "server/features/profile";
 import { startSellingService } from "server/features/selling";
+import { startTravelService } from "server/features/travel";
 import { startUpgradesService } from "server/features/upgrades";
 import {
 	buildBasePlaceholders,
@@ -31,6 +32,7 @@ startSellingService();
 startFactoryService();
 startLayersService();
 startMovementService();
+startTravelService();
 startDrillService();
 startChestsService();
 startEquipmentService();

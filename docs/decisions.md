@@ -116,3 +116,14 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the first security review showed a teleport exploit. The anchor (not "previous sample") is used because the slack
   would otherwise be granted again for every sample and a 3x speed hack would pass. Known limit: a hack of about 1.7x or less
   is not caught; that is the price of not punishing lag.
+
+## 015. Fast travel
+
+- **Date:** 2026-11-24
+- **Decision:** a menu button opens a list of the surface and every opened camp. Travel is free with a 30 s pause per
+  player (`shared/features/travel/tuning.ts`). The server checks the destination (integer 0..N, camp opened, character
+  alive, pause over), moves the character and calls `resetMovementBaseline`. The surface point is a new map tag
+  `SurfaceSpawn` (one Part). The pause starts only after a successful trip.
+- **Why:** going up must never feel like a punishment (CLAUDE.md). The pause stops constant hopping and keeps the descent
+  meaningful. Not free or tied to depth for now: the economy is not measured yet.
+- **Not included:** an elevator with its own animation. A later feature can reuse the same service.
