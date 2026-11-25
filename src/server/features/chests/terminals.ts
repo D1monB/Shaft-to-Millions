@@ -56,6 +56,33 @@ function makeStand(terminal: Model, chestId: ChestId): void {
 	CollectionService.AddTag(anchor, TAGS.Chest);
 }
 
+const OPPOSITE_FACE: Partial<Record<Enum.NormalId["Name"], Enum.NormalId>> = {
+	Front: Enum.NormalId.Back,
+	Back: Enum.NormalId.Front,
+	Left: Enum.NormalId.Right,
+	Right: Enum.NormalId.Left,
+};
+
+/**
+ * The map author's title sign (TitleText) has its name on one face only; players behind the terminal saw a blank
+ * board (play-test 2026-11-25). Adds a copy of the SurfaceGui on the opposite face, at runtime only.
+ */
+function titleOnBothSides(terminal: Model): void {
+	const title = terminal.FindFirstChild(CHEST_TERMINALS.Title);
+	const gui = title?.FindFirstChildOfClass("SurfaceGui");
+	if (title === undefined || gui === undefined) {
+		return;
+	}
+	const opposite = OPPOSITE_FACE[gui.Face.Name];
+	const guis = title.GetChildren().filter((child) => child.IsA("SurfaceGui"));
+	if (opposite === undefined || guis.size() > 1) {
+		return;
+	}
+	const copy = gui.Clone();
+	copy.Face = opposite;
+	copy.Parent = title;
+}
+
 /** Turns every known terminal on every plot into a chest stand. Returns how many were found. */
 export function setupChestTerminals(): number {
 	const plots = Workspace.FindFirstChild(PLOTS.MapFolder)?.FindFirstChild(PLOTS.PlotsFolder);
@@ -66,6 +93,7 @@ export function setupChestTerminals(): number {
 			const terminal = terminals?.FindFirstChild(name);
 			if (terminal !== undefined && terminal.IsA("Model") && isChestId(chestId)) {
 				makeStand(terminal, chestId);
+				titleOnBothSides(terminal);
 				count += 1;
 			}
 		}

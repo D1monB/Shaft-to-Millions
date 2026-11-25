@@ -1,6 +1,7 @@
 // The buy sign beside a machine place that is not bought yet: a post with a board showing the machine and its price.
 // Only the next machine's sign is active (orange glow); later ones are grey and say which machine comes first.
 // Built by code until the map author models a sign; the server owns it, the client only sees it.
+import { Players, Workspace } from "@rbxts/services";
 
 const POST_SIZE = new Vector3(0.5, 4.5, 0.5);
 const BOARD_SIZE = new Vector3(6, 3.4, 0.4);
@@ -54,6 +55,31 @@ function label(parent: Instance, text: string, color: Color3, y: number, height:
 	line.Parent = parent;
 }
 
+/** How far above and below the planned spot the floor is searched for (studs). */
+const FLOOR_SEARCH_UP = 10;
+const FLOOR_SEARCH_DOWN = 60;
+
+/**
+ * Moves `at` down (or up) onto the real floor under it. Why: the planned height comes from the plot spawn point,
+ * which stands above the floor on the map author's plots, so signs hung in the air (play-test 2026-11-25).
+ * Signs, characters and non-colliding parts are ignored; with no floor found the planned spot is kept.
+ */
+function onFloor(at: CFrame, ignore: Instance): CFrame {
+	const params = new RaycastParams();
+	params.FilterType = Enum.RaycastFilterType.Exclude;
+	const skip: Instance[] = [ignore];
+	for (const player of Players.GetPlayers()) {
+		if (player.Character !== undefined) {
+			skip.push(player.Character);
+		}
+	}
+	params.FilterDescendantsInstances = skip;
+	params.RespectCanCollide = true;
+	const origin = at.Position.add(new Vector3(0, FLOOR_SEARCH_UP, 0));
+	const hit = Workspace.Raycast(origin, new Vector3(0, -(FLOOR_SEARCH_UP + FLOOR_SEARCH_DOWN), 0), params);
+	return hit !== undefined ? at.add(new Vector3(0, hit.Position.Y - at.Position.Y, 0)) : at;
+}
+
 /**
  * Builds a sign standing at `at` (its foot on the ground, front facing the walkway).
  * Returns the model and its board, where the caller puts the buy prompt.
@@ -61,6 +87,7 @@ function label(parent: Instance, text: string, color: Color3, y: number, height:
 export function buildSign(name: string, at: CFrame, info: SignInfo, parent: Instance): { model: Model; board: Part } {
 	const model = new Instance("Model");
 	model.Name = name;
+	at = onFloor(at, parent);
 	const accent = info.active ? COLORS.active : COLORS.locked;
 
 	const post = part("Post", POST_SIZE, COLORS.post, model);

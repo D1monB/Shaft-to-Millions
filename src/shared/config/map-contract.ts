@@ -47,6 +47,8 @@ export const CHEST_TERMINALS = {
 	Folder: "Terminals",
 	PromptPoint: "PromptPoint",
 	FallbackPoint: "RollButton",
+	/** The name sign of a terminal (a Part with a SurfaceGui). */
+	Title: "TitleText",
 	/** Terminal model name -> chest id (config/chests.ts). */
 	Chests: {
 		Terminal_Pets: "pet_chest",
