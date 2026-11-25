@@ -11,7 +11,7 @@ import { formatDuration, formatMoney } from "shared/lib/format";
 import { useView } from "client/features/profile";
 import { useServerClock, useTagged } from "client/lib/hooks";
 import { COLORS, FONTS, ProgressBar, RADIUS, STROKE, TEXT_SIZES } from "client/lib/ui-kit";
-import { liveState } from "./factory-panels";
+import { liveState } from "./factory-helpers";
 
 /** The part a board hangs over, and how high above it. Models use their bounding box. */
 function anchorOf(instance: Instance): [BasePart, number] | undefined {
