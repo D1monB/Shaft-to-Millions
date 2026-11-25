@@ -68,3 +68,15 @@ export const PLOT_ATTRIBUTES = {
 	/** On a conveyor part: false stops the belt animation (read by the map author's ConveyorAnimator). */
 	ConveyorOn: "ConveyorOn",
 } as const;
+
+/**
+ * The map author's ore spawn points (decision 034): Workspace/Map/Mine/OreSpawns/Tier<N>/<any BasePart>, Tier N =
+ * layer N. The server puts an ore block on every point at start; points near Mine/TunnelEntrance/Portal on the
+ * deepest layer grow iridium. The place file is not changed.
+ */
+export const ORE_SPAWNS = {
+	Mine: "Mine",
+	Spawns: "OreSpawns",
+	PortalModel: "TunnelEntrance",
+	Portal: "Portal",
+} as const;

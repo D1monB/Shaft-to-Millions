@@ -21,8 +21,11 @@ import {
 	buildChestPlaceholders,
 	buildLayerPlaceholders,
 	buildPlotPlaceholders,
+	spawnMapOre,
 } from "server/features/world";
 
+// The map author's ore spawn points first: with real ore on the map, no ore placeholders are built.
+spawnMapOre();
 buildBasePlaceholders();
 buildLayerPlaceholders();
 // The map author's chest terminals first: with real Chest stands on the map, no chest placeholders are built.

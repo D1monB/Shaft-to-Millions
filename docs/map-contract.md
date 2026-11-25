@@ -96,3 +96,10 @@ Workspace
   У файлі карти нічого не змінюється.
 - Перейменування терміналів або папки `Terminals` вимкне сундуки: назви записані в `src/shared/config/map-contract.ts`
   (`CHEST_TERMINALS`).
+
+## Ore spawn points (decision 034)
+
+- `Workspace/Map/Mine/OreSpawns/Tier<N>/<any BasePart>`: one ore block per point, layer N's ore. The point's bottom
+  is the block's bottom. Points may be invisible; their name does not matter.
+- `Workspace/Map/Mine/TunnelEntrance/Portal` (BasePart): Tier5 points within 60 studs of it grow iridium.
+- More points or a new tier folder need no code change (a new tier needs a layer and an ore in the config).

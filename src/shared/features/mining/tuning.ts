@@ -12,3 +12,6 @@ export const MAX_MINING_DISTANCE = 20;
 
 /** ClickDetector activation distance shown to players. */
 export const CLICK_DISTANCE = 16;
+
+/** Ore spawn points of layer 5 closer than this to the portal (studs, on the ground plane) grow iridium. */
+export const PORTAL_ORE_RADIUS = 60;

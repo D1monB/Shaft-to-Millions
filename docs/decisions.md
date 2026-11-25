@@ -402,3 +402,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   and translate texts with numbers correctly, which Roblox's auto-capture does poorly.
 - **Notes:** texts avoid plural forms ("Ore sold: {count}") so one template fits every language. Studio-only tools
   (devtools panel, placeholders) are plain English. Inventory cards now sort by item id, not by name.
+
+## 034. Ore blocks on the map author's spawn points; iridium near the portal (2026-11-25)
+
+- **What:** at server start, every BasePart in `Map/Mine/OreSpawns/Tier<N>` gets a 4-stud ore block of layer N's
+  main ore (copper, iron, silver, gold, titanium), tagged `OreNode` with `OreId`, so the mining service needs no
+  change. Points of the deepest layer within `PORTAL_ORE_RADIUS` (60 studs, ground plane) of
+  `Map/Mine/TunnelEntrance/Portal` grow iridium (`nearPortal` ore); on the current map that is 2 of 11 Tier5 points.
+  Blocks are plain coloured parts in `Workspace/MapOre` until the map author models ore blocks.
+- **Why:** the map author placed spawn points instead of tagged blocks; without this the live game had no ore.

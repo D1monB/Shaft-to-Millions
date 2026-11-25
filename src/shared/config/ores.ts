@@ -19,6 +19,8 @@ export interface OreDef {
 	readonly layer: number;
 	/** False: auto drills never mine it (iridium grows only in the portal zone, it must be mined by hand). */
 	readonly drillable?: boolean;
+	/** True: grows only at ore spawn points near the portal (decision 034), never at the layer's other points. */
+	readonly nearPortal?: true;
 	/** RGB 0-255. Plain numbers, not Color3, so this file also runs in headless tests. */
 	readonly color: readonly [number, number, number];
 }
@@ -73,6 +75,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		respawnSeconds: 45,
 		layer: 5,
 		drillable: false,
+		nearPortal: true,
 		color: [170, 100, 240],
 	},
 };
