@@ -290,3 +290,22 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Machine-done is polled on the client:** production is timestamp based and the server sends no "done" event, so the
   client checks the queue once a second and plays the sound once per finished item.
 - **Why a pool:** many hits per second must not create or destroy `Sound` instances (mobile performance).
+
+## 027. Tycoon line instead of recipes (draft, check)
+
+- **Date:** 2026-11-25 (draft, check)
+- **Decision:** the factory becomes a tycoon line on the player's plot (one of `Map/Plots/Plot1..6`), built from the
+  friend's 12 machines `M01_HydroWasher` .. `M12_QuantumAssembler`. An item is "ore + stage" (stage 0 = raw ore,
+  stage 12 = reactor); each machine turns stage N into stage N + 1. There are no recipes and no ingots any more.
+- **Value:** `ore base value * stage multiplier * quality bonus of the machines passed`. The stage table grows about
+  x1.84 per stage, so a $10 ore becomes a ~$15 000 reactor (friend's target).
+- **Flow:** machines are bought in order; the player drops ore from the bag into the hopper (queue of the first machine);
+  the item leaves the last owned machine and is sold automatically. The server counts time and money; items on the
+  belts are only drawn by the client.
+- **Machine upgrades:** speed, double-output chance, quality (value bonus) and queue capacity (so a slow machine is a
+  bottleneck worth upgrading, not a silent loss).
+- **Ores:** the friend's 6 ores (copper, iron, gold, titanium, obsidian, etherium) on the 5 floors of his pit.
+- **Gear:** costs money only (no materials).
+- **Offline:** the line keeps running while the player is away at half speed, for at most 8 hours (tunable).
+- **Why:** matches the friend's map and the tycoon genre; one generic rule instead of a recipe per product, so a new
+  ore works on the whole line with one config entry.
