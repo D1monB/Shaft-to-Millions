@@ -23,6 +23,27 @@ import {
 	rowItemWidth,
 } from "client/lib/ui-kit";
 
+/** Two presses: the first arms the button, the second resets. A reset wipes the whole test profile. */
+function ResetProfileButton(props: { order: number }) {
+	const [armed, setArmed] = useState(false);
+	return (
+		<Button
+			text={armed ? "Точно скинути ВСЕ? Натисни ще раз" : "Скинути профіль (новий гравець)"}
+			variant="danger"
+			onClick={() => {
+				if (!armed) {
+					setArmed(true);
+					task.delay(4, () => setArmed(false));
+					return;
+				}
+				setArmed(false);
+				sendToServer(DEV_COMMAND_REMOTE, "resetProfile");
+			}}
+			order={props.order}
+		/>
+	);
+}
+
 function DevPanel() {
 	return (
 		<>
@@ -53,6 +74,7 @@ function DevPanel() {
 				onClick={() => sendToServer(DEV_COMMAND_REMOTE, "openLayers")}
 				order={51}
 			/>
+			<ResetProfileButton order={59} />
 			<Button text="🎨 UI showcase" variant="secondary" onClick={openShowcase} order={60} />
 		</>
 	);

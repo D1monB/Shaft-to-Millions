@@ -15,6 +15,52 @@ class DevtoolsTests {
 		Assert.equal(parseDevCommand(["money", DEV_MONEY_AMOUNTS[1]])?.kind, "money");
 		Assert.equal(parseDevCommand(["maxGear"])?.kind, "maxGear");
 		Assert.equal(parseDevCommand(["openLayers"])?.kind, "openLayers");
+		Assert.equal(parseDevCommand(["resetProfile"])?.kind, "resetProfile");
+		// No extra arguments are tolerated.
+		Assert.undefined(parseDevCommand(["resetProfile", 1]));
+	}
+
+	@Test
+	public resetBringsBackANewPlayerInPlace() {
+		const data = createDefaultProfileData();
+		const same = data;
+		applyDevCommand(data, { kind: "money", amount: DEV_MONEY_AMOUNTS[2] });
+		applyDevCommand(data, { kind: "maxGear" });
+		applyDevCommand(data, { kind: "materials" });
+		applyDevCommand(data, { kind: "openLayers" });
+		data.stats.totalEarned = 500;
+		data.deepestMeters = 80;
+		data.inventory.push({ uid: "i1", item: "pet_mole" });
+		data.nextUid = 2;
+		applyDevCommand(data, { kind: "resetProfile" });
+		const fresh = createDefaultProfileData();
+		Assert.equal(data, same, "the live table must stay the same object");
+		Assert.equal(data.money, 0);
+		Assert.equal(data.deepestLayer, 1);
+		Assert.equal(data.deepestMeters, 0);
+		Assert.equal(data.stats.totalEarned, 0);
+		Assert.equal(data.inventory.size(), 0);
+		Assert.equal(data.nextUid, 1);
+		Assert.deepEqual(data.gear, fresh.gear);
+		Assert.deepEqual(data.warehouse, {});
+	}
+
+	@Test
+	public resetKeepsTheVersionAndGrantedReceipts() {
+		const data = createDefaultProfileData();
+		data.purchaseIds.push("receipt-1");
+		applyDevCommand(data, { kind: "resetProfile" });
+		// A paid purchase must never be granted twice, so its id survives a test reset.
+		Assert.deepEqual(data.purchaseIds, ["receipt-1"]);
+		Assert.equal(data.schemaVersion, createDefaultProfileData().schemaVersion);
+	}
+
+	@Test
+	public resetGivesIndependentTablesNotSharedOnes() {
+		const data = createDefaultProfileData();
+		applyDevCommand(data, { kind: "resetProfile" });
+		data.bag.coal = 5;
+		Assert.undefined(createDefaultProfileData().bag.coal);
 	}
 
 	@Test

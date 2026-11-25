@@ -4,7 +4,8 @@
 import { LAYER_COUNT } from "shared/config/layers";
 import { RESOURCE_IDS } from "shared/config/resources";
 import { GEAR_BY_SLOT, GEAR_SLOTS } from "shared/features/upgrades";
-import type { ProfileData } from "shared/features/profile";
+import { ProfileData, createDefaultProfileData } from "shared/features/profile";
+import { PlainTable } from "shared/lib/tables";
 import { MAX_COUNTER } from "shared/lib/repair";
 
 export const DEV_MONEY_AMOUNTS: ReadonlyArray<number> = [1_000, 100_000, 10_000_000];
@@ -16,7 +17,8 @@ export type DevCommand =
 	| { readonly kind: "money"; readonly amount: number }
 	| { readonly kind: "maxGear" }
 	| { readonly kind: "materials" }
-	| { readonly kind: "openLayers" };
+	| { readonly kind: "openLayers" }
+	| { readonly kind: "resetProfile" };
 
 /** Turns raw remote arguments into a command, or undefined when anything is off (count, type, unknown preset). */
 export function parseDevCommand(args: ReadonlyArray<unknown>): DevCommand | undefined {
@@ -28,7 +30,10 @@ export function parseDevCommand(args: ReadonlyArray<unknown>): DevCommand | unde
 		}
 		return { kind: "money", amount };
 	}
-	if ((kind === "maxGear" || kind === "materials" || kind === "openLayers") && args.size() === 1) {
+	if (
+		(kind === "maxGear" || kind === "materials" || kind === "openLayers" || kind === "resetProfile") &&
+		args.size() === 1
+	) {
 		return { kind };
 	}
 	return undefined;
@@ -57,7 +62,27 @@ export function applyDevCommand(data: ProfileData, command: DevCommand): void {
 		for (const id of RESOURCE_IDS) {
 			data.warehouse[id] = math.min((data.warehouse[id] ?? 0) + DEV_MATERIAL_AMOUNT, MAX_COUNTER);
 		}
+	} else if (command.kind === "resetProfile") {
+		resetProfile(data);
 	} else {
 		data.deepestLayer = LAYER_COUNT;
+	}
+}
+
+/** Fields a reset keeps: the version (the data is still this version) and Robux receipts (already granted, see below). */
+const KEPT_ON_RESET: ReadonlyArray<string> = ["schemaVersion", "purchaseIds"];
+
+/**
+ * Puts the profile back to a brand-new player, in place (the live table must stay the same object, the session
+ * saves it). Granted Robux receipt ids are KEPT: a purchase that was paid and granted must never be granted twice,
+ * and a test reset is no reason to forget it. Studio only, like every dev command.
+ */
+function resetProfile(data: ProfileData): void {
+	const fresh = createDefaultProfileData() as unknown as PlainTable;
+	const target = data as unknown as PlainTable;
+	for (const [key, value] of pairs(fresh)) {
+		if (!KEPT_ON_RESET.includes(key as string)) {
+			target[key as string] = value;
+		}
 	}
 }
