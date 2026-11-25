@@ -15,9 +15,13 @@ export interface SoundDef {
 }
 
 export const SOUNDS: { readonly [K in SoundId]: SoundDef } = {
-	hit: { assetId: "", volume: 0.5, minGap: 0.08 },
-	oreBreak: { assetId: "", volume: 0.7, minGap: 0.1 },
-	success: { assetId: "", volume: 0.6, minGap: 0.2 },
+	// "Metal Hits 2 (SFX)" by ProSoundEffects (library licensed to Roblox creators).
+	hit: { assetId: "rbxassetid://9116651255", volume: 0.4, minGap: 0.08 },
+	// "Shale Break Low End Crackling Rock 6 (SFX)" by ProSoundEffects.
+	oreBreak: { assetId: "rbxassetid://9119050772", volume: 0.7, minGap: 0.1 },
+	// "SS_wobbleboxx_rewards_Rise03" by RBLXEssentials.
+	success: { assetId: "rbxassetid://137298617974043", volume: 0.6, minGap: 0.2 },
+	// Silent for now: no licensed error sound picked yet (do not use game rips like "Windows error").
 	error: { assetId: "", volume: 0.6, minGap: 0.3 },
 };
 
