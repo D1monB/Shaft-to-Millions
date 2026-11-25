@@ -141,7 +141,8 @@ export function startChestsService(): void {
 	const addPrompt = (instance: Instance) => {
 		const chestId = instance.GetAttribute(ATTRIBUTES.ChestId);
 		if (isChestId(chestId)) {
-			ensurePrompt(instance, "Подивитись", CHESTS[chestId].name);
+			// A bit shorter than the server check (CHEST_DISTANCE), so a prompt the engine shows always passes it.
+			ensurePrompt(instance, "Подивитись", CHESTS[chestId].name, CHEST_DISTANCE - 2);
 		} else {
 			warn(`[chests] ${instance.GetFullName()} has tag Chest but no valid ChestId attribute; skipped.`);
 		}

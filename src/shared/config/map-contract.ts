@@ -39,6 +39,22 @@ export const PLOTS = {
 	Conveyors: "Conveyors",
 } as const;
 
+/**
+ * The chest terminals the map author put on every plot: Map/Plots/<PlotN>/Terminals/<name>, each with an Attachment
+ * PromptPoint (fallback RollButton) somewhere inside. The server turns them into Chest stands at runtime.
+ */
+export const CHEST_TERMINALS = {
+	Folder: "Terminals",
+	PromptPoint: "PromptPoint",
+	FallbackPoint: "RollButton",
+	/** Terminal model name -> chest id (config/chests.ts). */
+	Chests: {
+		Terminal_Pets: "pet_chest",
+		Terminal_PickaxeAura: "pickaxe_chest",
+		Terminal_CharAura: "speed_chest",
+	},
+} as const;
+
 export const PLOT_ATTRIBUTES = {
 	/** On the plot: UserId of the owner, 0 = free. Set by the server. */
 	Owner: "Owner",

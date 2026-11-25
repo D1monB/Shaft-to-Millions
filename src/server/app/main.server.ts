@@ -2,7 +2,7 @@
 // 1. Studio placeholders (so tagged objects exist before services look for them),
 // 2. feature services (they register remotes and "profile loaded" listeners),
 // 3. profile last, so every listener is in place before the first player's data loads.
-import { startChestsService } from "server/features/chests";
+import { setupChestTerminals, startChestsService } from "server/features/chests";
 import { startDevtoolsService } from "server/features/devtools";
 import { startDrillService } from "server/features/drill";
 import { startEquipmentService } from "server/features/equipment";
@@ -24,6 +24,8 @@ import {
 
 buildBasePlaceholders();
 buildLayerPlaceholders();
+// The map author's chest terminals first: with real Chest stands on the map, no chest placeholders are built.
+setupChestTerminals();
 buildChestPlaceholders();
 buildPlotPlaceholders();
 
