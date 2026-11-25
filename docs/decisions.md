@@ -205,9 +205,29 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Data:** profile schema v3: `gear.owned` (ids) + `gear.equipped` (one id per slot) replace `levels.pickaxe/bag/shoes`.
   The migration turns each old level into the closest new item that is never weaker (old ore tier is kept). Unknown ids are
   kept in the save (an item from a newer server is never taken away) and fall back to the starter at runtime.
-- **Server:** `BuyGear(id)` checks distance to a shop, money and materials, then takes money and materials and adds the item
-  in one frame (atomic); owning the item already is a refusal, so a double click never charges twice. `EquipGear(id)` only
+- **Server:** `BuyGear(id)` checks distance to a shop, money and materials, then takes money and materials, adds the item
+  and equips it in one frame (atomic); owning the item already is a refusal, so a double click never charges twice. `EquipGear(id)` only
   accepts owned items. Both are rate limited.
 - **To check in a play test:** the first 10 minutes. The copper pickaxe and the miner backpack now need copper ingots, so the
   furnace comes earlier than before; `balance-analyst` should look at it after the play test.
+
+## 021. Server-to-client remotes are declared at startup
+
+- **Date:** 2026-11-25 (draft, check)
+- **Decision:** every RemoteEvent that only the server fires (`StateUpdate`, `Notify`, `MineProgress`, `NodeBroken`,
+  `ChestResult`) is created at server start with `declareClientEvent(name)` (`server/lib/remotes.ts`), before any player joins.
+- **Why:** created lazily on the first `FireClient`, the remote did not exist yet when the client started. The client waited
+  ("Infinite yield" warning) and could connect its handler only after the first message, so exactly that message was lost.
+  Client-to-server remotes are still created by `onClientRequest`.
+
+## 022. UI automation: Studio MCP clicks in ask mode
+
+- **Date:** 2026-11-25 (draft, check)
+- **Decision:** `user_mouse_input`, `user_keyboard_input` and `character_navigation` moved from deny to `ask` in
+  `.claude/settings.json`, so Claude can click through the game UI in Play mode (each call needs the developer's confirmation).
+  Rules: only in Play mode, only on the game's own UI, never on Studio windows or publish/settings dialogs; targets are
+  found by `instance_path` only, never by screen coordinates. For that, React elements get stable instance names
+  (Tabs, the recipe button row, machine panel cards and buttons) and lists use stable keys.
+- **Why:** the play-test checklist is long; clicks by path do not break when the layout or window size changes.
+  Everything else that changes the place or the account stays denied.
 
