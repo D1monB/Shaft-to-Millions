@@ -1,5 +1,6 @@
 // Fast travel: the player picks the surface or an opened camp, the SERVER checks everything and moves the character.
 // The client only sends the destination number. Going up is free; a pause between trips keeps the descent meaningful.
+import { text } from "shared/features/i18n";
 import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { SURFACE, TRAVEL_REMOTE, canTravelTo, isTravelDestination, travelCooldownLeft } from "shared/features/travel";
@@ -49,13 +50,13 @@ function handleTravel(player: Player, args: Array<unknown>): void {
 	}
 	const wait = travelCooldownLeft(os.clock(), lastTravelAt.get(player));
 	if (wait > 0) {
-		notify(player, `Подорож ще не готова: зачекай ${math.ceil(wait)} с.`, "info");
+		notify(player, text("travel.notReady", { seconds: math.ceil(wait) }), "info");
 		return;
 	}
 	const point = findDestinationPoint(destination);
 	const position = point === undefined ? undefined : getInstancePosition(point);
 	if (position === undefined) {
-		notify(player, "Це місце ще не готове на карті.", "error");
+		notify(player, text("travel.placeMissing"), "error");
 		return;
 	}
 

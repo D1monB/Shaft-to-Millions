@@ -1,5 +1,7 @@
 // Server-side "is the player really standing there" checks. Clients can lie about anything, so every
 // request that needs the player to be at a place (shop, sell zone, machine) is checked here.
+import { Text } from "shared/features/i18n";
+import { localizePrompt } from "./localized";
 import { CollectionService } from "@rbxts/services";
 
 /** The character's root position, or undefined if the player has no live character. */
@@ -58,7 +60,7 @@ export function findNearbyTagged(
 }
 
 /** Adds a ProximityPrompt to a tagged object so players on any device can interact with it. */
-export function ensurePrompt(instance: Instance, actionText: string, objectText: string, distance = 10): void {
+export function ensurePrompt(instance: Instance, action: Text, object: Text, distance = 10): void {
 	const anchor = instance.IsA("Model")
 		? (instance.PrimaryPart ?? instance.FindFirstChildWhichIsA("BasePart"))
 		: instance;
@@ -66,8 +68,7 @@ export function ensurePrompt(instance: Instance, actionText: string, objectText:
 		return;
 	}
 	const prompt = new Instance("ProximityPrompt");
-	prompt.ActionText = actionText;
-	prompt.ObjectText = objectText;
+	localizePrompt(prompt, action, object);
 	prompt.MaxActivationDistance = distance;
 	prompt.RequiresLineOfSight = false;
 	prompt.HoldDuration = 0;

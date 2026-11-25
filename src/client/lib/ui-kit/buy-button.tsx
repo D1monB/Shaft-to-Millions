@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import React from "@rbxts/react";
 import { formatMoney } from "shared/lib/format";
 import { Button } from "./button";
@@ -5,7 +6,7 @@ import { Button } from "./button";
 export interface BuyButtonProps {
 	readonly price: number;
 	readonly money: number;
-	/** "Купити", "Відкрити", "Збудувати"... */
+	/** The verb in the player's language: t("common.buy"), t("common.open")... */
 	readonly verb: string;
 	readonly onClick: () => void;
 	/** Extra reason the purchase is impossible right now (e.g. inventory full). */
@@ -25,8 +26,8 @@ export interface BuyButtonProps {
 export function BuyButton(props: BuyButtonProps) {
 	const affordable = props.money >= props.price;
 	const text = affordable
-		? `${props.icon !== undefined ? `${props.icon}  ` : ""}${props.verb} за ${formatMoney(props.price)}`
-		: `${formatMoney(props.price)} · бракує ${formatMoney(props.price - props.money)}`;
+		? `${props.icon !== undefined ? `${props.icon}  ` : ""}${t("common.buyFor", { verb: props.verb, price: formatMoney(props.price) })}`
+		: t("common.short", { price: formatMoney(props.price), missing: formatMoney(props.price - props.money) });
 	return (
 		<Button
 			text={text}

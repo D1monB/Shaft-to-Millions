@@ -50,6 +50,8 @@ export interface ProfileData {
 	nextUid: number;
 	/** Granted Robux receipts (PurchaseId). Private: never sent to the client. */
 	purchaseIds: string[];
+	/** The language chosen in the game menu (decision 033), "" = automatic (Roblox language, then country). */
+	language: string;
 	/** Equipped item uids (from `inventory`). */
 	equipped: Equipped;
 }
@@ -70,6 +72,7 @@ export function createDefaultProfileData(): ProfileData {
 		equipped: { pets: [] },
 		line: newLineState(),
 		lastSeen: 0,
+		language: "",
 	};
 }
 
@@ -104,6 +107,7 @@ const profileDataShape = t.interface({
 		),
 	}),
 	lastSeen: t.number,
+	language: t.string,
 	inventory: t.array(t.interface({ uid: t.string, item: t.string })),
 	nextUid: t.integer,
 	purchaseIds: t.array(t.string),

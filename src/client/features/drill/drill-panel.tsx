@@ -2,7 +2,9 @@
 // and how it compares with mining by hand, so automation never looks like a replacement for the pickaxe.
 import React from "@rbxts/react";
 import { DRILLS, drillKey } from "shared/config/drills";
-import { LAYERS, LAYER_COUNT, oresOfLayer } from "shared/config/layers";
+import { LAYER_COUNT, oresOfLayer } from "shared/config/layers";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "client/lib/i18n";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES } from "shared/config/ores";
 import {
@@ -43,11 +45,7 @@ function DrillShop(props: { layer: number; view: PlayerView }) {
 	const tier = getPickaxe(props.view.gear.equipped.pickaxe).tier;
 	return (
 		<>
-			<Label
-				text="Автобур добуває руду цього шару сам і везе її конвеєром на стрічку твоєї ділянки, навіть коли тебе немає (до 8 год)."
-				tone="muted"
-				order={1}
-			/>
+			<Label text={t("drill.info")} tone="muted" order={1} />
 			<Card order={2}>
 				{oresOfLayer(props.layer).map((oreId, index) => {
 					const allowed = canDrillOre(props.layer, oreId, tier);
@@ -56,8 +54,11 @@ function DrillShop(props: { layer: number; view: PlayerView }) {
 							key={oreId}
 							text={
 								allowed
-									? `${ORES[oreId].name}: 1 шт. за ${secondsPerPiece(props.layer, oreId)} с`
-									: `🔒 ${ORES[oreId].name}: потрібна краща кирка`
+									? t("drill.orePerPiece", {
+											ore: t(nameKeys.ore(oreId)),
+											seconds: secondsPerPiece(props.layer, oreId),
+										})
+									: t("drill.oreLocked", { ore: t(nameKeys.ore(oreId)) })
 							}
 							tone={allowed ? "normal" : "danger"}
 							order={index}
@@ -68,7 +69,7 @@ function DrillShop(props: { layer: number; view: PlayerView }) {
 			<BuyButton
 				price={def.price}
 				money={props.view.money}
-				verb="Збудувати"
+				verb={t("common.build")}
 				onClick={() => sendToServer(BUY_DRILL_REMOTE, props.layer)}
 				order={3}
 			/>
@@ -82,18 +83,18 @@ function DrillPanel(props: { layer: number }) {
 	const layer = props.layer;
 	const def = DRILLS[layer];
 	if (view === undefined) {
-		return <Label text="Завантаження..." tone="muted" />;
+		return <Label text={t("common.loading")} tone="muted" />;
 	}
 	if (def === undefined) {
-		return <Label text="На цьому шарі буру немає." tone="muted" />;
+		return <Label text={t("drill.none")} tone="muted" />;
 	}
-	const layerName = LAYERS[layer]?.name ?? `${layer}`;
-	const nextName = LAYERS[layer + 1]?.name ?? "наступного шару";
+	const layerName = t(nameKeys.layer(layer));
+	const nextName = layer + 1 <= LAYER_COUNT ? t(nameKeys.layer(layer + 1)) : t("drill.nextLayer");
 	if (!isDrillUnlocked(layer, view.deepestLayer)) {
 		return (
 			<>
-				<Label text={`🔒 Бур відкриється, коли пройдеш шар «${layerName}».`} display={true} order={1} />
-				<Label text={`Дійди до табору шару «${nextName}».`} tone="muted" order={2} />
+				<Label text={t("drill.locked", { layer: layerName })} display={true} order={1} />
+				<Label text={t("drill.reachCamp", { layer: nextName })} tone="muted" order={2} />
 			</>
 		);
 	}
@@ -113,24 +114,23 @@ function DrillPanel(props: { layer: number }) {
 	return (
 		<>
 			<Card order={1} accent={blocked ? COLORS.canyon : COLORS.gold}>
-				<Label text={`⚙️ Добуває: ${ore.name}`} display={true} size={TEXT_SIZES.large} order={1} />
-				<Label text={`Бур: 1 шт. за ${perPiece} с (~${math.floor(3600 / perPiece)} шт./год)`} order={2} />
 				<Label
-					text={`Вручну: ~${string.format("%.1f", manual)} с на шматок, без дороги`}
-					tone="muted"
-					order={3}
+					text={t("drill.mining", { ore: t(nameKeys.ore(state.oreId)) })}
+					display={true}
+					size={TEXT_SIZES.large}
+					order={1}
 				/>
+				<Label text={t("drill.rate", { seconds: perPiece, perHour: math.floor(3600 / perPiece) })} order={2} />
+				<Label text={t("drill.manual", { seconds: string.format("%.1f", manual) })} tone="muted" order={3} />
 				<ProgressBar progress={state.progress / perPiece} height={16} order={4} />
 				<Label
-					text={`Буфер: ${formatCount(state.buffer, def.bufferCapacity)}`}
+					text={t("drill.buffer", { count: formatCount(state.buffer, def.bufferCapacity) })}
 					tone={state.buffer > 0 ? "danger" : "muted"}
 					order={5}
 				/>
-				{blocked && (
-					<Label text="Початок стрічки заповнений: бур чекає, поки руда проїде." tone="danger" order={6} />
-				)}
+				{blocked && <Label text={t("drill.beltFull")} tone="danger" order={6} />}
 			</Card>
-			<Label text="Що добувати:" display={true} order={2} />
+			<Label text={t("drill.choose")} display={true} order={2} />
 			{oresOfLayer(layer).map((oreId, index) => {
 				const allowed = canDrillOre(layer, oreId, pickaxe.tier);
 				const selected = oreId === state.oreId;
@@ -139,8 +139,8 @@ function DrillPanel(props: { layer: number }) {
 						key={oreId}
 						text={
 							selected
-								? `✅ ${ORES[oreId].name}`
-								: `${ORES[oreId].name} (${formatMoney(ORES[oreId].price)})`
+								? `✅ ${t(nameKeys.ore(oreId))}`
+								: `${t(nameKeys.ore(oreId))} (${formatMoney(ORES[oreId].price)})`
 						}
 						variant={selected ? "success" : "secondary"}
 						onClick={() => {
@@ -163,7 +163,7 @@ export function startDrillController(): void {
 		if (typeIs(layer, "number")) {
 			openPanel({
 				key: `drill_${layer}`,
-				title: `Автобур: ${LAYERS[layer]?.name ?? layer}`,
+				title: t("drill.title", { layer: t(nameKeys.layer(layer)) }),
 				icon: "⚙️",
 				render: () => <DrillPanel layer={layer} />,
 			});
@@ -172,12 +172,16 @@ export function startDrillController(): void {
 
 	registerHudStat(5, (view) => ({
 		icon: "🕳",
-		text: `Найглибший шар: ${LAYERS[view.deepestLayer]?.name ?? view.deepestLayer} (${view.deepestLayer}/${LAYER_COUNT})`,
+		text: t("hud.deepest", {
+			layer: t(nameKeys.layer(view.deepestLayer)),
+			n: view.deepestLayer,
+			total: LAYER_COUNT,
+		}),
 		short: `${view.deepestLayer}/${LAYER_COUNT}`,
 	}));
 	registerHudStat(25, (view) => {
 		const speed = math.floor(walkSpeedFor(view.gear.equipped.shoes, speedBonusOf(view)));
-		return { icon: "👟", text: `Швидкість ходьби: ${speed}`, short: `${speed}` };
+		return { icon: "👟", text: t("hud.walkSpeed", { speed }), short: `${speed}` };
 	});
 
 	registerGoalSource((view) => {
@@ -188,7 +192,7 @@ export function startDrillController(): void {
 				isDrillUnlocked(layer, view.deepestLayer) &&
 				view.drills[drillKey(layer)] === undefined
 			) {
-				return [{ label: def.name, price: def.price, priority: 1 }];
+				return [{ label: nameKeys.drill(layer), price: def.price, priority: 1 }];
 			}
 		}
 		return [];

@@ -6,6 +6,7 @@ import { setupChestTerminals, startChestsService } from "server/features/chests"
 import { startDevtoolsService } from "server/features/devtools";
 import { startDrillService } from "server/features/drill";
 import { startEquipmentService } from "server/features/equipment";
+import { startLanguageService } from "server/features/i18n";
 import { startLayersService } from "server/features/layers";
 import { startLeaderboardService } from "server/features/leaderboard";
 import { startLineService } from "server/features/line";
@@ -41,5 +42,6 @@ startChestsService();
 startEquipmentService();
 startDevtoolsService();
 startLeaderboardService();
+startLanguageService();
 
 startProfileService();

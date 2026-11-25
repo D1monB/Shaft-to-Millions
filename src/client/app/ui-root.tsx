@@ -6,6 +6,7 @@ import { createPortal, createRoot } from "@rbxts/react-roblox";
 import { Players } from "@rbxts/services";
 import { GoalBanner } from "client/features/goals";
 import { Hud } from "client/features/hud";
+import { useLanguageChoice } from "client/lib/i18n";
 import { PanelHost, ToastHost } from "client/lib/ui-kit";
 
 /**
@@ -24,8 +25,14 @@ function scaleFor(viewport: Vector2): number {
 function App() {
 	const viewport = useViewport();
 	const scale = viewport.map(scaleFor);
+	// A language change re-mounts the UI (the key), so every t() call during render picks up the new words.
+	const choice = useLanguageChoice();
 	return (
 		<screengui
+			key={choice.language}
+			// Our own languages are already translated; only English shown to players of other languages may be
+			// auto-translated by Roblox (decision 033).
+			AutoLocalize={choice.robloxTranslates}
 			ResetOnSpawn={false}
 			IgnoreGuiInset={false}
 			ZIndexBehavior={Enum.ZIndexBehavior.Sibling}

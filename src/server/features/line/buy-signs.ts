@@ -2,6 +2,8 @@
 // Only the next machine's sign is active (orange glow); later ones are grey and say which machine comes first.
 // Built by code until the map author models a sign; the server owns it, the client only sees it.
 import { Players, Workspace } from "@rbxts/services";
+import { Text, nameKeys, ref, text } from "shared/features/i18n";
+import { localizeLabel } from "server/lib/localized";
 
 const POST_SIZE = new Vector3(0.5, 4.5, 0.5);
 const BOARD_SIZE = new Vector3(6, 3.4, 0.4);
@@ -19,12 +21,13 @@ const COLORS = {
 };
 
 export interface SignInfo {
-	readonly machineName: string;
+	/** Machine id (M01..M12), for its name in each language. */
+	readonly machineId: string;
 	readonly price: string;
 	/** True only for the next machine in line. */
 	readonly active: boolean;
-	/** For a locked sign: the machine that must be bought before this one. */
-	readonly requires?: string;
+	/** For a locked sign: the id of the machine that must be bought before this one. */
+	readonly requiresId?: string;
 }
 
 function part(name: string, size: Vector3, color: Color3, parent: Instance): Part {
@@ -42,12 +45,23 @@ function part(name: string, size: Vector3, color: Color3, parent: Instance): Par
 	return result;
 }
 
-function label(parent: Instance, text: string, color: Color3, y: number, height: number, font: Enum.Font): void {
+function label(
+	parent: Instance,
+	value: string | Text,
+	color: Color3,
+	y: number,
+	height: number,
+	font: Enum.Font,
+): void {
 	const line = new Instance("TextLabel");
 	line.BackgroundTransparency = 1;
 	line.Position = new UDim2(0.05, 0, y, 0);
 	line.Size = new UDim2(0.9, 0, height, 0);
-	line.Text = text;
+	if (typeIs(value, "string")) {
+		line.Text = value;
+	} else {
+		localizeLabel(line, value);
+	}
 	line.TextColor3 = color;
 	line.TextScaled = true;
 	line.Font = font;
@@ -109,9 +123,10 @@ export function buildSign(name: string, at: CFrame, info: SignInfo, parent: Inst
 	gui.LightInfluence = 0;
 	gui.Parent = board;
 
-	label(gui, info.machineName, COLORS.text, 0.06, 0.3, Enum.Font.BuilderSansExtraBold);
+	label(gui, text(nameKeys.machine(info.machineId)), COLORS.text, 0.06, 0.3, Enum.Font.BuilderSansExtraBold);
 	label(gui, info.price, info.active ? COLORS.price : COLORS.muted, 0.38, 0.28, Enum.Font.BuilderSansExtraBold);
-	const hint = info.active ? "Натисни, щоб купити" : `Спершу: ${info.requires ?? "попередня машина"}`;
+	const requires = info.requiresId !== undefined ? nameKeys.machine(info.requiresId) : "line.prevMachine";
+	const hint = info.active ? text("line.signActive") : text("line.signRequires", { name: ref(requires) });
 	label(gui, hint, info.active ? accent : COLORS.muted, 0.7, 0.22, Enum.Font.BuilderSansBold);
 
 	model.PrimaryPart = board;

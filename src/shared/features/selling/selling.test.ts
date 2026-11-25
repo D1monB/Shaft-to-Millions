@@ -2,7 +2,7 @@ import { Assert, Test } from "@rbxts/lunit";
 import { ORES, ORE_IDS } from "shared/config/ores";
 import { MAX_SELL_MULTIPLIER, previewSale, safeMultiplier } from "./selling";
 
-const PRICES = ORES as unknown as { [id: string]: { name: string; price: number } };
+const PRICES = ORES as unknown as { [id: string]: { price: number } };
 
 class SellingTests {
 	@Test

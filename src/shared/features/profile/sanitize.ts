@@ -9,6 +9,7 @@ import {
 	LINE_UPGRADES,
 	LINE_UPGRADE_TRACKS,
 } from "shared/config/line";
+import { isLanguage } from "shared/features/i18n";
 import { GEAR_SLOTS, findGear, starterOf } from "shared/features/upgrades";
 import { MAX_COUNTER, repairCountMap, repairInteger, repairNumber, repairTable } from "shared/lib/repair";
 import { PlainTable } from "shared/lib/tables";
@@ -45,6 +46,11 @@ export function sanitize(data: PlainTable): string[] {
 		repairs.push("lastSeen");
 	}
 	repairNumber(data, "lastSeen", 0, MAX_TIMESTAMP, 0, "lastSeen", repairs);
+	// Only one of our languages or "" (automatic); anything else is reset to automatic.
+	if (data.language !== "" && !isLanguage(data.language)) {
+		data.language = "";
+		repairs.push("language");
+	}
 
 	return repairs;
 }

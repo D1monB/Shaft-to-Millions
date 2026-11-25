@@ -2,8 +2,10 @@
 // At server start each terminal gets an invisible anchor at its PromptPoint, tagged Chest with the right ChestId, so
 // the usual chest flow works: the prompt opens the odds panel, and the server checks the player stands near a
 // tagged anchor with that ChestId before charging. The place file is never changed (runtime only).
+import { nameKeys, text } from "shared/features/i18n";
+import { localizePrompt } from "server/lib/localized";
 import { CollectionService, Workspace } from "@rbxts/services";
-import { CHESTS, ChestId, isChestId } from "shared/config/chests";
+import { ChestId, isChestId } from "shared/config/chests";
 import { CHEST_DISTANCE } from "shared/features/chests";
 import { ATTRIBUTES, CHEST_TERMINALS, PLOTS, TAGS } from "shared/config/map-contract";
 
@@ -43,8 +45,7 @@ function makeStand(terminal: Model, chestId: ChestId): void {
 	// default OnePerButton, another E prompt nearby (belt intake, plot claim) took the focus and the chest prompt
 	// never appeared. Made here, before the tag, so the service sees a prompt already exists and keeps this one.
 	const prompt = new Instance("ProximityPrompt");
-	prompt.ActionText = "Подивитись";
-	prompt.ObjectText = CHESTS[chestId].name;
+	localizePrompt(prompt, text("common.view"), text(nameKeys.chest(chestId)));
 	prompt.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow;
 	prompt.RequiresLineOfSight = false;
 	prompt.HoldDuration = 0;

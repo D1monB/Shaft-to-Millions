@@ -1,7 +1,8 @@
 // Fast travel panel: the surface and every camp the player has opened. The list comes from the same shared rules
 // the server uses, so a button is never shown for a trip the server would refuse.
 import React from "@rbxts/react";
-import { LAYERS } from "shared/config/layers";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "client/lib/i18n";
 import { PlayerView } from "shared/features/profile";
 import { SURFACE, TRAVEL_COOLDOWN, TRAVEL_REMOTE, travelDestinations } from "shared/features/travel";
 import { registerHudButton } from "client/features/hud";
@@ -12,20 +13,16 @@ import { Button, Label } from "client/lib/ui-kit";
 
 function destinationName(destination: number): string {
 	if (destination === SURFACE) {
-		return "🏠 Поверхня";
+		return t("travel.surface");
 	}
-	return `⛏️ Табір: ${LAYERS[destination]?.name ?? destination}`;
+	return t("travel.camp", { layer: t(nameKeys.layer(destination)) });
 }
 
 function TravelList(props: { view: PlayerView }) {
 	const destinations = travelDestinations(props.view.deepestLayer);
 	return (
 		<>
-			<Label
-				text={`Подорож безкоштовна, але між подорожами пауза ${TRAVEL_COOLDOWN} с.`}
-				tone="muted"
-				order={1}
-			/>
+			<Label text={t("travel.cooldown", { seconds: TRAVEL_COOLDOWN })} tone="muted" order={1} />
 			{destinations.map((destination, index) => (
 				<Button
 					key={destination}
@@ -39,11 +36,7 @@ function TravelList(props: { view: PlayerView }) {
 				/>
 			))}
 			{destinations.size() === 1 && (
-				<Label
-					text="Табори відкриваються, коли торкнешся їх у шахті."
-					tone="muted"
-					order={destinations.size() + 2}
-				/>
+				<Label text={t("travel.campsHint")} tone="muted" order={destinations.size() + 2} />
 			)}
 		</>
 	);
@@ -52,7 +45,7 @@ function TravelList(props: { view: PlayerView }) {
 function TravelPanel() {
 	const view = useView();
 	if (view === undefined) {
-		return <Label text="Завантаження..." tone="muted" />;
+		return <Label text={t("common.loading")} tone="muted" />;
 	}
 	return <TravelList view={view} />;
 }
@@ -60,8 +53,8 @@ function TravelPanel() {
 export function startTravelController(): void {
 	registerHudButton(
 		"🧭",
-		"Подорож",
-		() => openPanel({ key: "travel", title: "Швидка подорож", icon: "🧭", render: () => <TravelPanel /> }),
+		() => t("menu.travel"),
+		() => openPanel({ key: "travel", title: t("travel.title"), icon: "🧭", render: () => <TravelPanel /> }),
 		20,
 		"success",
 	);

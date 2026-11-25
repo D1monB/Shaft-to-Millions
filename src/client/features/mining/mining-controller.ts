@@ -1,6 +1,8 @@
 // Mining effects only. The server decides every hit; this file shows what happened and labels each node
 // with what the player needs to know: ore name, price, hits needed, or which pickaxe unlocks it.
 // World labels stay plain Instances (not React): there can be hundreds of nodes and they rarely change.
+import { nameKeys } from "shared/features/i18n";
+import { onLanguageChanged, t } from "client/lib/i18n";
 import { CollectionService, TweenService } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, isOreId } from "shared/config/ores";
@@ -101,11 +103,16 @@ function refreshNodeLabel(node: Instance, view: PlayerView): void {
 	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
 	if (canMineTier(ore, pickaxe)) {
 		const hits = hitsRequired(ore.hardness, pickaxe.power);
-		label.Text = `${ore.name} · ${formatMoney(ore.price)}\n${hits} ${hits === 1 ? "удар" : "ударів"}`;
+		label.Text = t("mining.label", { ore: t(nameKeys.ore(oreId)), price: formatMoney(ore.price), hits });
 		label.TextColor3 = COLORS.text;
 	} else {
-		const needed = PICKAXES.find((p) => p.tier >= ore.requiredTier)?.name ?? "краща кирка";
-		label.Text = `🔒 ${ore.name} · ${formatMoney(ore.price)}\nПотрібна: ${needed}`;
+		const neededDef = PICKAXES.find((p) => p.tier >= ore.requiredTier);
+		const needed = neededDef !== undefined ? t(nameKeys.gear(neededDef.id)) : t("mining.betterPickaxe");
+		label.Text = t("mining.locked", {
+			ore: t(nameKeys.ore(oreId)),
+			price: formatMoney(ore.price),
+			pickaxe: needed,
+		});
 		label.TextColor3 = COLORS.danger;
 	}
 }
@@ -235,12 +242,19 @@ function hideNode(node: Instance, seconds: number): void {
 export function startMiningController(): void {
 	// The bag is shown in the HUD top bar; only the pickaxe goes to the stat column.
 	registerHudStat(20, (view) => {
-		const name = getPickaxe(view.gear.equipped.pickaxe).name;
-		// The first word fits on the tile ("Залізна"); the whole name is in the tooltip.
-		return { icon: "⛏️", text: `Кирка: ${name}`, short: name.split(" ")[0] ?? name };
+		const name = t(nameKeys.gear(getPickaxe(view.gear.equipped.pickaxe).id));
+		// The first word fits on the tile ("Iron"); the whole name is in the tooltip.
+		return { icon: "⛏️", text: t("hud.pickaxe", { name }), short: name.split(" ")[0] ?? name };
 	});
 
 	onViewChanged(refreshAllLabels);
+	// Ore labels are world texts built here, so a language change rewrites them too.
+	onLanguageChanged(() => {
+		const view = getView();
+		if (view !== undefined) {
+			refreshAllLabels(view);
+		}
+	});
 	CollectionService.GetInstanceAddedSignal(TAGS.OreNode).Connect((node) => {
 		const view = getView();
 		if (view !== undefined) {
@@ -264,7 +278,7 @@ export function startMiningController(): void {
 		}
 		const part = anchorPart(node);
 		if (part !== undefined && typeIs(amount, "number") && amount > 0) {
-			showPopup(part, `+${amount} ${ORES[oreId].name}`);
+			showPopup(part, `+${amount} ${t(nameKeys.ore(oreId))}`);
 		}
 		playOreBreak(oreId);
 		bars.get(node)?.gui.Destroy();

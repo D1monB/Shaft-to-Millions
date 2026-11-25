@@ -1,5 +1,6 @@
 // Chests: opening with dollars (at a chest stand) and with Robux (Developer Products via ProcessReceipt).
 // Every roll happens here, on the server, with the server's Random.
+import { nameKeys, text } from "shared/features/i18n";
 import { CollectionService, MarketplaceService, Players, PolicyService } from "@rbxts/services";
 import { CHESTS, CHEST_IDS, ChestId, isChestId } from "shared/config/chests";
 import { ItemId } from "shared/config/items";
@@ -91,7 +92,7 @@ function handleOpenWithDollars(player: Player, args: Array<unknown>): void {
 	}
 	const check = canOpenWithDollars(chestId, data.money, data.inventory.size());
 	if (!check.ok) {
-		notify(player, check.reason === "money" ? "Не вистачає грошей." : "Інвентар повний: прибери щось.", "error");
+		notify(player, check.reason === "money" ? text("common.notEnoughMoney") : text("chest.inventoryFull"), "error");
 		return;
 	}
 	// Charge and grant in the same frame: no yield in between, so no way to get one without the other.
@@ -142,7 +143,7 @@ export function startChestsService(): void {
 		const chestId = instance.GetAttribute(ATTRIBUTES.ChestId);
 		if (isChestId(chestId)) {
 			// A bit shorter than the server check (CHEST_DISTANCE), so a prompt the engine shows always passes it.
-			ensurePrompt(instance, "Подивитись", CHESTS[chestId].name, CHEST_DISTANCE - 2);
+			ensurePrompt(instance, text("common.view"), text(nameKeys.chest(chestId)), CHEST_DISTANCE - 2);
 		} else {
 			warn(`[chests] ${instance.GetFullName()} has tag Chest but no valid ChestId attribute; skipped.`);
 		}

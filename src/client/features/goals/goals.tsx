@@ -1,5 +1,7 @@
 // "What next" hint: one clear goal in a capsule at the bottom of the screen, with a bar that fills as money comes in.
 // Features register where goals come from; the shared pickGoalInfo chooses exactly one.
+import { nameKeys } from "shared/features/i18n";
+import { t, tx } from "client/lib/i18n";
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
 import { ORES, ORE_IDS } from "shared/config/ores";
@@ -36,7 +38,7 @@ function gearGoal(view: PlayerView, slot: GearSlot, priority: number): GoalCandi
 	if (upcoming === undefined) {
 		return undefined;
 	}
-	return { label: upcoming.name, price: upcoming.price, priority };
+	return { label: nameKeys.gear(upcoming.id), price: upcoming.price, priority };
 }
 
 function gearGoals(view: PlayerView): GoalCandidate[] {
@@ -97,7 +99,8 @@ function statusColor(info: GoalInfo): Color3 {
 export function GoalBanner() {
 	const view = useView();
 	const info = view === undefined ? undefined : currentGoal(view);
-	const key = info?.text;
+	// The words, not the object: a new object arrives on every render, the words change only with the goal.
+	const key = info !== undefined ? tx(info.text) : undefined;
 	const [scale, scaleMotion] = useMotion(1);
 	useEffect(() => {
 		if (key !== undefined) {
@@ -110,7 +113,8 @@ export function GoalBanner() {
 		return undefined;
 	}
 	const isPurchase = info.kind === "saving" || info.kind === "affordable";
-	const title = isPurchase ? `Ціль: <font color="#FCD34D">${escapeRich(info.title)}</font>` : escapeRich(info.title);
+	const name = escapeRich(tx(info.title));
+	const title = isPurchase ? t("goal.banner", { name: `<font color="#FCD34D">${name}</font>` }) : name;
 	return (
 		<frame
 			AnchorPoint={new Vector2(0.5, 1)}
@@ -156,7 +160,7 @@ export function GoalBanner() {
 						Position={new UDim2(1, 0, 0, 0)}
 						Size={new UDim2(0.38, 0, 0, 26)}
 						Font={FONTS.display}
-						Text={info.status}
+						Text={tx(info.status)}
 						TextSize={TEXT_SIZES.body - 2}
 						TextColor3={statusColor(info)}
 						TextXAlignment={Enum.TextXAlignment.Right}

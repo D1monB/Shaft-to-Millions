@@ -1,3 +1,4 @@
+import { nameKeys, ref, text } from "shared/features/i18n";
 import { CollectionService } from "@rbxts/services";
 import { TAGS } from "shared/config/map-contract";
 import {
@@ -36,9 +37,9 @@ function handleBuy(player: Player, args: Array<unknown>): void {
 		data.money = result.money;
 		applyPurchase(result, data.gear);
 		markDirty(player);
-		notify(player, `Куплено й надіто: ${result.def.name}!`, "success");
+		notify(player, text("shop.bought", { name: ref(nameKeys.gear(result.def.id)) }), "success");
 	} else if (result.reason === "not-enough-money") {
-		notify(player, "Не вистачає грошей.", "error");
+		notify(player, text("common.notEnoughMoney"), "error");
 	}
 	// "owned" (a double click) is silently ignored: the UI already shows the truth.
 }
@@ -66,7 +67,7 @@ function handleEquip(player: Player, args: Array<unknown>): void {
 export function startUpgradesService(): void {
 	onClientRequest(BUY_GEAR_REMOTE, new RateLimiter(6, 3), handleBuy);
 	onClientRequest(EQUIP_GEAR_REMOTE, new RateLimiter(6, 3), handleEquip);
-	const addPrompt = (shop: Instance) => ensurePrompt(shop, "Відкрити", "Магазин спорядження");
+	const addPrompt = (shop: Instance) => ensurePrompt(shop, text("common.open"), text("shop.title"));
 	CollectionService.GetTagged(TAGS.Shop).forEach(addPrompt);
 	CollectionService.GetInstanceAddedSignal(TAGS.Shop).Connect(addPrompt);
 }

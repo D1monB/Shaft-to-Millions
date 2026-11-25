@@ -384,3 +384,21 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - Late machines: M10 $650k -> $1.5M, M11 $1.6M -> $4M, M12 $4M -> $10M (deep-ore players paid them back in minutes).
 - Drills on layers 4 and 5 faster: 3.5 -> 2 and 3 -> 1.5 seconds per hardness. Drill names follow the layer names.
 - Numbers are first estimates; confirm in a play-test.
+
+## 033. Languages: English source, our own texts for en/uk/ru/pl, Roblox auto-translation for the rest (2026-11-25)
+
+- **What:** every player-visible text is a key in `src/shared/config/i18n/{en,uk,ru,pl}.ts` (English is the source;
+  the compiler and a test check that every language has every key and the same `{placeholders}`). Configs keep ids
+  only; names come from keys built from ids (`nameKeys`, e.g. `ore.copper`, `machine.M01`, `gear.pickaxe_iron`).
+  The server never picks a language: `notify` sends a key plus values (names as `@key` refs), world texts (prompts,
+  sign labels) carry the key as an attribute with tag `Localized`, and each client writes the words itself.
+- **Which language:** the menu choice (saved as profile `language`, `""` = automatic; no schema bump, the default
+  fills old saves), else the player's Roblox language (`Player.LocaleId`), else when Roblox is in English the country
+  Roblox reports (UA -> uk, PL -> pl, RU/BY/KZ/KG -> ru; asked on the client, never sent or stored), else English.
+  A Roblox language we do not have gets English with `AutoLocalize` on, so Roblox's automatic translation may
+  translate it (needs Automatic translation turned on for the experience in Creator Hub). Our own languages have
+  `AutoLocalize` off.
+- **Why:** the developer wants English first plus the players' own languages; own tables work in Studio, are tested,
+  and translate texts with numbers correctly, which Roblox's auto-capture does poorly.
+- **Notes:** texts avoid plural forms ("Ore sold: {count}") so one template fits every language. Studio-only tools
+  (devtools panel, placeholders) are plain English. Inventory cards now sort by item id, not by name.

@@ -8,15 +8,15 @@ export interface ShoesDef extends GearBase {
 }
 
 export const SHOES: ReadonlyArray<ShoesDef> = [
-	{ id: "shoes_old", name: "Старі черевики", walkSpeed: 20, price: 0 },
-	{ id: "shoes_miner", name: "Кросівки шахтаря", walkSpeed: 23, price: 120 },
-	{ id: "shoes_light", name: "Легкі берці", walkSpeed: 26, price: 800 },
-	{ id: "shoes_riveted", name: "Окуті чоботи", walkSpeed: 29, price: 2_500 },
-	{ id: "shoes_spring", name: "Пружинні чоботи", walkSpeed: 32, price: 6_000 },
-	{ id: "shoes_silver", name: "Сталеві кеди", walkSpeed: 36, price: 15_000 },
-	{ id: "shoes_jet", name: "Реактивні кеди", walkSpeed: 40, price: 40_000 },
-	{ id: "shoes_gold", name: "Золоті скороходи", walkSpeed: 45, price: 100_000 },
-	{ id: "shoes_gravity", name: "Гравіботи", walkSpeed: 50, price: 250_000 },
+	{ id: "shoes_old", walkSpeed: 20, price: 0 },
+	{ id: "shoes_miner", walkSpeed: 23, price: 120 },
+	{ id: "shoes_light", walkSpeed: 26, price: 800 },
+	{ id: "shoes_riveted", walkSpeed: 29, price: 2_500 },
+	{ id: "shoes_spring", walkSpeed: 32, price: 6_000 },
+	{ id: "shoes_silver", walkSpeed: 36, price: 15_000 },
+	{ id: "shoes_jet", walkSpeed: 40, price: 40_000 },
+	{ id: "shoes_gold", walkSpeed: 45, price: 100_000 },
+	{ id: "shoes_gravity", walkSpeed: 50, price: 250_000 },
 ];
 
 /** Hard cap after all bonuses: the best shoes (50) with the strongest speed aura (+30%). Keeps platforming sane. */

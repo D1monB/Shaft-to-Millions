@@ -4,7 +4,9 @@ import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
 import { MarketplaceService, Players } from "@rbxts/services";
 import { CHESTS, ChestId, isChestId } from "shared/config/chests";
-import { INVENTORY_LIMIT, ITEMS, ItemId, KIND_NAMES, RARITY_NAMES, isItemId } from "shared/config/items";
+import { INVENTORY_LIMIT, ITEMS, ItemId, isItemId } from "shared/config/items";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "client/lib/i18n";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import {
 	CHEST_RESULT_REMOTE,
@@ -45,7 +47,7 @@ function robuxAllowed(): boolean {
 	return Players.LocalPlayer.GetAttribute(ROBUX_CHESTS_ALLOWED_ATTRIBUTE) === true;
 }
 
-/** "🎁 Предметів у сховищі: 14 / 60" with a small bar, centred like in the reference. */
+/** "🎁 Items in storage: 14 / 60" with a small bar, centred like in the reference. */
 function StoragePill(props: { count: number; order: number }) {
 	const full = props.count >= INVENTORY_LIMIT;
 	return (
@@ -72,7 +74,7 @@ function StoragePill(props: { count: number; order: number }) {
 					AutomaticSize={Enum.AutomaticSize.X}
 					Font={FONTS.display}
 					RichText={true}
-					Text={`🎁  Предметів у сховищі: <font color="#FCD34D">${formatCount(props.count, INVENTORY_LIMIT)}</font>${full ? "  · повне" : ""}`}
+					Text={`🎁  ${t("chest.storage")} <font color="#FCD34D">${formatCount(props.count, INVENTORY_LIMIT)}</font>${full ? `  · ${t("chest.full")}` : ""}`}
 					TextSize={TEXT_SIZES.small + 1}
 					TextColor3={COLORS.text}
 					LayoutOrder={1}
@@ -93,12 +95,16 @@ function StoragePill(props: { count: number; order: number }) {
 function ChestPanel(props: { chestId: ChestId }) {
 	const view = useView();
 	if (view === undefined) {
-		return <Label text="Завантаження..." tone="muted" />;
+		return <Label text={t("common.loading")} tone="muted" />;
 	}
-	const chest = CHESTS[props.chestId];
 	return (
 		<>
-			<Label text={`✨ Що може випасти · ${chest.description}`} tone="muted" size={TEXT_SIZES.small} order={1} />
+			<Label
+				text={t("chest.whatDrops", { description: t(nameKeys.chestDescription(props.chestId)) })}
+				tone="muted"
+				size={TEXT_SIZES.small}
+				order={1}
+			/>
 			<CardStrip cardWidth={ITEM_CARD_WIDTH} cardHeight={ITEM_CARD_HEIGHT} order={2}>
 				{chestOdds(props.chestId).map((line, index) => (
 					<StripSlot key={`odds_${index}`} width={ITEM_CARD_WIDTH} height={ITEM_CARD_HEIGHT} order={index}>
@@ -128,42 +134,20 @@ function ChestFooter(props: { chestId: ChestId }) {
 
 	let robux: React.Element;
 	if (productId === undefined) {
-		robux = (
-			<Label
-				text="💎 Гра повністю проходиться без Robux · Відкриття за Robux у розробці"
-				tone="muted"
-				size={TEXT_SIZES.small}
-				align="center"
-				order={6}
-			/>
-		);
+		robux = <Label text={t("chest.robuxSoon")} tone="muted" size={TEXT_SIZES.small} align="center" order={6} />;
 	} else if (!robuxAllowed()) {
-		robux = (
-			<Label
-				text="💎 Гра повністю проходиться без Robux · Відкриття за Robux недоступне для твого акаунта"
-				tone="muted"
-				size={TEXT_SIZES.small}
-				align="center"
-				order={6}
-			/>
-		);
+		robux = <Label text={t("chest.robuxBlocked")} tone="muted" size={TEXT_SIZES.small} align="center" order={6} />;
 	} else {
 		robux = (
 			<>
 				<Button
-					text={`💎  Відкрити за R$ ${chest.robuxPrice}`}
+					text={t("chest.openRobux", { price: chest.robuxPrice })}
 					variant="crystal"
 					onClick={() => MarketplaceService.PromptProductPurchase(Players.LocalPlayer, productId)}
 					disabled={full}
 					order={6}
 				/>
-				<Label
-					text="💎 Гра повністю проходиться без Robux"
-					tone="muted"
-					size={TEXT_SIZES.small}
-					align="center"
-					order={7}
-				/>
+				<Label text={t("chest.noRobux")} tone="muted" size={TEXT_SIZES.small} align="center" order={7} />
 			</>
 		);
 	}
@@ -174,7 +158,7 @@ function ChestFooter(props: { chestId: ChestId }) {
 			<BuyButton
 				price={chest.dollarPrice}
 				money={view.money}
-				verb="Відкрити"
+				verb={t("common.open")}
 				icon="✨"
 				blocked={full}
 				height={52}
@@ -193,7 +177,7 @@ const CHEST_ACCENTS = { pet_chest: "pets", pickaxe_chest: "pickaxeAura", speed_c
 function openChest(chestId: ChestId): void {
 	openPanel({
 		key: `chest_${chestId}`,
-		title: CHESTS[chestId].name,
+		title: t(nameKeys.chest(chestId)),
 		icon: "🎁",
 		accent: CHEST_ACCENTS[chestId],
 		render: () => <ChestPanel chestId={chestId} />,
@@ -244,8 +228,18 @@ function ChestResult(props: { item: ItemId }) {
 					SortOrder={Enum.SortOrder.LayoutOrder}
 					VerticalAlignment={Enum.VerticalAlignment.Center}
 				/>
-				<Label text={def.name} display={true} size={TEXT_SIZES.huge - 6} color={color} order={1} />
-				<Label text={`${RARITY_NAMES[def.rarity]} · ${KIND_NAMES[def.kind]}`} tone="muted" order={2} />
+				<Label
+					text={t(nameKeys.item(props.item))}
+					display={true}
+					size={TEXT_SIZES.huge - 6}
+					color={color}
+					order={1}
+				/>
+				<Label
+					text={`${t(nameKeys.rarity(def.rarity))} · ${t(nameKeys.kind(def.kind))}`}
+					tone="muted"
+					order={2}
+				/>
 				<Label
 					text={effectText(def.kind, def.bonus)}
 					display={true}
@@ -253,7 +247,7 @@ function ChestResult(props: { item: ItemId }) {
 					tone="gold"
 					order={3}
 				/>
-				<Label text="Уже в інвентарі. Надінь у меню «Речі»." tone="muted" size={TEXT_SIZES.small} order={4} />
+				<Label text={t("chest.alreadyOwned")} tone="muted" size={TEXT_SIZES.small} order={4} />
 			</frame>
 		</frame>
 	);
@@ -263,9 +257,9 @@ function ChestResult(props: { item: ItemId }) {
 function ChestResultFooter(props: { chestId: ChestId }) {
 	return (
 		<ButtonRow count={2} order={1}>
-			<Button text="Забрати!" onClick={closePanel} width={rowItemWidth(2)} order={1} />
+			<Button text={t("chest.take")} onClick={closePanel} width={rowItemWidth(2)} order={1} />
 			<Button
-				text="Ще раз"
+				text={t("chest.again")}
 				variant="secondary"
 				onClick={() => openChest(props.chestId)}
 				width={rowItemWidth(2)}
@@ -290,10 +284,10 @@ export function startChestsController(): void {
 				playSound("chestRare");
 			}
 			// "info", not "success": the chest has its own sound, a third one on top would be noise.
-			toast(`Випало: ${ITEMS[item].name}!`, "info", 4);
+			toast(t("chest.dropped", { item: t(nameKeys.item(item)) }), "info", 4);
 			openPanel({
 				key: `chest_result_${item}_${os.clock()}`,
-				title: "Новий предмет!",
+				title: t("chest.newItem"),
 				icon: "🎉",
 				accent: CHEST_ACCENTS[chestId],
 				render: () => <ChestResult item={item} />,
@@ -305,7 +299,7 @@ export function startChestsController(): void {
 		view.inventory.size() > 0
 			? {
 					icon: "🎁",
-					text: `Предметів у сховищі: ${formatCount(view.inventory.size(), INVENTORY_LIMIT)}`,
+					text: t("hud.storage", { count: formatCount(view.inventory.size(), INVENTORY_LIMIT) }),
 					short: formatCount(view.inventory.size(), INVENTORY_LIMIT),
 				}
 			: undefined,

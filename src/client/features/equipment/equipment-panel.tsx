@@ -1,7 +1,10 @@
 // Equipment panel: active bonuses first, then the items by category (tabs), one card per kind of item.
 // Uses the same shared computeBonuses as the server, and feeds it into every preview on the client.
+import { StringKey } from "shared/config/i18n";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "client/lib/i18n";
 import React, { useState } from "@rbxts/react";
-import { ITEMS, ItemKind } from "shared/config/items";
+import { ItemKind } from "shared/config/items";
 import { ORES } from "shared/config/ores";
 import {
 	BONUS_CAPS,
@@ -50,15 +53,18 @@ function Summary(props: { view: PlayerView }) {
 	const base = shoesFor(view.gear.equipped.shoes).walkSpeed;
 	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
 	const speed = math.floor(walkSpeedFor(view.gear.equipped.shoes, bonuses.speedBonus));
-	const sell = `💰 Продаж ×${string.format("%.2f", bonuses.sellMultiplier)}`;
-	const walk = `👟 Швидкість ${base} → ${speed}`;
-	const ore = `⛏️ Руда ~${string.format("%.2f", 1 + bonuses.yieldBonus)} шт. (${hitsRequired(ORES.iron.hardness, pickaxe.power)} уд. по залізу)`;
+	const sell = t("equip.sell", { value: string.format("%.2f", bonuses.sellMultiplier) });
+	const walk = t("equip.walk", { base, speed });
+	const ore = t("equip.ore", {
+		amount: string.format("%.2f", 1 + bonuses.yieldBonus),
+		hits: hitsRequired(ORES.iron.hardness, pickaxe.power),
+	});
 	return (
 		<>
 			<Label text={`${sell}   ·   ${walk}   ·   ${ore}`} tone="gold" size={TEXT_SIZES.small + 1} order={1} />
 			{bonuses.petCapped && (
 				<Label
-					text={`Досягнуто стелі бонусу улюбленців (+${formatPercent(BONUS_CAPS.pets)}).`}
+					text={t("equip.petCap", { percent: formatPercent(BONUS_CAPS.pets) })}
 					tone="danger"
 					size={TEXT_SIZES.small}
 					order={2}
@@ -73,7 +79,7 @@ function EquipmentFooter() {
 	const view = useView();
 	return (
 		<Button
-			text="⭐ Надіти найкраще"
+			text={t("equip.best")}
 			onClick={() => sendToServer(EQUIP_BEST_REMOTE)}
 			disabled={view === undefined || view.inventory.size() === 0}
 			order={1}
@@ -81,10 +87,10 @@ function EquipmentFooter() {
 	);
 }
 
-const TABS: ReadonlyArray<{ readonly key: ItemKind; readonly label: string }> = [
-	{ key: "pet", label: "🐾 Улюбленці" },
-	{ key: "speedAura", label: "💨 Швидкість" },
-	{ key: "pickaxeAura", label: "✨ Кирка" },
+const TABS: ReadonlyArray<{ readonly key: ItemKind; readonly label: StringKey }> = [
+	{ key: "pet", label: "equip.tab.pet" },
+	{ key: "speedAura", label: "equip.tab.speedAura" },
+	{ key: "pickaxeAura", label: "equip.tab.pickaxeAura" },
 ];
 
 function isKind(value: string): value is ItemKind {
@@ -94,12 +100,14 @@ function isKind(value: string): value is ItemKind {
 /** What is in the slots of this kind right now. */
 function slotText(view: PlayerView, kind: ItemKind): string {
 	if (kind === "pet") {
-		return `Надіто улюбленців: ${view.equipped.pets.size()}/${MAX_PETS}. Кожен збільшує ціну продажу.`;
+		return t("equip.petsInfo", { count: view.equipped.pets.size(), max: MAX_PETS });
 	}
 	const uid = kind === "speedAura" ? view.equipped.speedAura : view.equipped.pickaxeAura;
 	const owned = uid === undefined ? undefined : view.inventory.find((entry) => entry.uid === uid);
-	const slot = kind === "speedAura" ? "Аура швидкості" : "Аура кирки";
-	return owned === undefined ? `${slot}: не надіто (1 слот).` : `${slot}: ${ITEMS[owned.item].name} (1 слот).`;
+	const slot = t(nameKeys.kind(kind));
+	return owned === undefined
+		? t("equip.slotEmpty", { slot })
+		: t("equip.slotItem", { slot, item: t(nameKeys.item(owned.item)) });
 }
 
 /** One kind of item: the card with a count, and its buttons. Actions use the first copy of the group. */
@@ -108,11 +116,11 @@ function InventoryCard(props: { group: ItemGroup; order: number }) {
 	const uid = group.uids[0];
 	const count = group.uids.size();
 	const footer = group.equipped ? (
-		<Button text="Зняти" variant="secondary" onClick={() => sendToServer(UNEQUIP_REMOTE, uid)} />
+		<Button text={t("common.unequip")} variant="secondary" onClick={() => sendToServer(UNEQUIP_REMOTE, uid)} />
 	) : (
 		<ButtonRow count={2}>
 			<Button
-				text="Надіти"
+				text={t("common.equip")}
 				variant="success"
 				onClick={() => sendToServer(EQUIP_REMOTE, uid)}
 				width={rowItemWidth(2)}
@@ -130,7 +138,7 @@ function InventoryCard(props: { group: ItemGroup; order: number }) {
 	return (
 		<ItemCard
 			item={group.item}
-			topLeft={group.equipped ? { text: "✅ НАДІТО", color: COLORS.success } : undefined}
+			topLeft={group.equipped ? { text: t("common.equipped"), color: COLORS.success } : undefined}
 			topRight={count > 1 ? { text: `×${count}`, color: COLORS.gold } : undefined}
 			highlighted={group.equipped}
 			footer={footer}
@@ -143,7 +151,7 @@ function EquipmentPanel() {
 	const view = useView();
 	const [tab, setTab] = useState<ItemKind>("pet");
 	if (view === undefined) {
-		return <Label text="Завантаження..." tone="muted" />;
+		return <Label text={t("common.loading")} tone="muted" />;
 	}
 	const groups = groupInventory(view.inventory, view.equipped, tab);
 	return (
@@ -152,7 +160,7 @@ function EquipmentPanel() {
 			<Tabs
 				items={TABS.map((entry) => ({
 					key: entry.key,
-					label: entry.label,
+					label: t(entry.label),
 					count: countOfKind(view.inventory, entry.key),
 				}))}
 				selected={tab}
@@ -165,12 +173,7 @@ function EquipmentPanel() {
 			/>
 			<Label text={slotText(view, tab)} tone="muted" size={TEXT_SIZES.small + 1} order={4} />
 			{groups.size() === 0 ? (
-				<Label
-					text="Тут поки порожньо. Відкрий скриню біля магазину! 🎁"
-					tone="muted"
-					align="center"
-					order={5}
-				/>
+				<Label text={t("equip.empty")} tone="muted" align="center" order={5} />
 			) : (
 				<CardStrip cardWidth={ITEM_CARD_WIDTH} cardHeight={ITEM_CARD_HEIGHT + ITEM_CARD_FOOTER} order={5}>
 					{groups.map((group, index) => (
@@ -195,11 +198,11 @@ export function startEquipmentController(): void {
 
 	registerHudButton(
 		"🎒",
-		"Речі",
+		() => t("menu.items"),
 		() =>
 			openPanel({
 				key: "equipment",
-				title: "Екіпірування",
+				title: t("equip.title"),
 				icon: "🎒",
 				render: () => <EquipmentPanel />,
 				footer: () => <EquipmentFooter />,
@@ -214,7 +217,10 @@ export function startEquipmentController(): void {
 		}
 		return {
 			icon: "✨",
-			text: `Бонуси: продаж ×${string.format("%.2f", bonuses.sellMultiplier)} · руда +${formatPercent(bonuses.yieldBonus)}`,
+			text: t("hud.bonuses", {
+				sell: string.format("%.2f", bonuses.sellMultiplier),
+				ore: formatPercent(bonuses.yieldBonus),
+			}),
 			short: `×${string.format("%.2f", bonuses.sellMultiplier)}`,
 			tone: "success",
 		};

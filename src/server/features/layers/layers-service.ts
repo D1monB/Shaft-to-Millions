@@ -4,7 +4,7 @@
 // Camps are NOT Roblox spawn points (SpawnLocation.Enabled = false or a plain Part): Roblox would otherwise spawn
 // new players at random camps, including locked deep ones. The server moves the character itself instead.
 import { CollectionService, Players } from "@rbxts/services";
-import { LAYERS } from "shared/config/layers";
+import { nameKeys, ref, text } from "shared/features/i18n";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { reachLayer, unlockCooldownLeft } from "shared/features/layers";
 import { RateLimiter } from "shared/lib/rate-limiter";
@@ -38,14 +38,14 @@ function onCampTouched(camp: Instance, hit: BasePart): void {
 		const wait = unlockCooldownLeft(os.clock(), lastUnlockAt.get(player) ?? 0);
 		if (wait > 0) {
 			if (waitNoticeLimiter.tryTake(player.UserId, os.clock())) {
-				notify(player, `Табір ще не готовий: зачекай ${math.ceil(wait)} с і торкнись знову.`, "info");
+				notify(player, text("layers.campNotReady", { seconds: math.ceil(wait) }), "info");
 			}
 			return;
 		}
 		lastUnlockAt.set(player, os.clock());
 		data.deepestLayer = reached;
 		markDirty(player);
-		notify(player, `Відкрито новий шар: ${LAYERS[reached]?.name ?? reached}!`, "success");
+		notify(player, text("layers.opened", { layer: ref(nameKeys.layer(reached)) }), "success");
 	}
 	// Only an opened camp becomes the respawn point: a locked one would be a free teleport down.
 	if (layer <= data.deepestLayer) {

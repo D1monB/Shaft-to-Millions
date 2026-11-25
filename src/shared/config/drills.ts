@@ -3,7 +3,6 @@
 // or busy, but never replaces manual mining. The buffer caps how much it can stockpile.
 
 export interface DrillDef {
-	readonly name: string;
 	readonly price: number;
 	/** Seconds of drilling per point of ore hardness: copper (3) takes 3x this, iron (6) takes 6x. */
 	readonly secondsPerHardness: number;
@@ -12,11 +11,11 @@ export interface DrillDef {
 }
 
 export const DRILLS: { readonly [layer: number]: DrillDef | undefined } = {
-	1: { name: "Бур Сірих Пластів", price: 2_000, secondsPerHardness: 6, bufferCapacity: 40 },
-	2: { name: "Бур Іржавих Порожнин", price: 20_000, secondsPerHardness: 5, bufferCapacity: 60 },
-	3: { name: "Бур Базальтової Глибини", price: 150_000, secondsPerHardness: 4, bufferCapacity: 80 },
-	4: { name: "Бур Золотих Ребер", price: 600_000, secondsPerHardness: 2, bufferCapacity: 100 },
-	5: { name: "Бур Титанового Дна", price: 2_000_000, secondsPerHardness: 1.5, bufferCapacity: 120 },
+	1: { price: 2_000, secondsPerHardness: 6, bufferCapacity: 40 },
+	2: { price: 20_000, secondsPerHardness: 5, bufferCapacity: 60 },
+	3: { price: 150_000, secondsPerHardness: 4, bufferCapacity: 80 },
+	4: { price: 600_000, secondsPerHardness: 2, bufferCapacity: 100 },
+	5: { price: 2_000_000, secondsPerHardness: 1.5, bufferCapacity: 120 },
 };
 
 /** Offline production is counted for at most this long, so a drill bought once does not print money forever. */

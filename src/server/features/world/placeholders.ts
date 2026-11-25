@@ -120,7 +120,7 @@ export function buildBasePlaceholders(): void {
 			position: new Vector3(0, 0.5, -10),
 			color: Color3.fromRGB(120, 170, 255),
 			tag: TAGS.SurfaceSpawn,
-			label: "Поверхня (швидка подорож)",
+			label: "Surface (fast travel)",
 		});
 	}
 	if (needsPlaceholders(TAGS.Shop)) {
@@ -130,7 +130,7 @@ export function buildBasePlaceholders(): void {
 			position: new Vector3(-10, 4, -20),
 			color: Color3.fromRGB(240, 180, 60),
 			tag: TAGS.Shop,
-			label: "Магазин спорядження",
+			label: "Gear Shop",
 		});
 	}
 	if (needsPlaceholders(TAGS.SellZone)) {
@@ -140,7 +140,7 @@ export function buildBasePlaceholders(): void {
 			position: new Vector3(-10, 3, 0),
 			color: Color3.fromRGB(90, 200, 120),
 			tag: TAGS.SellZone,
-			label: "Скупка руди",
+			label: "Ore Buyer",
 			transparent: true,
 		});
 	}
@@ -156,7 +156,7 @@ function makeCamp(layer: number, position: Vector3): void {
 	camp.Position = position;
 	camp.Color = Color3.fromRGB(80, 160, 255);
 	camp.SetAttribute(ATTRIBUTES.LayerId, layer);
-	makeLabel(camp, `Табір шару ${layer}`);
+	makeLabel(camp, `Layer ${layer} camp`);
 	camp.Parent = getFolder();
 	CollectionService.AddTag(camp, TAGS.CampSpawn);
 }
@@ -203,7 +203,7 @@ export function buildLayerPlaceholders(): void {
 				material: Enum.Material.DiamondPlate,
 				tag: TAGS.DrillSite,
 				attributes: { [ATTRIBUTES.LayerId]: layer },
-				label: `Автобур ${layer}`,
+				label: `Auto Drill ${layer}`,
 			});
 		}
 	}
@@ -215,9 +215,9 @@ export function buildChestPlaceholders(): void {
 		return;
 	}
 	const chests: ReadonlyArray<[string, string, Color3]> = [
-		["pet_chest", "Скриня улюбленців", Color3.fromRGB(255, 140, 180)],
-		["speed_chest", "Скриня швидкості", Color3.fromRGB(80, 200, 255)],
-		["pickaxe_chest", "Скриня кирки", Color3.fromRGB(255, 170, 60)],
+		["pet_chest", "Pet Chest", Color3.fromRGB(255, 140, 180)],
+		["speed_chest", "Speed Chest", Color3.fromRGB(80, 200, 255)],
+		["pickaxe_chest", "Pickaxe Chest", Color3.fromRGB(255, 170, 60)],
 	];
 	chests.forEach(([chestId, label, color], index) => {
 		makePlaceholder({
@@ -245,7 +245,7 @@ function makeMachineBox(parent: Instance, stage: number, position: Vector3): voi
 	box.Color = Color3.fromHSV(stage / 12, 0.5, 0.9);
 	box.Material = Enum.Material.SmoothPlastic;
 	box.Parent = model;
-	makeLabel(box, `Машина ${stage}`);
+	makeLabel(box, `Machine ${stage}`);
 	model.PrimaryPart = box;
 	model.SetAttribute(PLOT_ATTRIBUTES.Stage, stage);
 	model.Parent = parent;

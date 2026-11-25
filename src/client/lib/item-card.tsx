@@ -1,7 +1,9 @@
 // The coloured card: an icon, the name, a pill and a one-line effect; optional corner pills and a footer for buttons.
 // RarityCard is the generic card (the shop uses it for gear); ItemCard fills it from a chest item.
 import React from "@rbxts/react";
-import { ITEMS, ItemId, RARITY_NAMES } from "shared/config/items";
+import { ITEMS, ItemId } from "shared/config/items";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "./i18n";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText } from "./item-display";
 import { COLORS, FONTS, RADIUS, Ramp, STROKE, Sunburst, TEXT_SIZES, rampSequence } from "./ui-kit";
 
@@ -21,7 +23,7 @@ export interface CornerPill {
 interface CardDecor {
 	/** Top-right pill, e.g. the chance "45%" or the count "×3". */
 	readonly topRight?: CornerPill;
-	/** Top-left pill, e.g. "✅ НАДІТО". */
+	/** Top-left pill, e.g. "✅ EQUIPPED". */
 	readonly topLeft?: CornerPill;
 	/** Green outline: the item is in use. */
 	readonly highlighted?: boolean;
@@ -42,7 +44,7 @@ export interface RarityCardProps extends CardDecor {
 	readonly light: Color3;
 	readonly icon: string;
 	readonly name: string;
-	/** Middle pill, e.g. "ЛЕГЕНДАРНИЙ" or "РІВЕНЬ 3". */
+	/** Middle pill, e.g. "LEGENDARY" or "LEVEL 3". */
 	readonly pill: string;
 	readonly effect: string;
 	/** Light rays behind the content: the best card of a set. */
@@ -242,8 +244,8 @@ export function ItemCard(props: ItemCardProps) {
 			ramp={RARITY_RAMPS[def.rarity]}
 			light={RARITY_LIGHT[def.rarity]}
 			icon={KIND_ICONS[def.kind]}
-			name={def.name}
-			pill={RARITY_NAMES[def.rarity].upper()}
+			name={t(nameKeys.item(props.item))}
+			pill={t(nameKeys.rarity(def.rarity))}
 			effect={effectText(def.kind, def.bonus)}
 			rays={def.rarity === "legendary"}
 		/>

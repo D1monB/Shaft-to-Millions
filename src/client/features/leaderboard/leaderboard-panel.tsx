@@ -2,7 +2,8 @@
 // the client never sends anything for the leaderboard.
 import React, { useState } from "@rbxts/react";
 import { Players } from "@rbxts/services";
-import { LAYERS } from "shared/config/layers";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "client/lib/i18n";
 import {
 	BoardId,
 	LeaderboardRow,
@@ -28,7 +29,7 @@ const ROW_HEIGHT = 40;
 
 function depthText(score: number): string {
 	const record = decodeDepthScore(score);
-	return `${LAYERS[record.layer]?.name ?? `Шар ${record.layer}`} · ${record.meters} м`;
+	return t("board.depth", { layer: t(nameKeys.layer(record.layer)), meters: record.meters });
 }
 
 function scoreText(board: BoardId, score: number): string {
@@ -76,8 +77,8 @@ function MyRecord(props: { board: BoardId; order: number }) {
 	}
 	const text =
 		props.board === "depth"
-			? `Твій рекорд: ${depthText(depthScore(view.deepestLayer, view.deepestMeters))}`
-			: `Ти заробив за весь час: ${formatMoney(wealthScore(view.stats.totalEarned))}`;
+			? t("board.myRecord", { depth: depthText(depthScore(view.deepestLayer, view.deepestMeters)) })
+			: t("board.myWealth", { money: formatMoney(wealthScore(view.stats.totalEarned)) });
 	return <Label text={text} tone="muted" order={props.order} />;
 }
 
@@ -90,8 +91,8 @@ function LeaderboardPanel() {
 		<>
 			<Tabs
 				items={[
-					{ key: "depth", label: "⛏️ Найглибше" },
-					{ key: "wealth", label: "💰 Найбагатші" },
+					{ key: "depth", label: t("board.tab.depth") },
+					{ key: "wealth", label: t("board.tab.wealth") },
 				]}
 				selected={board}
 				onSelect={(key) => setBoard(key === "wealth" ? "wealth" : "depth")}
@@ -102,9 +103,9 @@ function LeaderboardPanel() {
 					<Row key={`row_${row.rank}`} board={board} row={row} mine={row.userId === me} />
 				))}
 			</Stack>
-			{rows.size() === 0 && <Label text="Поки що порожньо. Будь першим!" tone="muted" order={3} />}
+			{rows.size() === 0 && <Label text={t("board.empty")} tone="muted" order={3} />}
 			<MyRecord board={board} order={4} />
-			<Label text="Таблиця оновлюється раз на хвилину." tone="muted" size={TEXT_SIZES.small} order={5} />
+			<Label text={t("board.refresh")} tone="muted" size={TEXT_SIZES.small} order={5} />
 		</>
 	);
 }
@@ -113,9 +114,9 @@ export function startLeaderboardController(): void {
 	onServerMessage(LEADERBOARD_REMOTE, (raw) => snapshotStore.set(parseSnapshot(raw)));
 	registerHudButton(
 		"🏆",
-		"Топ",
+		() => t("menu.top"),
 		() =>
-			openPanel({ key: "leaderboard", title: "Таблиця лідерів", icon: "🏆", render: () => <LeaderboardPanel /> }),
+			openPanel({ key: "leaderboard", title: t("board.title"), icon: "🏆", render: () => <LeaderboardPanel /> }),
 		30,
 		"primary",
 	);

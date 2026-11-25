@@ -7,7 +7,6 @@
 export type OreId = "copper" | "iron" | "silver" | "gold" | "titanium" | "iridium";
 
 export interface OreDef {
-	readonly name: string;
 	/** Sell price of one piece of raw ore, in dollars. */
 	readonly price: number;
 	/** Damage needed to break one node. Hits = ceil(hardness / pickaxe power). */
@@ -26,7 +25,6 @@ export interface OreDef {
 
 export const ORES: { readonly [K in OreId]: OreDef } = {
 	copper: {
-		name: "Мідь",
 		price: 5,
 		hardness: 3,
 		requiredTier: 1,
@@ -35,7 +33,6 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		color: [214, 120, 52],
 	},
 	iron: {
-		name: "Залізо",
 		price: 12,
 		hardness: 6,
 		requiredTier: 2,
@@ -44,7 +41,6 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		color: [150, 152, 158],
 	},
 	silver: {
-		name: "Срібло",
 		price: 30,
 		hardness: 9,
 		requiredTier: 3,
@@ -54,7 +50,6 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	},
 	// Gold and titanium keep their ids; their layer and price moved (decisions 031), so old drills follow sanitize.
 	gold: {
-		name: "Золото",
 		price: 70,
 		hardness: 13,
 		requiredTier: 4,
@@ -63,7 +58,6 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		color: [245, 200, 60],
 	},
 	titanium: {
-		name: "Титан",
 		price: 150,
 		hardness: 18,
 		requiredTier: 5,
@@ -73,7 +67,6 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	},
 	// The jackpot: only in the portal zone at the bottom of layer 5, hard and slow to come back, never drilled.
 	iridium: {
-		name: "Іридій",
 		price: 400,
 		hardness: 24,
 		requiredTier: 5,

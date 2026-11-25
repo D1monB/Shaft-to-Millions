@@ -1,6 +1,9 @@
 // Shop panel: a catalogue. One tab per slot (pickaxes, bags, shoes), one card per item. Everything is for sale
 // at once: an item costs money only, is kept forever and can be equipped any time.
 // Buying and equipping send only the item id; the server checks distance, money and ownership.
+import { StringKey } from "shared/config/i18n";
+import { nameKeys } from "shared/features/i18n";
+import { t } from "client/lib/i18n";
 import React, { useState } from "@rbxts/react";
 import { BAGS } from "shared/config/bags";
 import { GearBase } from "shared/config/gear";
@@ -26,10 +29,10 @@ import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
 import { BuyButton, Button, COLORS, CardStrip, FONTS, Label, StripSlot, TEXT_SIZES, Tabs } from "client/lib/ui-kit";
 
-const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: string; readonly icon: string }> = [
-	{ key: "pickaxe", label: "⛏️ Кирки", icon: "⛏️" },
-	{ key: "bag", label: "🎒 Сумки", icon: "🎒" },
-	{ key: "shoes", label: "👟 Взуття", icon: "👟" },
+const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: StringKey; readonly icon: string }> = [
+	{ key: "pickaxe", label: "shop.tab.pickaxe", icon: "⛏️" },
+	{ key: "bag", label: "shop.tab.bag", icon: "🎒" },
+	{ key: "shoes", label: "shop.tab.shoes", icon: "👟" },
 ];
 
 /** Footer: the buy / equip button or a note. */
@@ -48,18 +51,22 @@ function colourOf(index: number, count: number): Rarity {
 function statsOf(slot: GearSlot, index: number): { pill: string; effect: string } {
 	if (slot === "pickaxe") {
 		const def = PICKAXES[index];
-		const stats = `Удар ${def.power} · раз на ${def.swingSeconds} с`;
-		return { pill: `РУДА ДО РІВНЯ ${def.tier}`, effect: def.special !== undefined ? def.special : stats };
+		const stats = t("shop.pickaxeStats", { power: def.power, seconds: def.swingSeconds });
+		const effect = def.special !== undefined ? t(nameKeys.gearSpecial(def.id)) : stats;
+		return { pill: t("shop.pickaxePill", { tier: def.tier }), effect };
 	}
 	if (slot === "bag") {
 		const def = BAGS[index];
-		return { pill: `МІСТКІСТЬ ${def.capacity}`, effect: `Носиш до ${def.capacity} шматків руди` };
+		return {
+			pill: t("shop.bagPill", { capacity: def.capacity }),
+			effect: t("shop.bagEffect", { capacity: def.capacity }),
+		};
 	}
 	const def = SHOES[index];
 	const faster = def.walkSpeed / BASE_WALK_SPEED - 1;
 	return {
-		pill: `ШВИДКІСТЬ ${def.walkSpeed}`,
-		effect: faster > 0 ? `Бігаєш на ${formatPercent(faster)} швидше` : "Звичайна швидкість",
+		pill: t("shop.shoesPill", { speed: def.walkSpeed }),
+		effect: faster > 0 ? t("shop.shoesFaster", { percent: formatPercent(faster) }) : t("shop.shoesNormal"),
 	};
 }
 
@@ -96,7 +103,7 @@ function ForSaleFooter(props: { def: GearBase; view: PlayerView }) {
 			<BuyButton
 				price={props.def.price}
 				money={props.view.money}
-				verb="Купити"
+				verb={t("common.buy")}
 				textSize={TEXT_SIZES.small}
 				onClick={() => sendToServer(BUY_GEAR_REMOTE, props.def.id)}
 			/>
@@ -107,13 +114,13 @@ function ForSaleFooter(props: { def: GearBase; view: PlayerView }) {
 function footerOf(def: GearBase, view: PlayerView): React.Element {
 	const state = gearCardState(def.id, view.gear);
 	if (state === "equipped") {
-		return <FooterNote text="Зараз у тебе" color={COLORS.success} />;
+		return <FooterNote text={t("shop.current")} color={COLORS.success} />;
 	}
 	if (state === "owned") {
 		return (
 			<ButtonSlot>
 				<Button
-					text="Надіти"
+					text={t("common.equip")}
 					variant="success"
 					textSize={TEXT_SIZES.small + 2}
 					onClick={() => sendToServer(EQUIP_GEAR_REMOTE, def.id)}
@@ -135,16 +142,16 @@ function GearCard(props: { slot: GearSlot; icon: string; index: number; view: Pl
 			ramp={RARITY_RAMPS[colour]}
 			light={RARITY_LIGHT[colour]}
 			icon={props.icon}
-			name={def.name}
+			name={t(nameKeys.gear(def.id))}
 			pill={stats.pill}
 			effect={stats.effect}
 			rays={props.index === items.size() - 1}
 			highlighted={state === "equipped"}
 			topLeft={
 				state === "equipped"
-					? { text: "✅ НАДІТО", color: COLORS.success }
+					? { text: t("common.equipped"), color: COLORS.success }
 					: state === "owned"
-						? { text: "КУПЛЕНО", color: COLORS.textMuted }
+						? { text: t("common.owned"), color: COLORS.textMuted }
 						: undefined
 			}
 			topRight={def.special !== undefined ? { text: "⚡", color: COLORS.gold } : undefined}
@@ -159,7 +166,7 @@ function ShopPanel() {
 	const view = useView();
 	const [tab, setTab] = useState<GearSlot>("pickaxe");
 	if (view === undefined) {
-		return <Label text="Завантаження..." tone="muted" />;
+		return <Label text={t("common.loading")} tone="muted" />;
 	}
 	const items = GEAR_BY_SLOT[tab];
 	const icon = TABS.find((entry) => entry.key === tab)?.icon ?? "";
@@ -168,7 +175,7 @@ function ShopPanel() {
 	return (
 		<>
 			<Tabs
-				items={TABS.map((entry) => ({ key: entry.key, label: entry.label }))}
+				items={TABS.map((entry) => ({ key: entry.key, label: t(entry.label) }))}
 				selected={tab}
 				onSelect={(key) => {
 					if (isGearSlot(key)) {
@@ -178,7 +185,7 @@ function ShopPanel() {
 				order={1}
 			/>
 			<Label
-				text={`Надіто: ${equipped.name}. Куплено ${owned} з ${items.size()}. Матеріали беруться зі складу.`}
+				text={t("shop.summary", { name: t(nameKeys.gear(equipped.id)), owned, total: items.size() })}
 				tone="muted"
 				size={TEXT_SIZES.small + 1}
 				order={2}
@@ -201,6 +208,6 @@ function ShopPanel() {
 
 export function startShopController(): void {
 	onPromptForTag(TAGS.Shop, () =>
-		openPanel({ key: "shop", title: "Магазин спорядження", icon: "🛒", render: () => <ShopPanel /> }),
+		openPanel({ key: "shop", title: t("shop.title"), icon: "🛒", render: () => <ShopPanel /> }),
 	);
 }

@@ -21,6 +21,7 @@ import {
 	tryBuyLineMachine,
 	tryLineUpgrade,
 } from "shared/features/line";
+import { Text, nameKeys, ref, text } from "shared/features/i18n";
 import { ProfileData } from "shared/features/profile";
 import { formatMoney } from "shared/lib/format";
 import { RateLimiter } from "shared/lib/rate-limiter";
@@ -37,6 +38,7 @@ import {
 } from "server/features/profile";
 import { getSellMultiplier } from "server/features/selling";
 import { notify } from "server/lib/notify";
+import { localizePrompt } from "server/lib/localized";
 import { getRootPosition } from "server/lib/proximity";
 import { declareUnreliableClientEvent, logAbuse, onClientRequest } from "server/lib/remotes";
 import { buildSign } from "./buy-signs";
@@ -143,14 +145,13 @@ function guarded(player: Player, action: (player: Player) => void): void {
 
 function makePrompt(
 	parent: Instance,
-	action: string,
-	object: string,
+	action: Text,
+	object: Text,
 	keys: { keyboard: Enum.KeyCode; gamepad: Enum.KeyCode },
 	onTriggered: (player: Player) => void,
 ): void {
 	const prompt = new Instance("ProximityPrompt");
-	prompt.ActionText = action;
-	prompt.ObjectText = object;
+	localizePrompt(prompt, action, object);
 	prompt.KeyboardKeyCode = keys.keyboard;
 	prompt.GamepadKeyCode = keys.gamepad;
 	prompt.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow;
@@ -190,20 +191,32 @@ function refreshSigns(plot: Plot, owned: number): void {
 			const cframe = slotCFrame(plot, stage);
 			if (active && cframe !== undefined) {
 				const slot = makeAnchor(folder, `BuySlot_${stage}`, cframe);
-				makePrompt(slot, `Купити за ${formatMoney(def.price)}`, def.name, BUY_KEYS, (p) => buyNext(p, plot));
+				makePrompt(
+					slot,
+					text("line.buyFor", { price: formatMoney(def.price) }),
+					text(nameKeys.machine(def.id)),
+					BUY_KEYS,
+					(p) => buyNext(p, plot),
+				);
 			}
 			continue;
 		}
 		const { board } = buildSign(
 			`Sign_${stage}`,
 			at,
-			{ machineName: def.name, price: formatMoney(def.price), active, requires: LINE_MACHINES[index - 1]?.name },
+			{ machineId: def.id, price: formatMoney(def.price), active, requiresId: LINE_MACHINES[index - 1]?.id },
 			folder,
 		);
 		if (!active) {
 			continue;
 		}
-		makePrompt(board, `Купити за ${formatMoney(def.price)}`, def.name, BUY_KEYS, (p) => buyNext(p, plot));
+		makePrompt(
+			board,
+			text("line.buyFor", { price: formatMoney(def.price) }),
+			text(nameKeys.machine(def.id)),
+			BUY_KEYS,
+			(p) => buyNext(p, plot),
+		);
 		// A click or a tap on the board buys too (phones). The server learns who clicked from the engine, not the client.
 		const click = new Instance("ClickDetector");
 		click.MaxActivationDistance = LINE_DISTANCE - 4;
@@ -227,7 +240,7 @@ function buildFor(plot: Plot, data: ProfileData): void {
 	const intakeAt = slotCFrame(plot, 1);
 	if (intakeAt !== undefined) {
 		const intake = makeAnchor(built, "Intake", intakeAt);
-		makePrompt(intake, "Скинути руду із сумки", "Початок стрічки", DROP_KEYS, (player) => dropOre(player, plot));
+		makePrompt(intake, text("line.dropOre"), text("line.beltStart"), DROP_KEYS, (player) => dropOre(player, plot));
 	}
 	refreshSigns(plot, data.line.machines.size());
 }
@@ -237,7 +250,7 @@ function buildFor(plot: Plot, data: ProfileData): void {
 /** Common checks for actions on a plot: it is the player's own, the profile is loaded, the player is close. */
 function ownData(player: Player, plot: Plot, at: Vector3 | undefined): ProfileData | undefined {
 	if (plotOf.get(player) !== plot) {
-		notify(player, "Це чужа ділянка.", "error");
+		notify(player, text("line.notYours"), "error");
 		return undefined;
 	}
 	const data = getProfileData(player);
@@ -254,7 +267,7 @@ function buyNext(player: Player, plot: Plot): void {
 	const result = tryBuyLineMachine(data.line, data.money);
 	if (!result.ok) {
 		if (result.reason === "not-enough-money") {
-			notify(player, "Не вистачає грошей.", "error");
+			notify(player, text("common.notEnoughMoney"), "error");
 		}
 		return;
 	}
@@ -267,7 +280,7 @@ function buyNext(player: Player, plot: Plot): void {
 		clearOfMachine(machine);
 	}
 	refreshSigns(plot, data.line.machines.size());
-	notify(player, `Збудовано: ${result.def.name}!`, "success");
+	notify(player, text("line.built", { name: ref(nameKeys.machine(result.def.id)) }), "success");
 }
 
 function dropOre(player: Player, plot: Plot): void {
@@ -285,15 +298,11 @@ function dropOre(player: Player, plot: Plot): void {
 	}
 	if (total === 0) {
 		const empty = ORE_IDS.every((id) => (data.bag[id] ?? 0) <= 0);
-		notify(
-			player,
-			empty ? "Сумка порожня: спершу накопай руди." : "Стрічка заповнена: зачекай, поки руда проїде.",
-			"error",
-		);
+		notify(player, empty ? text("line.bagEmpty") : text("line.beltFull"), "error");
 		return;
 	}
 	markDirty(player);
-	notify(player, `На стрічку поїхало ${total} шт. руди.`, "success");
+	notify(player, text("line.dropped", { count: total }), "success");
 }
 
 // ---- upgrades (remote from the UI) ----
@@ -316,7 +325,7 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 	const result = tryLineUpgrade(data.line, index, track, data.money);
 	if (!result.ok) {
 		if (result.reason === "not-enough-money") {
-			notify(player, "Не вистачає грошей.", "error");
+			notify(player, text("common.notEnoughMoney"), "error");
 		} else if (result.reason === "unknown") {
 			logAbuse(player, "UpgradeLineMachine of a machine not owned or an unknown track");
 		}
@@ -325,7 +334,7 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 	data.money = result.money;
 	applyLineUpgrade(data.line, index, track as Parameters<typeof applyLineUpgrade>[2]);
 	markDirty(player);
-	notify(player, `Покращено до рівня ${result.upgrade.level}!`, "success");
+	notify(player, text("line.upgraded", { level: result.upgrade.level }), "success");
 }
 
 // ---- plots: claim, release, spawn ----
@@ -355,7 +364,7 @@ function claim(player: Player, plot: Plot): void {
 		return;
 	}
 	if (plotOf.has(player)) {
-		notify(player, "У тебе вже є ділянка.", "error");
+		notify(player, text("line.havePlot"), "error");
 		return;
 	}
 	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, player.UserId);
@@ -366,17 +375,20 @@ function claim(player: Player, plot: Plot): void {
 	if (!built) {
 		warn(`[line] building ${plot.model.Name} failed: ${err}`);
 		releasePlot(player);
-		notify(player, "Не вдалося збудувати ділянку, спробуй іншу.", "error");
+		notify(player, text("line.buildFailed"), "error");
 		return;
 	}
-	notify(player, "Ділянка твоя! Кидай руду на стрічку або купи першу машину.", "success");
+	notify(player, text("line.claimed"), "success");
 }
 
 function addClaimPrompt(plot: Plot): void {
 	const prompt = new Instance("ProximityPrompt");
 	prompt.Name = "ClaimPrompt";
-	prompt.ActionText = "Зайняти ділянку";
-	prompt.ObjectText = `Ділянка ${tostring(plot.model.GetAttribute(PLOT_ATTRIBUTES.PlotIndex) ?? "")}`;
+	localizePrompt(
+		prompt,
+		text("line.claim"),
+		text("line.plot", { n: tostring(plot.model.GetAttribute(PLOT_ATTRIBUTES.PlotIndex) ?? "") }),
+	);
 	prompt.RequiresLineOfSight = false;
 	prompt.HoldDuration = 0.5;
 	prompt.MaxActivationDistance = CLAIM_DISTANCE - 5;
@@ -500,7 +512,7 @@ function onLoaded(player: Player): void {
 		const result = advanceOffline(data.line, nowUnix() - data.lastSeen, valueOf, roll);
 		const income = credit(player, data, result.money);
 		if (income > 0) {
-			notify(player, `Поки тебе не було, лінія заробила ${formatMoney(income)}.`, "success");
+			notify(player, text("line.offline", { money: formatMoney(income) }), "success");
 		}
 	}
 	data.lastSeen = nowUnix();
@@ -508,11 +520,11 @@ function onLoaded(player: Player): void {
 	// The first character spawned before the profile loaded: put it on a free plot now.
 	const position = spawnFor(player);
 	if (position === undefined) {
-		notify(player, "Вільних ділянок немає: лінія працює, але кидати руду ніде.", "error");
+		notify(player, text("line.noPlots"), "error");
 		return;
 	}
 	teleport(player, position);
-	notify(player, "Обери ділянку: стань біля її точки й натисни E.", "info");
+	notify(player, text("line.choosePlot"), "info");
 }
 
 export function startLineService(): void {

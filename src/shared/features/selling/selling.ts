@@ -2,13 +2,11 @@
 // so the number on the button is exactly the money received (unless the bag changed in between).
 
 export interface PriceEntry {
-	readonly name: string;
 	readonly price: number;
 }
 
 export interface SaleLine {
 	readonly id: string;
-	readonly name: string;
 	readonly count: number;
 	readonly unitPrice: number;
 	readonly subtotal: number;
@@ -54,7 +52,7 @@ export function previewSale(
 		}
 		const count = math.floor(raw);
 		const subtotal = count * entry.price;
-		lines.push({ id, name: entry.name, count, unitPrice: entry.price, subtotal });
+		lines.push({ id, count, unitPrice: entry.price, subtotal });
 		itemCount += count;
 		baseTotal += subtotal;
 	}

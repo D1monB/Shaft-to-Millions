@@ -1,5 +1,6 @@
 // The decision logic of ProcessReceipt, without Roblox API, so every path is unit tested.
 // chests-service.ts wires the real profile, policy, roll and save into these ports.
+import { Text, text } from "shared/features/i18n";
 import { ProfileData } from "shared/features/profile";
 import { rememberPurchase, wasGranted } from "shared/features/chests";
 
@@ -12,7 +13,7 @@ export interface ReceiptPorts {
 	readonly grant: (data: ProfileData) => boolean;
 	/** Saves now and waits for confirmation. */
 	readonly save: () => boolean;
-	readonly notify: (text: string) => void;
+	readonly notify: (message: Text) => void;
 }
 
 export type ReceiptDecision = "granted" | "not-processed";
@@ -32,14 +33,14 @@ export function decideReceipt(purchaseId: string, ports: ReceiptPorts): ReceiptD
 		return ports.save() ? "granted" : "not-processed";
 	}
 	if (!ports.robuxAllowed()) {
-		ports.notify("Відкриття скринь за Robux недоступне для твого акаунта.");
+		ports.notify(text("chest.robuxUnavailable"));
 		return "not-processed";
 	}
 	rememberPurchase(data.purchaseIds, purchaseId);
 	if (!ports.grant(data)) {
 		// Nothing was added, so forget the id: a later retry (after freeing space) must be able to grant.
 		data.purchaseIds.remove(data.purchaseIds.indexOf(purchaseId));
-		ports.notify("Інвентар переповнений. Звільни місце: покупку буде видано пізніше.");
+		ports.notify(text("chest.overflow"));
 		return "not-processed";
 	}
 	return ports.save() ? "granted" : "not-processed";

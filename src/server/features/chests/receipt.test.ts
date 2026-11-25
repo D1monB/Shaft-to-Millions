@@ -1,3 +1,4 @@
+import { Text } from "shared/features/i18n";
 import { Assert, Test } from "@rbxts/lunit";
 import { ProfileData, createDefaultProfileData } from "shared/features/profile";
 import { ReceiptPorts, decideReceipt } from "./receipt";
@@ -9,7 +10,7 @@ class Harness {
 	public saveWorks = true;
 	public grants = 0;
 	public saves = 0;
-	public notices: string[] = [];
+	public notices: Text[] = [];
 
 	public readonly ports: ReceiptPorts = {
 		getData: () => this.data,

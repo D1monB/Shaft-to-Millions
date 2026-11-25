@@ -4,6 +4,7 @@
 //   right edge, vertically centred: the coloured dock of menu buttons;
 //   bottom centre: the goal (goals feature).
 // Other features plug in their own stats and buttons, so the HUD knows nothing about factories or chests.
+import { t } from "client/lib/i18n";
 import React, { useEffect, useState } from "@rbxts/react";
 import { UserInputService } from "@rbxts/services";
 import { bagCapacity, bagTotal } from "shared/features/bag";
@@ -45,7 +46,8 @@ interface StatEntry {
 interface ButtonEntry {
 	readonly order: number;
 	readonly icon: string;
-	readonly label: string;
+	/** A function when the label depends on the language (called on every render). */
+	readonly label: string | (() => string);
 	readonly onClick: () => void;
 	readonly variant: ButtonVariant;
 }
@@ -65,7 +67,7 @@ export function registerHudStat(order: number, render: (view: PlayerView) => Hud
 /** Adds a square button to the dock on the right edge (e.g. Equipment). `variant` picks its colour. */
 export function registerHudButton(
 	icon: string,
-	label: string,
+	label: string | (() => string),
 	onClick: () => void,
 	order = 50,
 	variant: ButtonVariant = "secondary",
@@ -124,7 +126,7 @@ function MoneyCapsule(props: { money: number }) {
 					BackgroundTransparency={1}
 					Size={new UDim2(1, 0, 0, 14)}
 					Font={FONTS.display}
-					Text="БАЛАНС"
+					Text={t("hud.balance")}
 					TextSize={13}
 					TextColor3={COLORS.textMuted}
 					TextXAlignment={Enum.TextXAlignment.Left}
@@ -151,7 +153,7 @@ function BagCapsule(props: { used: number; capacity: number }) {
 					progress={props.capacity > 0 ? props.used / props.capacity : 0}
 					color={full ? COLORS.canyon : Color3.fromRGB(251, 191, 36)}
 					height={30}
-					text={full ? "ПОВНА!" : `${props.used} / ${props.capacity}`}
+					text={full ? t("hud.bagFull") : `${props.used} / ${props.capacity}`}
 				/>
 			</frame>
 		</Capsule>
@@ -217,7 +219,7 @@ function Dock() {
 				<MenuButton
 					key={`menu_${index}`}
 					icon={button.icon}
-					label={button.label}
+					label={typeIs(button.label, "function") ? button.label() : button.label}
 					onClick={button.onClick}
 					variant={button.variant}
 					order={index}

@@ -1,4 +1,4 @@
-// How the inventory is shown: one card per kind of item instead of one per copy, so ten moles are "Кротик ×10",
+// How the inventory is shown: one card per kind of item instead of one per copy, so ten moles are "Little Mole ×10",
 // not ten identical rows. Pure, so the grouping and its order are unit tested.
 import { ITEMS, ItemId, ItemKind } from "shared/config/items";
 import type { OwnedItem } from "shared/features/chests";
@@ -50,7 +50,8 @@ export function groupInventory(inventory: ReadonlyArray<OwnedItem>, equipped: Eq
 		if (bonusA !== bonusB) {
 			return bonusA > bonusB;
 		}
-		return ITEMS[a.item].name < ITEMS[b.item].name;
+		// By id, not by name: the order must not change with the language.
+		return a.item < b.item;
 	});
 	return groups;
 }

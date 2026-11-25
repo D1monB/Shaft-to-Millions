@@ -1,4 +1,5 @@
 // How chest items look in the UI: rarity colour, icon and a one-line effect. Shared by chests and equipment.
+import { t } from "./i18n";
 import { ITEMS, ItemId, ItemKind, RARITY_COLORS, Rarity } from "shared/config/items";
 import { formatPercent } from "shared/lib/format";
 import { Ramp } from "./ui-kit";
@@ -38,10 +39,10 @@ export const KIND_ICONS: { [K in ItemKind]: string } = {
 
 export function effectText(kind: ItemKind, bonus: number): string {
 	if (kind === "pet") {
-		return `+${formatPercent(bonus)} до ціни продажу`;
+		return t("effect.pet", { percent: formatPercent(bonus) });
 	}
 	if (kind === "speedAura") {
-		return `+${formatPercent(bonus)} до швидкості`;
+		return t("effect.speedAura", { percent: formatPercent(bonus) });
 	}
-	return `+${formatPercent(bonus)} шанс додаткової руди`;
+	return t("effect.pickaxeAura", { percent: formatPercent(bonus) });
 }

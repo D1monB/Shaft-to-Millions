@@ -1,3 +1,4 @@
+import { nameKeys, ref, text } from "shared/features/i18n";
 import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, OreId, isOreId } from "shared/config/ores";
@@ -41,7 +42,8 @@ function getSession(player: Player): MiningSession<Instance> {
 }
 
 function pickaxeNameForTier(tier: number): string {
-	return PICKAXES.find((pickaxe) => pickaxe.tier >= tier)?.name ?? "краща кирка";
+	const pickaxe = PICKAXES.find((candidate) => candidate.tier >= tier);
+	return ref(pickaxe !== undefined ? nameKeys.gear(pickaxe.id) : "mining.betterPickaxe");
 }
 
 function handleHit(player: Player, node: Instance, oreId: OreId): void {
@@ -70,7 +72,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	const capacity = bagCapacity(data.gear.equipped.bag);
 	if (bagFreeSpace(data.bag, capacity) <= 0) {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
-			notify(player, "Сумка повна! Продай руду або віднеси її на склад.", "error");
+			notify(player, text("mining.bagFull"), "error");
 		}
 		return;
 	}
@@ -80,7 +82,14 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 
 	if (result.kind === "locked") {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
-			notify(player, `${ore.name}: потрібна ${pickaxeNameForTier(result.requiredTier)}.`, "error");
+			notify(
+				player,
+				text("mining.needPickaxe", {
+					ore: ref(nameKeys.ore(oreId)),
+					pickaxe: pickaxeNameForTier(result.requiredTier),
+				}),
+				"error",
+			);
 		}
 	} else if (result.kind === "progress") {
 		fireClient(MINE_PROGRESS_REMOTE, player, node, result.damage, result.hardness);

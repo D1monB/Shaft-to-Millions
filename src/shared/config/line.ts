@@ -5,27 +5,25 @@
 export interface LineMachineDef {
 	/** Matches the model name prefix on the friend's map (M01_HydroWasher -> "M01"). */
 	readonly id: string;
-	readonly name: string;
 	/** Name of the item this machine makes (stage = position in the line + 1). */
-	readonly output: string;
 	readonly price: number;
 	/** Seconds to process one item at speed level 1. */
 	readonly seconds: number;
 }
 
 export const LINE_MACHINES: ReadonlyArray<LineMachineDef> = [
-	{ id: "M01", name: "Гідро-Мийка", output: "Очищена руда", price: 150, seconds: 1.5 },
-	{ id: "M02", name: "Щекова Дробарка", output: "Рудний щебінь", price: 400, seconds: 1.5 },
-	{ id: "M03", name: "Магнітний Сепаратор", output: "Чистий концентрат", price: 1_000, seconds: 2 },
-	{ id: "M04", name: "Доменна Піч", output: "Розплавлений злиток", price: 2_500, seconds: 2 },
-	{ id: "M05", name: "Кріо-Охолоджувач", output: "Загартований злиток", price: 6_000, seconds: 2.5 },
-	{ id: "M06", name: "Прокатний Стан", output: "Металева пластина", price: 15_000, seconds: 2.5 },
-	{ id: "M07", name: "Гідравлічний Прес", output: "Штампований корпус", price: 40_000, seconds: 3 },
-	{ id: "M08", name: "Лазерний Різак", output: "Мікро-шестерні", price: 100_000, seconds: 3 },
-	{ id: "M09", name: "Хімічна Ванна", output: "Позолочені контакти", price: 250_000, seconds: 3.5 },
-	{ id: "M10", name: "Роботизований Зварювач", output: "Енерго-блок", price: 1_500_000, seconds: 3.5 },
-	{ id: "M11", name: "Плазмовий Інжектор", output: "Заряджене ядро", price: 4_000_000, seconds: 4 },
-	{ id: "M12", name: "Квантовий Складальник", output: "Квантовий Реактор", price: 10_000_000, seconds: 4 },
+	{ id: "M01", price: 150, seconds: 1.5 },
+	{ id: "M02", price: 400, seconds: 1.5 },
+	{ id: "M03", price: 1_000, seconds: 2 },
+	{ id: "M04", price: 2_500, seconds: 2 },
+	{ id: "M05", price: 6_000, seconds: 2.5 },
+	{ id: "M06", price: 15_000, seconds: 2.5 },
+	{ id: "M07", price: 40_000, seconds: 3 },
+	{ id: "M08", price: 100_000, seconds: 3 },
+	{ id: "M09", price: 250_000, seconds: 3.5 },
+	{ id: "M10", price: 1_500_000, seconds: 3.5 },
+	{ id: "M11", price: 4_000_000, seconds: 4 },
+	{ id: "M12", price: 10_000_000, seconds: 4 },
 ];
 
 /**
