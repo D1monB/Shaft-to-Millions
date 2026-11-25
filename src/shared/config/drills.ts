@@ -15,8 +15,8 @@ export const DRILLS: { readonly [layer: number]: DrillDef | undefined } = {
 	1: { name: "Бур Сірих Пластів", price: 2_000, secondsPerHardness: 6, bufferCapacity: 40 },
 	2: { name: "Бур Іржавих Порожнин", price: 20_000, secondsPerHardness: 5, bufferCapacity: 60 },
 	3: { name: "Бур Базальтової Глибини", price: 150_000, secondsPerHardness: 4, bufferCapacity: 80 },
-	4: { name: "Бур Титанових Ребер", price: 600_000, secondsPerHardness: 3.5, bufferCapacity: 100 },
-	5: { name: "Бур Ефірного Дна", price: 2_000_000, secondsPerHardness: 3, bufferCapacity: 120 },
+	4: { name: "Бур Золотих Ребер", price: 600_000, secondsPerHardness: 2, bufferCapacity: 100 },
+	5: { name: "Бур Титанового Дна", price: 2_000_000, secondsPerHardness: 1.5, bufferCapacity: 120 },
 };
 
 /** Offline production is counted for at most this long, so a drill bought once does not print money forever. */

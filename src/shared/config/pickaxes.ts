@@ -23,16 +23,17 @@ export const PICKAXES: ReadonlyArray<PickaxeDef> = [
 		tier: 2,
 		power: 2,
 		swingSeconds: 0.25,
-		price: 2_000,
+		price: 1_200,
 		special: "Дуже швидка, але слабка: найкраща для м'якої руди",
 	},
-	{ id: "pickaxe_silver", name: "Сталева кирка", tier: 3, power: 4, swingSeconds: 0.4, price: 4_000 },
-	{ id: "pickaxe_gold", name: "Срібна кирка", tier: 3, power: 5, swingSeconds: 0.4, price: 12_000 },
+	{ id: "pickaxe_silver", name: "Сталева кирка", tier: 3, power: 4, swingSeconds: 0.4, price: 2_800 },
+	{ id: "pickaxe_gold", name: "Срібна кирка", tier: 3, power: 5, swingSeconds: 0.4, price: 8_000 },
 	{
 		id: "pickaxe_hammer",
 		name: "Кирка-молот",
 		tier: 4,
-		power: 12,
+		// 13 = gold hardness: one hit, as its description promises (balance review 2026-11-25).
+		power: 13,
 		swingSeconds: 0.9,
 		price: 30_000,
 		special: "Повільна, але тверду руду ламає з одного удару",
@@ -40,5 +41,5 @@ export const PICKAXES: ReadonlyArray<PickaxeDef> = [
 	{ id: "pickaxe_obsidian", name: "Золота кирка", tier: 4, power: 7, swingSeconds: 0.35, price: 60_000 },
 	{ id: "pickaxe_cobalt", name: "Титанова кирка", tier: 5, power: 9, swingSeconds: 0.35, price: 200_000 },
 	{ id: "pickaxe_drill", name: "Ручний бур", tier: 5, power: 12, swingSeconds: 0.3, price: 600_000 },
-	{ id: "pickaxe_plasma", name: "Плазмовий бур", tier: 5, power: 16, swingSeconds: 0.3, price: 2_000_000 },
+	{ id: "pickaxe_plasma", name: "Плазмовий бур", tier: 5, power: 25, swingSeconds: 0.3, price: 2_000_000 },
 ];

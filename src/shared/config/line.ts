@@ -23,9 +23,9 @@ export const LINE_MACHINES: ReadonlyArray<LineMachineDef> = [
 	{ id: "M07", name: "Гідравлічний Прес", output: "Штампований корпус", price: 40_000, seconds: 3 },
 	{ id: "M08", name: "Лазерний Різак", output: "Мікро-шестерні", price: 100_000, seconds: 3 },
 	{ id: "M09", name: "Хімічна Ванна", output: "Позолочені контакти", price: 250_000, seconds: 3.5 },
-	{ id: "M10", name: "Роботизований Зварювач", output: "Енерго-блок", price: 650_000, seconds: 3.5 },
-	{ id: "M11", name: "Плазмовий Інжектор", output: "Заряджене ядро", price: 1_600_000, seconds: 4 },
-	{ id: "M12", name: "Квантовий Складальник", output: "Квантовий Реактор", price: 4_000_000, seconds: 4 },
+	{ id: "M10", name: "Роботизований Зварювач", output: "Енерго-блок", price: 1_500_000, seconds: 3.5 },
+	{ id: "M11", name: "Плазмовий Інжектор", output: "Заряджене ядро", price: 4_000_000, seconds: 4 },
+	{ id: "M12", name: "Квантовий Складальник", output: "Квантовий Реактор", price: 10_000_000, seconds: 4 },
 ];
 
 /**

@@ -375,3 +375,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the developer and the map author changed the design (each ore on its own layer, iridium only near the
   portal); the earlier per-spawn ore tables were dropped. Renaming by price means no player loses value.
 - **Later:** the portal will lead to another location (another canyon and mine with other ores). Not in this stage.
+
+## 032. Balance pass after the ore shift (2026-11-25, balance-analyst, approved by the developer)
+
+- Plasma drill power 16 -> 25 (it was the same as the hand drill for 3x the price); hammer power 12 -> 13 (gold in
+  one hit, as described); light pickaxe $2,000 -> $1,200; steel pickaxe $4,000 -> $2,800 (wall before silver);
+  silver pickaxe $12,000 -> $8,000.
+- Late machines: M10 $650k -> $1.5M, M11 $1.6M -> $4M, M12 $4M -> $10M (deep-ore players paid them back in minutes).
+- Drills on layers 4 and 5 faster: 3.5 -> 2 and 3 -> 1.5 seconds per hardness. Drill names follow the layer names.
+- Numbers are first estimates; confirm in a play-test.
