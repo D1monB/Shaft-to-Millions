@@ -8,9 +8,9 @@ export interface PanelProps extends React.PropsWithChildren {
 	readonly onClose: () => void;
 }
 
-const MAX_SIZE = new Vector2(540, 660);
+const MAX_SIZE = new Vector2(660, 740);
 /** The title sign hangs over the top edge; content starts below it. */
-const SIGN_OVERHANG = 22;
+const SIGN_OVERHANG = 28;
 
 /**
  * A timber board in the middle of the screen with a gold title sign and a close button.
@@ -90,7 +90,7 @@ function TitleSign(props: { title: string; icon?: string }) {
 		<frame
 			AnchorPoint={new Vector2(0.5, 0)}
 			Position={new UDim2(0.5, 0, 0, -SIGN_OVERHANG)}
-			Size={new UDim2(0, 0, 0, 48)}
+			Size={new UDim2(0, 0, 0, 58)}
 			AutomaticSize={Enum.AutomaticSize.X}
 			BackgroundColor3={COLORS.gold}
 			ZIndex={3}
@@ -114,7 +114,7 @@ function TitleSign(props: { title: string; icon?: string }) {
 				AutomaticSize={Enum.AutomaticSize.X}
 				Font={FONTS.display}
 				Text={text}
-				TextSize={TEXT_SIZES.title - 2}
+				TextSize={TEXT_SIZES.title}
 				TextColor3={COLORS.textDark}
 				ZIndex={3}
 			/>
@@ -128,12 +128,12 @@ function CloseButton(props: { onClose: () => void }) {
 		<textbutton
 			AnchorPoint={new Vector2(0.5, 0.5)}
 			Position={new UDim2(1, -10, 0, 10)}
-			Size={new UDim2(0, 46, 0, 46)}
+			Size={new UDim2(0, 56, 0, 56)}
 			BackgroundColor3={COLORS.canyon}
 			AutoButtonColor={false}
 			Font={FONTS.display}
 			Text="✕"
-			TextSize={24}
+			TextSize={30}
 			TextColor3={COLORS.text}
 			ZIndex={4}
 			Event={{

@@ -116,3 +116,14 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the first security review showed a teleport exploit. The anchor (not "previous sample") is used because the slack
   would otherwise be granted again for every sample and a 3x speed hack would pass. Known limit: a hack of about 1.7x or less
   is not caught; that is the price of not punishing lag.
+
+## 018. Bigger UI and a font comparison
+
+- **Date:** 2026-11-25
+- **Decision:** the first play-test found the UI too small. The screen scale is now computed from a design height of 620
+  (was 760) with limits 0.7..1.5 (was 0.6..1.2), text sizes are about 18% larger (body 20, title 30), chips, menu buttons,
+  the title sign and the goal banner are bigger, and the menu column moved to the right edge so it never overlaps the stat chips.
+  The UI showcase (Dev panel) shows 12 fonts with Ukrainian letters for choosing the final font.
+- **Why:** on a 720 px high window the old scale gave about 12 px chip text; on a phone it shrank to 0.6 and gave about 10 px.
+  `FredokaOne` has no Cyrillic, so titles used a fallback font. The font is chosen by the player in the showcase, not guessed.
+- **Open:** the final font (`FONTS` in `client/lib/ui-kit/theme.ts`).

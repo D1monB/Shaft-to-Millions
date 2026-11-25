@@ -80,13 +80,13 @@ export function GoalBanner() {
 		<frame
 			AnchorPoint={new Vector2(0.5, 1)}
 			Position={new UDim2(0.5, 0, 1, -18)}
-			Size={new UDim2(0, 0, 0, 44)}
+			Size={new UDim2(0, 0, 0, 56)}
 			AutomaticSize={Enum.AutomaticSize.X}
 			BackgroundColor3={COLORS.woodDark}
 			BackgroundTransparency={0.05}
 		>
 			<uiscale Scale={scale} />
-			<uisizeconstraint MaxSize={new Vector2(560, 44)} />
+			<uisizeconstraint MaxSize={new Vector2(720, 56)} />
 			<uicorner CornerRadius={RADIUS.round} />
 			<uistroke Color={COLORS.gold} Thickness={STROKE.thick} />
 			<uipadding PaddingLeft={new UDim(0, 18)} PaddingRight={new UDim(0, 20)} />
@@ -96,7 +96,7 @@ export function GoalBanner() {
 				AutomaticSize={Enum.AutomaticSize.X}
 				Font={FONTS.display}
 				Text={`🎯  ${text}`}
-				TextSize={TEXT_SIZES.body + 1}
+				TextSize={TEXT_SIZES.large}
 				TextColor3={COLORS.gold}
 				TextTruncate={Enum.TextTruncate.AtEnd}
 			>

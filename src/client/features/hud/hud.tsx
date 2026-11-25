@@ -37,7 +37,7 @@ export function registerHudStat(order: number, render: (view: PlayerView) => Hud
 	stats.sort((a, b) => a.order < b.order);
 }
 
-/** Adds a square button to the menu on the left edge (e.g. Equipment). */
+/** Adds a square button to the menu on the right edge (e.g. Equipment). */
 export function registerHudButton(icon: string, label: string, onClick: () => void, order = 50): void {
 	buttons.push({ order, icon, label, onClick });
 	buttons.sort((a, b) => a.order < b.order);
@@ -51,7 +51,7 @@ function TopBar(props: { view: PlayerView }) {
 		<frame
 			AnchorPoint={new Vector2(0.5, 0)}
 			Position={new UDim2(0.5, 0, 0, 10)}
-			Size={new UDim2(0, 300, 0, 0)}
+			Size={new UDim2(0, 380, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.Y}
 			BackgroundColor3={COLORS.woodDark}
 			BackgroundTransparency={0.05}
@@ -65,14 +65,14 @@ function TopBar(props: { view: PlayerView }) {
 				PaddingRight={new UDim(0, 14)}
 			/>
 			<uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
-			<CurrencyLabel value={props.view.money} size={34} align={Enum.TextXAlignment.Center} order={1} />
-			<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 22)} LayoutOrder={2}>
-				<textlabel BackgroundTransparency={1} Size={new UDim2(0, 26, 1, 0)} Text="🎒" TextSize={18} />
-				<frame BackgroundTransparency={1} Position={new UDim2(0, 30, 0, 2)} Size={new UDim2(1, -30, 1, -4)}>
+			<CurrencyLabel value={props.view.money} size={46} align={Enum.TextXAlignment.Center} order={1} />
+			<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 30)} LayoutOrder={2}>
+				<textlabel BackgroundTransparency={1} Size={new UDim2(0, 34, 1, 0)} Text="🎒" TextSize={24} />
+				<frame BackgroundTransparency={1} Position={new UDim2(0, 38, 0, 2)} Size={new UDim2(1, -38, 1, -4)}>
 					<ProgressBar
 						progress={capacity > 0 ? used / capacity : 0}
 						color={full ? COLORS.canyon : COLORS.crystal}
-						height={18}
+						height={24}
 						text={full ? `${formatCount(used, capacity)}  ПОВНА!` : formatCount(used, capacity)}
 					/>
 				</frame>
@@ -93,12 +93,12 @@ function StatColumn(props: { view: PlayerView }) {
 	});
 	return (
 		<frame
-			Position={new UDim2(0, 12, 0, 70)}
+			Position={new UDim2(0, 12, 0, 96)}
 			Size={new UDim2(0, 0, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.XY}
 			BackgroundTransparency={1}
 		>
-			<uilistlayout Padding={new UDim(0, 6)} SortOrder={Enum.SortOrder.LayoutOrder} />
+			<uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
 			{chips}
 		</frame>
 	);
@@ -107,13 +107,13 @@ function StatColumn(props: { view: PlayerView }) {
 function MenuColumn() {
 	return (
 		<frame
-			AnchorPoint={new Vector2(0, 0.5)}
-			Position={new UDim2(0, 12, 0.62, 0)}
+			AnchorPoint={new Vector2(1, 0.5)}
+			Position={new UDim2(1, -12, 0.5, 0)}
 			Size={new UDim2(0, 0, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.XY}
 			BackgroundTransparency={1}
 		>
-			<uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
+			<uilistlayout Padding={new UDim(0, 6)} SortOrder={Enum.SortOrder.LayoutOrder} />
 			{buttons.map((button, index) => (
 				<MenuButton
 					key={`menu_${index}`}

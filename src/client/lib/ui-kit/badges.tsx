@@ -15,13 +15,13 @@ export function StatChip(props: StatChipProps) {
 		<frame
 			BackgroundColor3={COLORS.woodDark}
 			BackgroundTransparency={0.1}
-			Size={new UDim2(0, 0, 0, 32)}
+			Size={new UDim2(0, 0, 0, 44)}
 			AutomaticSize={Enum.AutomaticSize.X}
 			LayoutOrder={props.order ?? 0}
 		>
 			<uicorner CornerRadius={RADIUS.round} />
 			<uistroke Color={COLORS.outline} Thickness={STROKE.thin} />
-			<uipadding PaddingLeft={new UDim(0, 4)} PaddingRight={new UDim(0, 12)} />
+			<uipadding PaddingLeft={new UDim(0, 5)} PaddingRight={new UDim(0, 14)} />
 			<uilistlayout
 				FillDirection={Enum.FillDirection.Horizontal}
 				VerticalAlignment={Enum.VerticalAlignment.Center}
@@ -30,9 +30,9 @@ export function StatChip(props: StatChipProps) {
 			/>
 			<textlabel
 				BackgroundColor3={COLORS.wood}
-				Size={new UDim2(0, 26, 0, 26)}
+				Size={new UDim2(0, 34, 0, 34)}
 				Text={props.icon}
-				TextSize={16}
+				TextSize={22}
 				Font={FONTS.display}
 				LayoutOrder={1}
 			>
@@ -44,7 +44,7 @@ export function StatChip(props: StatChipProps) {
 				AutomaticSize={Enum.AutomaticSize.X}
 				Font={FONTS.display}
 				Text={props.text}
-				TextSize={TEXT_SIZES.small + 1}
+				TextSize={TEXT_SIZES.body}
 				TextColor3={toneColor(props.tone ?? "normal")}
 				LayoutOrder={2}
 			>
@@ -66,17 +66,17 @@ export interface MenuButtonProps {
 export function MenuButton(props: MenuButtonProps) {
 	const [scale, scaleMotion] = useMotion(1);
 	return (
-		<frame BackgroundTransparency={1} Size={new UDim2(0, 72, 0, 84)} LayoutOrder={props.order ?? 0}>
+		<frame BackgroundTransparency={1} Size={new UDim2(0, 96, 0, 112)} LayoutOrder={props.order ?? 0}>
 			<uiscale Scale={scale} />
 			<textbutton
 				AutoButtonColor={false}
 				BackgroundColor3={props.color ?? COLORS.woodLight}
-				Size={new UDim2(0, 64, 0, 64)}
+				Size={new UDim2(0, 80, 0, 80)}
 				AnchorPoint={new Vector2(0.5, 0)}
 				Position={new UDim2(0.5, 0, 0, 0)}
 				Font={FONTS.display}
 				Text={props.icon}
-				TextSize={30}
+				TextSize={42}
 				Event={{
 					Activated: props.onClick,
 					MouseEnter: () => scaleMotion.spring(1.08, SPRINGS.bouncy),
@@ -96,10 +96,10 @@ export function MenuButton(props: MenuButtonProps) {
 				BackgroundTransparency={1}
 				AnchorPoint={new Vector2(0.5, 1)}
 				Position={new UDim2(0.5, 0, 1, 0)}
-				Size={new UDim2(1, 16, 0, 20)}
+				Size={new UDim2(1, 16, 0, 26)}
 				Font={FONTS.display}
 				Text={props.label}
-				TextSize={TEXT_SIZES.small}
+				TextSize={TEXT_SIZES.small + 2}
 				TextColor3={COLORS.text}
 			>
 				<uistroke Color={COLORS.outline} Thickness={2} />

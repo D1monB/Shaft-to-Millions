@@ -42,13 +42,33 @@ export const FONTS = {
 	bodyBold: Enum.Font.BuilderSansBold,
 };
 
+/** Sizes in design units (see ui-root.tsx for the screen scale). Raised after the first play-test: text was too small. */
 export const TEXT_SIZES = {
-	small: 14,
-	body: 17,
-	large: 21,
-	title: 28,
-	huge: 36,
+	small: 16,
+	body: 20,
+	large: 24,
+	title: 30,
+	huge: 40,
 };
+
+/**
+ * Fonts to compare in the UI showcase (Dev panel). All of them are checked for Cyrillic there, because a font
+ * without Ukrainian letters silently falls back to another one. The chosen font goes into FONTS above.
+ */
+export const FONT_CANDIDATES: ReadonlyArray<{ readonly name: string; readonly font: Enum.Font }> = [
+	{ name: "FredokaOne (зараз для заголовків)", font: Enum.Font.FredokaOne },
+	{ name: "BuilderSansMedium (зараз для тексту)", font: Enum.Font.BuilderSansMedium },
+	{ name: "BuilderSansBold", font: Enum.Font.BuilderSansBold },
+	{ name: "BuilderSansExtraBold", font: Enum.Font.BuilderSansExtraBold },
+	{ name: "Nunito", font: Enum.Font.Nunito },
+	{ name: "Ubuntu", font: Enum.Font.Ubuntu },
+	{ name: "Roboto", font: Enum.Font.Roboto },
+	{ name: "SourceSansBold", font: Enum.Font.SourceSansBold },
+	{ name: "Arial", font: Enum.Font.Arial },
+	{ name: "Merriweather", font: Enum.Font.Merriweather },
+	{ name: "Oswald", font: Enum.Font.Oswald },
+	{ name: "GothamBold", font: Enum.Font.GothamBold },
+];
 
 export const RADIUS = {
 	small: new UDim(0, 8),
@@ -64,7 +84,7 @@ export const STROKE = {
 };
 
 /** Minimum touch target on phones (Apple / Google guidelines use 44 pt). */
-export const MIN_TOUCH = 44;
+export const MIN_TOUCH = 52;
 
 export type Tone = "normal" | "muted" | "gold" | "success" | "danger" | "crystal" | "dark";
 
