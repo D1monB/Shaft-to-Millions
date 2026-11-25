@@ -111,6 +111,7 @@ ESLint + Prettier, GitHub Actions + Dependabot. Editor: VS Code. Node ≥ 24.
 - `npm run format`: Prettier write + ESLint autofix
 - `npm test`: build, then run unit tests headless under Lune
 - `npm run audit`: `npm audit --audit-level=moderate`
+- `npx skills install`: restore third-party agent skills from `skills-lock.json` (pinned commits) into `.agents/skills` and link them for Claude Code. Review a skill before adding it: it runs with full agent permissions.
 - `rojo serve`: live sync to Studio (run together with `npm run watch`), Studio Rojo plugin → Connect (port 34872)
 - Before finishing any task: build, lint and tests must all pass.
 
@@ -190,7 +191,8 @@ Details: `docs/architecture.md`, numbers: `docs/economy.md`.
 
 - Never read `node_modules/`, `out/`, `include/` or `package-lock.json` (blocked in `.claude/settings.json`).
 - Show only failing lines of build/lint/test output. `/pre-pr` does this for the four gates.
-- Project skills: `/pre-pr`, `/new-feature <name>`.
+- Project skills: `/pre-pr`, `/new-feature <name>`. Third-party (reviewed, pinned): `roblox-ui`, `roblox-networking`, `roblox-luau`, `find-skills`.
+  They are advice; where they disagree with this file (e.g. `execute_luau`, plain-Luau examples), this file wins.
 - A hook formats edited files with Prettier automatically; do not spend turns on formatting.
 - Subagents: `security-reviewer` (read-only; run after changes to remotes, player data, inventory, currency,
   mining, production or chests, and before a PR) and `test-writer` (lunit tests incl. bad input for pure logic).
