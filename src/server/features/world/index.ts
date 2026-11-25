@@ -5,6 +5,7 @@ export {
 	buildChestPlaceholders,
 	buildLayerPlaceholders,
 	buildOreRow,
+	buildPlotPlaceholders,
 	makePlaceholder,
 	needsPlaceholders,
 } from "./placeholders";

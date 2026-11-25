@@ -8,6 +8,8 @@ export {
 	depositOre,
 	isLineIdle,
 	itemValue,
+	lineIncome,
+	machineAction,
 	newLineState,
 	nextLineMachine,
 	nextLineUpgrade,
@@ -22,7 +24,9 @@ export type {
 	LineState,
 	LineTickResult,
 	LineUpgradeResult,
+	MachineAction,
 	NextLineUpgrade,
 	OreValueOf,
 	RandomFn,
 } from "./line";
+export { LINE_DISTANCE, UPGRADE_LINE_MACHINE_REMOTE } from "./network";

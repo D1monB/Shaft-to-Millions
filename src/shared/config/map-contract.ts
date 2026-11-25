@@ -23,3 +23,30 @@ export const ATTRIBUTES = {
 	LayerId: "LayerId",
 	ChestId: "ChestId",
 } as const;
+
+/**
+ * The tycoon plots (decisions 027), found by path, not by tag, because the map author built them that way:
+ * Workspace/Map/Plots/<PlotN> (Model, attributes Owner, PlotIndex) with a Base part and
+ * Factory/Machines/<model with attribute Stage 1..12> and Factory/Conveyors/<parts with ConveyorFlow>.
+ * A plot without a Factory gets a copy of the first plot's Factory at runtime (the map is not changed).
+ */
+export const PLOTS = {
+	MapFolder: "Map",
+	PlotsFolder: "Plots",
+	Base: "Base",
+	Factory: "Factory",
+	Machines: "Machines",
+	Conveyors: "Conveyors",
+} as const;
+
+export const PLOT_ATTRIBUTES = {
+	/** On the plot: UserId of the owner, 0 = free. Set by the server. */
+	Owner: "Owner",
+	PlotIndex: "PlotIndex",
+	/** On a machine model: its place in the line, 1..12 (LINE_MACHINES order). */
+	Stage: "Stage",
+	/** On a machine model: the owner has bought it. Set by the server, read by the client for visuals. */
+	Bought: "Bought",
+	/** On a conveyor part: false stops the belt animation (read by the map author's ConveyorAnimator). */
+	ConveyorOn: "ConveyorOn",
+} as const;

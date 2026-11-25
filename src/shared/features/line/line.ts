@@ -291,3 +291,36 @@ export function advanceOffline(
 export function isLineIdle(state: LineState): boolean {
 	return state.machines.every((machine) => machine.queue.size() === 0);
 }
+
+// ---- what the prompt at a machine does ----
+
+export type MachineAction =
+	| { readonly kind: "buy"; readonly price: number }
+	| { readonly kind: "locked" }
+	| { readonly kind: "deposit" }
+	| { readonly kind: "upgrade" };
+
+/**
+ * What the prompt at machine `index` (0-based) does for this line: the next machine is for sale, later ones are
+ * locked (machines are bought in order), the first owned one takes ore from the bag, other owned ones open upgrades.
+ */
+export function machineAction(state: LineState, index: number): MachineAction {
+	const owned = state.machines.size();
+	const def = LINE_MACHINES[index];
+	if (def === undefined || index < 0 || index !== math.floor(index)) {
+		return { kind: "locked" };
+	}
+	if (index === owned) {
+		return { kind: "buy", price: def.price };
+	}
+	if (index > owned) {
+		return { kind: "locked" };
+	}
+	return index === 0 ? { kind: "deposit" } : { kind: "upgrade" };
+}
+
+/** Line income after the sell bonus (pets), in whole dollars. A broken multiplier counts as 1. */
+export function lineIncome(money: number, multiplier: number): number {
+	const safe = isFiniteNumber(multiplier) && multiplier > 0 ? multiplier : 1;
+	return isFiniteNumber(money) && money > 0 ? math.floor(money * safe) : 0;
+}

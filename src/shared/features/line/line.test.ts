@@ -17,6 +17,8 @@ import {
 	depositOre,
 	isLineIdle,
 	itemValue,
+	lineIncome,
+	machineAction,
 	newLineState,
 	nextLineMachine,
 	nextLineUpgrade,
@@ -323,6 +325,43 @@ class LineTests {
 		// The cap bounds the work: OFFLINE_MAX_SECONDS at half speed is far more than 500 items need, so all are sold.
 		const all = advanceOffline(state, OFFLINE_MAX_SECONDS * 10, valueOf, never);
 		Assert.equal(HOPPER_CAPACITY, all.sold);
+	}
+
+	// ---- machine prompts ----
+
+	@Test
+	public promptActionsFollowTheBuyOrder() {
+		const state = newLineState();
+		const first = machineAction(state, 0);
+		Assert.true(first.kind === "buy" && first.price === LINE_MACHINES[0].price);
+		Assert.equal("locked", machineAction(state, 1).kind);
+		applyBuyLineMachine(state);
+		Assert.equal("deposit", machineAction(state, 0).kind);
+		Assert.equal("buy", machineAction(state, 1).kind);
+		applyBuyLineMachine(state);
+		Assert.equal("upgrade", machineAction(state, 1).kind);
+		Assert.equal("locked", machineAction(state, 3).kind);
+	}
+
+	@Test
+	public promptActionRejectsBadIndexes() {
+		const state = lineWith(2);
+		for (const index of [-1, 0.5, 0 / 0, math.huge, LINE_MACHINES.size()]) {
+			Assert.equal("locked", machineAction(state, index).kind, `index ${index}`);
+		}
+	}
+
+	// ---- income ----
+
+	@Test
+	public incomeAppliesTheSellBonusAndRoundsDown() {
+		Assert.equal(15, lineIncome(10, 1.5));
+		Assert.equal(12, lineIncome(10, 1.25));
+		Assert.equal(10, lineIncome(10, 0 / 0));
+		Assert.equal(10, lineIncome(10, -2));
+		Assert.equal(10, lineIncome(10, math.huge));
+		Assert.equal(0, lineIncome(-5, 2));
+		Assert.equal(0, lineIncome(0 / 0, 2));
 	}
 }
 

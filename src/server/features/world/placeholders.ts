@@ -2,7 +2,7 @@
 // Why: the developer can play-test every system before the map author delivers models, and as soon as a
 // real tagged model exists, its placeholder is no longer built. Nothing here ships to live servers.
 import { CollectionService, RunService, Workspace } from "@rbxts/services";
-import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
+import { ATTRIBUTES, PLOTS, PLOT_ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, OreId } from "shared/config/ores";
 
 let folder: Folder | undefined;
@@ -231,4 +231,85 @@ export function buildChestPlaceholders(): void {
 			label,
 		});
 	});
+}
+
+/** A grey-box machine: a Model with one labelled box, the Stage attribute and a primary part. */
+function makeMachineBox(parent: Instance, stage: number, position: Vector3): void {
+	const model = new Instance("Model");
+	model.Name = `${stage < 10 ? "0" : ""}${stage}_Machine`;
+	const box = new Instance("Part");
+	box.Name = "Frame";
+	box.Anchored = true;
+	box.Size = new Vector3(6, 6, 6);
+	box.Position = position;
+	box.Color = Color3.fromHSV(stage / 12, 0.5, 0.9);
+	box.Material = Enum.Material.SmoothPlastic;
+	box.Parent = model;
+	makeLabel(box, `Машина ${stage}`);
+	model.PrimaryPart = box;
+	model.SetAttribute(PLOT_ATTRIBUTES.Stage, stage);
+	model.Parent = parent;
+}
+
+/** A plot like the map author's: Base, Factory/Machines (12 boxes) and Factory/Conveyors, or only a Base. */
+function makePlot(plotsFolder: Folder, index: number, origin: Vector3, withFactory: boolean): void {
+	const plot = new Instance("Model");
+	plot.Name = `Plot${index}`;
+	plot.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
+	plot.SetAttribute(PLOT_ATTRIBUTES.PlotIndex, index);
+	const base = new Instance("Part");
+	base.Name = PLOTS.Base;
+	base.Anchored = true;
+	base.Size = new Vector3(90, 1, 30);
+	base.Position = origin;
+	base.Color = Color3.fromRGB(120, 90, 70);
+	base.Parent = plot;
+	plot.PrimaryPart = base;
+	if (withFactory) {
+		const factory = new Instance("Folder");
+		factory.Name = PLOTS.Factory;
+		const machines = new Instance("Folder");
+		machines.Name = PLOTS.Machines;
+		machines.Parent = factory;
+		const conveyors = new Instance("Folder");
+		conveyors.Name = PLOTS.Conveyors;
+		conveyors.Parent = factory;
+		for (let stage = 1; stage <= 12; stage++) {
+			makeMachineBox(machines, stage, origin.add(new Vector3(-41 + (stage - 1) * 7.5, 3.5, 0)));
+		}
+		const belt = new Instance("Part");
+		belt.Name = "Conveyor_Straight";
+		belt.Anchored = true;
+		belt.Size = new Vector3(86, 0.4, 3);
+		belt.Position = origin.add(new Vector3(0, 0.7, 6));
+		belt.Color = Color3.fromRGB(60, 60, 65);
+		belt.SetAttribute("ConveyorFlow", 1);
+		belt.Parent = conveyors;
+		factory.Parent = plot;
+	}
+	plot.Parent = plotsFolder;
+}
+
+/**
+ * Two test plots when the place has no Map/Plots (our own test place): the first with a full grey-box factory, the
+ * second with only a Base, so the runtime copy of the factory is tested too.
+ */
+export function buildPlotPlaceholders(): void {
+	if (
+		!RunService.IsStudio() ||
+		Workspace.FindFirstChild(PLOTS.MapFolder)?.FindFirstChild(PLOTS.PlotsFolder) !== undefined
+	) {
+		return;
+	}
+	let map = Workspace.FindFirstChild(PLOTS.MapFolder);
+	if (map === undefined) {
+		map = new Instance("Folder");
+		map.Name = PLOTS.MapFolder;
+		map.Parent = Workspace;
+	}
+	const plotsFolder = new Instance("Folder");
+	plotsFolder.Name = PLOTS.PlotsFolder;
+	plotsFolder.Parent = map;
+	makePlot(plotsFolder, 1, new Vector3(-80, 0.5, -60), true);
+	makePlot(plotsFolder, 2, new Vector3(-80, 0.5, -100), false);
 }

@@ -8,17 +8,24 @@ import { startDrillService } from "server/features/drill";
 import { startEquipmentService } from "server/features/equipment";
 import { startLayersService } from "server/features/layers";
 import { startLeaderboardService } from "server/features/leaderboard";
+import { startLineService } from "server/features/line";
 import { startMiningService } from "server/features/mining";
 import { startMovementService } from "server/features/movement";
 import { startProfileService } from "server/features/profile";
 import { startSellingService } from "server/features/selling";
 import { startTravelService } from "server/features/travel";
 import { startUpgradesService } from "server/features/upgrades";
-import { buildBasePlaceholders, buildChestPlaceholders, buildLayerPlaceholders } from "server/features/world";
+import {
+	buildBasePlaceholders,
+	buildChestPlaceholders,
+	buildLayerPlaceholders,
+	buildPlotPlaceholders,
+} from "server/features/world";
 
 buildBasePlaceholders();
 buildLayerPlaceholders();
 buildChestPlaceholders();
+buildPlotPlaceholders();
 
 startMiningService();
 startUpgradesService();
@@ -27,6 +34,7 @@ startLayersService();
 startMovementService();
 startTravelService();
 startDrillService();
+startLineService();
 startChestsService();
 startEquipmentService();
 startDevtoolsService();
