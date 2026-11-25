@@ -115,7 +115,8 @@ function RecipeCard(props: {
 				size={TEXT_SIZES.small + 2}
 				order={3}
 			/>
-			<ButtonRow count={3} order={4}>
+			{/* The key names the row "Buttons": automated UI checks need a path React's numeric names cannot give. */}
+			<ButtonRow key="Buttons" count={3} order={4}>
 				<Button
 					text="+1"
 					onClick={() => enqueue(1)}
