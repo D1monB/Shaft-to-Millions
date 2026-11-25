@@ -39,7 +39,6 @@ function Row(props: { board: BoardId; row: LeaderboardRow; mine: boolean }) {
 	const { row } = props;
 	return (
 		<frame
-			key={`row_${row.rank}`}
 			BackgroundColor3={props.mine ? COLORS.gold : COLORS.well}
 			BackgroundTransparency={props.mine ? 0.55 : 0.2}
 			Size={new UDim2(1, 0, 0, ROW_HEIGHT)}
@@ -54,14 +53,16 @@ function Row(props: { board: BoardId; row: LeaderboardRow; mine: boolean }) {
 				SortOrder={Enum.SortOrder.LayoutOrder}
 				Padding={new UDim(0, 8)}
 			/>
-			<Label text={MEDALS[row.rank] ?? `${row.rank}.`} display width={new UDim(0, 36)} order={1} />
-			<Label text={row.name} bold width={new UDim(0.45, -30)} order={2} />
+			<Label text={MEDALS[row.rank] ?? `${row.rank}.`} display truncate width={new UDim(0, 40)} order={1} />
+			{/* Truncated, not wrapped: the row has a fixed height, a second line would cover the next row. */}
+			<Label text={row.name} bold truncate width={new UDim(0.45, -32)} order={2} />
 			<Label
 				text={scoreText(props.board, row.score)}
 				tone="gold"
 				display
+				truncate
 				align="right"
-				width={new UDim(0.55, -30)}
+				width={new UDim(0.55, -32)}
 				order={3}
 			/>
 		</frame>
