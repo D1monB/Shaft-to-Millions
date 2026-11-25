@@ -326,3 +326,7 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   bought machine raises the value. New players appear on the first free plot, owners on their plot (an opened camp
   still wins). The line state gained `intake` and `beltProgress` (v5 was not released, so no new schema version).
 - **Open:** AFK plot squatting (an idle owner keeps a plot until they leave); an idle timeout is a later task.
+- **Play-test on the friend's map (2026-11-25):** passed - plots claimed, belt and SellStation built, machine bought
+  and placed in its belt gap, ore dropped and sold (balance grew by the line price). Two fixes: the claim prompt moved
+  from the sign (50 studs up, unreachable) to a ground point at the plot spawn; players standing on a new machine are
+  moved aside. Not tested: save across sessions (Studio API access is off in the friend's experience).

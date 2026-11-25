@@ -39,8 +39,9 @@ import { logAbuse, onClientRequest } from "server/lib/remotes";
 import { Plot, buildBase, clearBase, loadPlots, placeMachine, slotCFrame, spawnPosition } from "./plots";
 
 const TICK_SECONDS = 1;
-/** How close (studs) to a plot's sign the player must stand to claim it. */
+/** How close (studs) to a plot's spawn point the player must stand to claim it. */
 const CLAIM_DISTANCE = 40;
+const CLAIM_POINT = "ClaimPoint";
 
 let plots: Plot[] = [];
 const plotOf = new Map<Player, Plot>();
@@ -82,6 +83,29 @@ function teleport(player: Player, position: Vector3): void {
 	}
 	character.PivotTo(new CFrame(position));
 	resetMovementBaseline(player);
+}
+
+/**
+ * A machine appears where its buyer is standing, and would knock them over. Moves everyone inside its footprint to
+ * just outside it. The footprint is taken as a circle: the map author's models are rotated, so their box axes do not
+ * line up with the world.
+ */
+function clearOfMachine(machine: Model): void {
+	const [box, size] = machine.GetBoundingBox();
+	const radius = math.max(size.X, size.Y, size.Z) / 2 + 2;
+	for (const player of Players.GetPlayers()) {
+		const root = getRootPosition(player);
+		if (root === undefined) {
+			continue;
+		}
+		const offset = new Vector3(root.X - box.Position.X, 0, root.Z - box.Position.Z);
+		if (offset.Magnitude >= radius) {
+			continue;
+		}
+		const direction = offset.Magnitude > 0.1 ? offset.Unit : new Vector3(1, 0, 0);
+		const side = box.Position.add(direction.mul(radius + 3));
+		teleport(player, new Vector3(side.X, root.Y + 1, side.Z));
+	}
 }
 
 // ---- invisible anchors for prompts on the plot (the intake and the slot of the next machine) ----
@@ -197,7 +221,10 @@ function buyNext(player: Player, plot: Plot): void {
 	data.money = result.money;
 	applyBuyLineMachine(data.line);
 	markDirty(player);
-	placeMachine(plot, data.line.machines.size());
+	const machine = placeMachine(plot, data.line.machines.size());
+	if (machine !== undefined) {
+		clearOfMachine(machine);
+	}
 	refreshBuySlot(plot, data.line.machines.size());
 	notify(player, `Збудовано: ${result.def.name}!`, "success");
 }
@@ -262,9 +289,16 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 
 // ---- plots: claim, release, spawn ----
 
+/**
+ * The invisible point the claim prompt sits on: at the plot's spawn, on the ground. Not on the sign: the map author's
+ * signs stand tens of studs high, so a prompt there could never be reached.
+ */
 function claimAnchor(plot: Plot): BasePart {
-	const sign = plot.model.FindFirstChild("Sign");
-	return sign !== undefined && sign.IsA("BasePart") ? sign : plot.base;
+	const existing = plot.model.FindFirstChild(CLAIM_POINT);
+	if (existing !== undefined && existing.IsA("BasePart")) {
+		return existing;
+	}
+	return makeAnchor(plot.model, CLAIM_POINT, new CFrame(spawnPosition(plot)));
 }
 
 function setClaimPromptEnabled(plot: Plot, enabled: boolean): void {
@@ -389,7 +423,7 @@ function onLoaded(player: Player): void {
 		return;
 	}
 	teleport(player, position);
-	notify(player, "Обери ділянку: підійди до таблички й натисни E.", "info");
+	notify(player, "Обери ділянку: стань біля її точки й натисни E.", "info");
 }
 
 export function startLineService(): void {
