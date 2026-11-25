@@ -10,10 +10,10 @@ import { PanelHost, ToastHost } from "client/lib/ui-kit";
 
 /**
  * The UI is designed at this screen height; smaller screens (phones) scale it down, big ones up.
- * Why 620 and not larger: the first play-test found the UI too small. A lower design height makes everything bigger on
- * every screen, and the floor of 0.7 keeps text readable on phones (it used to shrink to 0.6 and gave ~10 px text).
+ * 760 since the dark-glass restyle (decision 029): at 620 the UI was 1.4x on a PC screen and felt bulky. The floor of
+ * 0.7 keeps text readable on phones (it used to shrink to 0.6 and gave ~10 px text).
  */
-const DESIGN_HEIGHT = 620;
+const DESIGN_HEIGHT = 760;
 const MIN_SCALE = 0.7;
 const MAX_SCALE = 1.5;
 

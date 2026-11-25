@@ -19,12 +19,12 @@ import {
 import { PlayerView } from "shared/features/profile";
 import { formatPercent } from "shared/lib/format";
 import { useView } from "client/features/profile";
-import { ITEM_CARD_HEIGHT, RarityCard } from "client/lib/item-card";
+import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, RarityCard } from "client/lib/item-card";
 import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
 import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
-import { BuyButton, Button, COLORS, Card, FONTS, Label, TEXT_SIZES, Tabs } from "client/lib/ui-kit";
+import { BuyButton, Button, COLORS, CardStrip, FONTS, Label, StripSlot, TEXT_SIZES, Tabs } from "client/lib/ui-kit";
 
 const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: string; readonly icon: string }> = [
 	{ key: "pickaxe", label: "⛏️ Кирки", icon: "⛏️" },
@@ -33,7 +33,7 @@ const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: string; read
 ];
 
 /** Footer: the buy / equip button or a note. */
-const FOOTER_HEIGHT = 64;
+const FOOTER_HEIGHT = 56;
 const BASE_WALK_SPEED = 16;
 
 /** Card colours climb the rarity ramp along the catalogue, so the best gear looks the best. */
@@ -183,18 +183,18 @@ function ShopPanel() {
 				size={TEXT_SIZES.small + 1}
 				order={2}
 			/>
-			<Card order={3}>
-				<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 0)} AutomaticSize={Enum.AutomaticSize.Y}>
-					<uigridlayout
-						CellSize={new UDim2(1 / 3, -8, 0, ITEM_CARD_HEIGHT + FOOTER_HEIGHT)}
-						CellPadding={new UDim2(0, 12, 0, 14)}
-						SortOrder={Enum.SortOrder.LayoutOrder}
-					/>
-					{items.map((def, index) => (
-						<GearCard key={def.id} slot={tab} icon={icon} index={index} view={view} />
-					))}
-				</frame>
-			</Card>
+			<CardStrip cardWidth={ITEM_CARD_WIDTH} cardHeight={ITEM_CARD_HEIGHT + FOOTER_HEIGHT} order={3}>
+				{items.map((def, index) => (
+					<StripSlot
+						key={def.id}
+						width={ITEM_CARD_WIDTH}
+						height={ITEM_CARD_HEIGHT + FOOTER_HEIGHT}
+						order={index}
+					>
+						<GearCard slot={tab} icon={icon} index={index} view={view} />
+					</StripSlot>
+				))}
+			</CardStrip>
 		</>
 	);
 }

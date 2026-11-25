@@ -24,44 +24,60 @@ import { setClientSpeedBonus } from "client/features/drill";
 import { registerHudButton, registerHudStat } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { setClientSellMultiplier } from "client/features/selling";
-import { ITEM_CARD_FOOTER, ITEM_CARD_HEIGHT, ItemCard } from "client/lib/item-card";
+import { ITEM_CARD_FOOTER, ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, ItemCard } from "client/lib/item-card";
 import { openPanel } from "client/lib/panels";
 import { sendToServer } from "client/lib/remotes";
-import { Button, ButtonRow, COLORS, Card, Label, TEXT_SIZES, Tabs, rowItemWidth } from "client/lib/ui-kit";
+import {
+	Button,
+	ButtonRow,
+	COLORS,
+	CardStrip,
+	Label,
+	StripSlot,
+	TEXT_SIZES,
+	Tabs,
+	rowItemWidth,
+} from "client/lib/ui-kit";
 
 function bonusesOf(view: PlayerView) {
 	return computeBonuses(view.inventory, view.equipped);
 }
 
+/** The active bonuses in one short line, so the item row fits without scrolling down. */
 function Summary(props: { view: PlayerView }) {
 	const view = props.view;
 	const bonuses = bonusesOf(view);
 	const base = shoesFor(view.gear.equipped.shoes).walkSpeed;
 	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
+	const speed = math.floor(walkSpeedFor(view.gear.equipped.shoes, bonuses.speedBonus));
+	const sell = `💰 Продаж ×${string.format("%.2f", bonuses.sellMultiplier)}`;
+	const walk = `👟 Швидкість ${base} → ${speed}`;
+	const ore = `⛏️ Руда ~${string.format("%.2f", 1 + bonuses.yieldBonus)} шт. (${hitsRequired(ORES.iron.hardness, pickaxe.power)} уд. по залізу)`;
 	return (
-		<Card order={1} accent={COLORS.gold}>
-			<Label text="Активні бонуси" display={true} tone="gold" size={TEXT_SIZES.large} order={1} />
-			<Label
-				text={`💰 Продаж ×${string.format("%.2f", bonuses.sellMultiplier)} (улюбленці +${formatPercent(bonuses.petBonus)})`}
-				order={2}
-			/>
+		<>
+			<Label text={`${sell}   ·   ${walk}   ·   ${ore}`} tone="gold" size={TEXT_SIZES.small + 1} order={1} />
 			{bonuses.petCapped && (
 				<Label
 					text={`Досягнуто стелі бонусу улюбленців (+${formatPercent(BONUS_CAPS.pets)}).`}
 					tone="danger"
 					size={TEXT_SIZES.small}
-					order={3}
+					order={2}
 				/>
 			)}
-			<Label
-				text={`👟 Швидкість ${base}, з аурою ${math.floor(walkSpeedFor(view.gear.equipped.shoes, bonuses.speedBonus))}`}
-				order={4}
-			/>
-			<Label
-				text={`⛏️ Руда з блоку: ~${string.format("%.2f", 1 + bonuses.yieldBonus)} шт. (${hitsRequired(ORES.iron.hardness, pickaxe.power)} ударів по залізу)`}
-				order={5}
-			/>
-		</Card>
+		</>
+	);
+}
+
+/** Pinned under the item row: one tap puts on the best items. */
+function EquipmentFooter() {
+	const view = useView();
+	return (
+		<Button
+			text="⭐ Надіти найкраще"
+			onClick={() => sendToServer(EQUIP_BEST_REMOTE)}
+			disabled={view === undefined || view.inventory.size() === 0}
+			order={1}
+		/>
 	);
 }
 
@@ -133,12 +149,6 @@ function EquipmentPanel() {
 	return (
 		<>
 			<Summary view={view} />
-			<Button
-				text="⭐ Надіти найкраще"
-				onClick={() => sendToServer(EQUIP_BEST_REMOTE)}
-				disabled={view.inventory.size() === 0}
-				order={2}
-			/>
 			<Tabs
 				items={TABS.map((entry) => ({
 					key: entry.key,
@@ -162,18 +172,18 @@ function EquipmentPanel() {
 					order={5}
 				/>
 			) : (
-				<Card order={5}>
-					<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 0)} AutomaticSize={Enum.AutomaticSize.Y}>
-						<uigridlayout
-							CellSize={new UDim2(1 / 3, -8, 0, ITEM_CARD_HEIGHT + ITEM_CARD_FOOTER)}
-							CellPadding={new UDim2(0, 12, 0, 14)}
-							SortOrder={Enum.SortOrder.LayoutOrder}
-						/>
-						{groups.map((group, index) => (
-							<InventoryCard key={`${group.item}_${group.equipped}`} group={group} order={index} />
-						))}
-					</frame>
-				</Card>
+				<CardStrip cardWidth={ITEM_CARD_WIDTH} cardHeight={ITEM_CARD_HEIGHT + ITEM_CARD_FOOTER} order={5}>
+					{groups.map((group, index) => (
+						<StripSlot
+							key={`${group.item}_${group.equipped}`}
+							width={ITEM_CARD_WIDTH}
+							height={ITEM_CARD_HEIGHT + ITEM_CARD_FOOTER}
+							order={index}
+						>
+							<InventoryCard group={group} order={index} />
+						</StripSlot>
+					))}
+				</CardStrip>
 			)}
 		</>
 	);
@@ -186,7 +196,14 @@ export function startEquipmentController(): void {
 	registerHudButton(
 		"🎒",
 		"Речі",
-		() => openPanel({ key: "equipment", title: "Екіпірування", icon: "🎒", render: () => <EquipmentPanel /> }),
+		() =>
+			openPanel({
+				key: "equipment",
+				title: "Екіпірування",
+				icon: "🎒",
+				render: () => <EquipmentPanel />,
+				footer: () => <EquipmentFooter />,
+			}),
 		10,
 		"crystal",
 	);

@@ -7,13 +7,15 @@ export { CapsuleBadge, MENU_BUTTON_SIZE, MenuButton, STAT_TILE_SIZE, StatTile } 
 export { CurrencyLabel } from "./currency-label";
 export { PanelHost, ToastHost } from "./hosts";
 export { Label } from "./label";
-export { ButtonRow, Card, Stack, rowItemWidth } from "./layout";
+export { ButtonRow, Card, CardStrip, Stack, StripSlot, rowItemWidth } from "./layout";
 export { Panel } from "./panel";
 export { ProgressBar } from "./progress-bar";
 export { Tabs } from "./tabs";
 export type { TabItem } from "./tabs";
 export {
+	ACCENTS,
 	COLORS,
+	GLASS_TRANSPARENCY,
 	DEFAULT_PLAYER_COLOR,
 	FONTS,
 	DEPTH,
@@ -25,4 +27,4 @@ export {
 	toneColor,
 } from "./theme";
 export { rampSequence } from "./theme";
-export type { ButtonVariant, Ramp, Tone } from "./theme";
+export type { Accent, ButtonVariant, Ramp, Tone } from "./theme";

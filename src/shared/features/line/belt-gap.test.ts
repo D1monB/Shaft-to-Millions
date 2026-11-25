@@ -24,7 +24,15 @@ class BeltGapTests {
 
 	@Test
 	public reversedPieceEndsAreNormalised() {
-		const gap = gapAround(0, [{ from: -4, to: -12 }, { from: 14, to: 6 }], 3, 50);
+		const gap = gapAround(
+			0,
+			[
+				{ from: -4, to: -12 },
+				{ from: 14, to: 6 },
+			],
+			3,
+			50,
+		);
 		Assert.notUndefined(gap);
 		if (gap !== undefined) {
 			near(gap.from, -4);
@@ -60,7 +68,15 @@ class BeltGapTests {
 		Assert.undefined(gapAround(0, [], -1, 50));
 		Assert.undefined(gapAround(0, [], 0, 50));
 		// Broken pieces are skipped, not trusted.
-		const gap = gapAround(0, [{ from: 0 / 0, to: 1 }, { from: -math.huge, to: 2 }], 3, 50);
+		const gap = gapAround(
+			0,
+			[
+				{ from: 0 / 0, to: 1 },
+				{ from: -math.huge, to: 2 },
+			],
+			3,
+			50,
+		);
 		Assert.notUndefined(gap);
 		if (gap !== undefined) {
 			near(gap.from, -3);

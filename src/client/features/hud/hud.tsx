@@ -76,11 +76,11 @@ export function registerHudButton(
 
 // ---------------------------------------------------------------- top centre: money and bag
 
-const MONEY_WIDTH = 260;
-const BAG_WIDTH = 340;
-const CAPSULE_HEIGHT = 56;
+const MONEY_WIDTH = 220;
+const BAG_WIDTH = 280;
+const CAPSULE_HEIGHT = 46;
 /** Room on the left of a capsule for the badge that sticks out of it. */
-const BADGE_ROOM = 58;
+const BADGE_ROOM = 48;
 
 function Capsule(props: React.PropsWithChildren<{ order: number; width: number }>) {
 	return (
@@ -110,7 +110,7 @@ function Capsule(props: React.PropsWithChildren<{ order: number; width: number }
 function MoneyCapsule(props: { money: number }) {
 	return (
 		<Capsule order={1} width={MONEY_WIDTH}>
-			<CapsuleBadge icon="$" ramp={RAMPS.coin} size={62} round={true} rotation={-6} />
+			<CapsuleBadge icon="$" ramp={RAMPS.coin} size={52} round={true} rotation={-6} />
 			<frame
 				BackgroundTransparency={1}
 				Position={new UDim2(0, BADGE_ROOM, 0, 4)}
@@ -130,7 +130,7 @@ function MoneyCapsule(props: { money: number }) {
 					TextXAlignment={Enum.TextXAlignment.Left}
 					LayoutOrder={1}
 				/>
-				<CurrencyLabel value={props.money} size={30} order={2} />
+				<CurrencyLabel value={props.money} size={25} order={2} />
 			</frame>
 		</Capsule>
 	);
@@ -140,7 +140,7 @@ function BagCapsule(props: { used: number; capacity: number }) {
 	const full = props.used >= props.capacity;
 	return (
 		<Capsule order={2} width={BAG_WIDTH}>
-			<CapsuleBadge icon="🎒" ramp={RAMPS.close} size={58} rotation={3} />
+			<CapsuleBadge icon="🎒" ramp={RAMPS.close} size={48} rotation={3} />
 			<frame
 				AnchorPoint={new Vector2(0, 0.5)}
 				BackgroundTransparency={1}

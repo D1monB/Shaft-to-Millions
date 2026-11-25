@@ -119,8 +119,8 @@ export function computeFills(
 	machines: ReadonlyMap<number, Model>,
 	walkway: Vector3,
 ): Map<number, SlotFill> {
-	const belt = (factory.FindFirstChild(PLOTS.Conveyors)?.GetDescendants() ?? []).filter(
-		(child): child is BasePart => child.IsA("BasePart"),
+	const belt = (factory.FindFirstChild(PLOTS.Conveyors)?.GetDescendants() ?? []).filter((child): child is BasePart =>
+		child.IsA("BasePart"),
 	);
 	const fills = new Map<number, SlotFill>();
 	for (const [stage, machine] of machines) {

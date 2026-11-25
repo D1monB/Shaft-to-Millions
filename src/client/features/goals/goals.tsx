@@ -77,9 +77,9 @@ export function startGoalsController(): void {
 	registerGoalSource(gearGoals);
 }
 
-const BANNER_WIDTH = 480;
-const BANNER_HEIGHT = 70;
-const BADGE_ROOM = 60;
+const BANNER_WIDTH = 420;
+const BANNER_HEIGHT = 56;
+const BADGE_ROOM = 50;
 
 /** Escapes text for RichText, so an item name can never break the markup. */
 function escapeRich(text: string): string {
@@ -131,7 +131,7 @@ export function GoalBanner() {
 				<uicorner CornerRadius={RADIUS.round} />
 				<uistroke Color={COLORS.gold} Thickness={STROKE.thick} />
 				<uigradient Rotation={90} Color={rampSequence(RAMPS.capsule)} />
-				<CapsuleBadge icon="🎯" ramp={RAMPS.close} size={52} round={true} />
+				<CapsuleBadge icon="🎯" ramp={RAMPS.close} size={44} round={true} />
 				<frame
 					BackgroundTransparency={1}
 					Position={new UDim2(0, BADGE_ROOM, 0, 10)}

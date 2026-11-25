@@ -15,7 +15,7 @@ import {
 import { formatCount, formatPercent } from "shared/lib/format";
 import { registerHudStat } from "client/features/hud";
 import { useView } from "client/features/profile";
-import { ITEM_CARD_HEIGHT, ItemCard } from "client/lib/item-card";
+import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, ItemCard } from "client/lib/item-card";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText, rarityColor } from "client/lib/item-display";
 import { closePanel, openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
@@ -26,12 +26,13 @@ import {
 	BuyButton,
 	Button,
 	COLORS,
-	Card,
+	CardStrip,
 	FONTS,
 	Label,
 	ProgressBar,
 	RADIUS,
 	STROKE,
+	StripSlot,
 	Sunburst,
 	TEXT_SIZES,
 	rampSequence,
@@ -46,11 +47,11 @@ function robuxAllowed(): boolean {
 function StoragePill(props: { count: number; order: number }) {
 	const full = props.count >= INVENTORY_LIMIT;
 	return (
-		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 40)} LayoutOrder={props.order}>
+		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 30)} LayoutOrder={props.order}>
 			<frame
 				AnchorPoint={new Vector2(0.5, 0.5)}
 				Position={new UDim2(0.5, 0, 0.5, 0)}
-				Size={new UDim2(0, 0, 0, 40)}
+				Size={new UDim2(0, 0, 0, 30)}
 				AutomaticSize={Enum.AutomaticSize.X}
 				BackgroundColor3={COLORS.well}
 			>
@@ -86,10 +87,38 @@ function StoragePill(props: { count: number; order: number }) {
 	);
 }
 
+/** The odds: every reward as a card with its chance, in one row that scrolls left-right. */
 function ChestPanel(props: { chestId: ChestId }) {
 	const view = useView();
 	if (view === undefined) {
 		return <Label text="Завантаження..." tone="muted" />;
+	}
+	const chest = CHESTS[props.chestId];
+	return (
+		<>
+			<Label text={`✨ Що може випасти · ${chest.description}`} tone="muted" size={TEXT_SIZES.small} order={1} />
+			<CardStrip cardWidth={ITEM_CARD_WIDTH} cardHeight={ITEM_CARD_HEIGHT} order={2}>
+				{chestOdds(props.chestId).map((line, index) => (
+					<StripSlot key={`odds_${index}`} width={ITEM_CARD_WIDTH} height={ITEM_CARD_HEIGHT} order={index}>
+						<ItemCard
+							item={line.item}
+							topRight={{
+								text: formatPercent(line.chance),
+								color: RARITY_LIGHT[ITEMS[line.item].rarity],
+							}}
+						/>
+					</StripSlot>
+				))}
+			</CardStrip>
+		</>
+	);
+}
+
+/** Pinned under the odds, never scrolled away: storage, the open button and the Robux line. */
+function ChestFooter(props: { chestId: ChestId }) {
+	const view = useView();
+	if (view === undefined) {
+		return <></>;
 	}
 	const chest = CHESTS[props.chestId];
 	const full = view.inventory.size() >= INVENTORY_LIMIT;
@@ -139,29 +168,6 @@ function ChestPanel(props: { chestId: ChestId }) {
 
 	return (
 		<>
-			<Label text="✨ Що може випасти (шанси):" display={true} size={TEXT_SIZES.large} order={1} />
-			<Label text={chest.description} tone="muted" size={TEXT_SIZES.small + 1} order={2} />
-			<Card order={3}>
-				<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 0)} AutomaticSize={Enum.AutomaticSize.Y}>
-					<uigridlayout
-						CellSize={new UDim2(1 / 3, -8, 0, ITEM_CARD_HEIGHT)}
-						CellPadding={new UDim2(0, 12, 0, 14)}
-						HorizontalAlignment={Enum.HorizontalAlignment.Center}
-						SortOrder={Enum.SortOrder.LayoutOrder}
-					/>
-					{chestOdds(props.chestId).map((line, index) => (
-						<ItemCard
-							key={`odds_${index}`}
-							item={line.item}
-							topRight={{
-								text: formatPercent(line.chance),
-								color: RARITY_LIGHT[ITEMS[line.item].rarity],
-							}}
-							order={index}
-						/>
-					))}
-				</frame>
-			</Card>
 			<StoragePill count={view.inventory.size()} order={4} />
 			<BuyButton
 				price={chest.dollarPrice}
@@ -169,8 +175,8 @@ function ChestPanel(props: { chestId: ChestId }) {
 				verb="Відкрити"
 				icon="✨"
 				blocked={full}
-				height={66}
-				textSize={TEXT_SIZES.title - 2}
+				height={52}
+				textSize={TEXT_SIZES.large}
 				onClick={() => sendToServer(OPEN_CHEST_REMOTE, props.chestId)}
 				order={5}
 			/>
@@ -179,12 +185,17 @@ function ChestPanel(props: { chestId: ChestId }) {
 	);
 }
 
+/** The terminal colour of each chest on the friend's map: pets pink, pickaxe aura violet, speed aura teal. */
+const CHEST_ACCENTS = { pet_chest: "pets", pickaxe_chest: "pickaxeAura", speed_chest: "speedAura" } as const;
+
 function openChest(chestId: ChestId): void {
 	openPanel({
 		key: `chest_${chestId}`,
 		title: CHESTS[chestId].name,
 		icon: "🎁",
+		accent: CHEST_ACCENTS[chestId],
 		render: () => <ChestPanel chestId={chestId} />,
+		footer: () => <ChestFooter chestId={chestId} />,
 	});
 }
 

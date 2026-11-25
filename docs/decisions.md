@@ -339,3 +339,14 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   never pulls back.
 - **Why:** the developer found walking too slow for a deep shaft, and the pull-back fought Studio tools (moving or
   scaling a character during Play) and could catch players carried by the belt. Live servers still pull back.
+
+## 029. UI restyle: "dark glass + neon", left-right card rows (2026-11-25)
+
+- **What:** the timber "juicy" theme is replaced by translucent graphite panels with a thin neon outline in the
+  section colour (pets pink, pickaxe aura violet, speed aura teal, default orange), a compact title on the left and a
+  small close button. Cards are dark with the rarity colour glowing from the top. The UI is about 30% smaller on a PC
+  (design height 760 instead of 620, smaller text, strokes, depth and HUD); phones keep the 0.7 floor. Card lists
+  (chest odds, shop, equipment) are one row that scrolls left-right; the main action of a panel (open chest, equip
+  best) is pinned under the content (`PanelSpec.footer`) and never scrolls away.
+- **Why:** the developer found the UI bulky and the vertical grids awkward (opening a chest needed scrolling down),
+  and the brown timber clashed with the friend's map (light concrete, orange rocks, neon terminals).
