@@ -4,14 +4,20 @@ export {
 	advance,
 	cancelLast,
 	collect,
+	craftSeconds,
 	depositAll,
 	enqueue,
 	machineProgress,
 	maxCrafts,
 	newMachineState,
+	nextMachineUpgrade,
+	nextWarehouseUpgrade,
+	queueLimitOf,
+	setSpeedLevel,
 	simulateProcessing,
 	storageFree,
 	storageTotal,
+	warehouseCapacity,
 } from "./factory";
-export type { Counts, EnqueueResult, MachineProgress, MachineState, ProcessingEstimate } from "./factory";
+export type { Counts, EnqueueResult, MachineProgress, MachineState, NextUpgrade, ProcessingEstimate } from "./factory";
 export * from "./network";

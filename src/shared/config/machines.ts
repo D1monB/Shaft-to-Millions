@@ -26,8 +26,6 @@ export interface MachineDef {
 	readonly name: string;
 	readonly description: string;
 	readonly price: number;
-	/** Max crafts waiting in the queue (including the one in progress). */
-	readonly queueLimit: number;
 }
 
 export const MACHINES: { readonly [K in MachineId]: MachineDef } = {
@@ -35,13 +33,11 @@ export const MACHINES: { readonly [K in MachineId]: MachineDef } = {
 		name: "Горн",
 		description: "Переплавляє руду на злитки. Злиток дорожчий за руду, з якої зроблений.",
 		price: 500,
-		queueLimit: 10,
 	},
 	workbench: {
 		name: "Верстат",
 		description: "Робить зі злитків деталі. Найдорожчий товар на ринку.",
 		price: 3_000,
-		queueLimit: 10,
 	},
 };
 
@@ -91,5 +87,66 @@ export function recipesOf(machine: MachineId): RecipeId[] {
 	return RECIPE_IDS.filter((id) => RECIPES[id].machine === machine);
 }
 
-/** Warehouse capacity (all resources together). Kept modest so selling and processing both matter. */
-export const WAREHOUSE_CAPACITY = 1_000;
+/** One step of an upgrade track. Level 1 is the base (price 0); buying level N costs `levels[N - 1].price`. */
+export interface UpgradeLevel {
+	readonly price: number;
+	/** What the level gives: a speed multiplier, a queue size or a warehouse capacity (see the table using it). */
+	readonly value: number;
+}
+
+export type UpgradeTrack = "speed" | "queue";
+
+/**
+ * Machine upgrades. Speed: value = how many times faster crafts run. Queue: value = max crafts waiting in the queue
+ * (including the one in progress). Prices are first guesses to be tuned after the first play-test (docs/balance-tuning.md).
+ */
+export const MACHINE_UPGRADES: {
+	readonly [K in MachineId]: {
+		readonly speed: ReadonlyArray<UpgradeLevel>;
+		readonly queue: ReadonlyArray<UpgradeLevel>;
+	};
+} = {
+	furnace: {
+		speed: [
+			{ price: 0, value: 1 },
+			{ price: 1_500, value: 1.25 },
+			{ price: 6_000, value: 1.6 },
+			{ price: 25_000, value: 2 },
+		],
+		queue: [
+			{ price: 0, value: 10 },
+			{ price: 1_000, value: 15 },
+			{ price: 4_000, value: 20 },
+			{ price: 15_000, value: 30 },
+		],
+	},
+	workbench: {
+		speed: [
+			{ price: 0, value: 1 },
+			{ price: 8_000, value: 1.25 },
+			{ price: 30_000, value: 1.6 },
+			{ price: 120_000, value: 2 },
+		],
+		queue: [
+			{ price: 0, value: 10 },
+			{ price: 5_000, value: 15 },
+			{ price: 20_000, value: 20 },
+			{ price: 80_000, value: 30 },
+		],
+	},
+};
+
+/**
+ * Warehouse capacity per level (all resources together). Level 1 is kept modest so selling and processing both matter;
+ * upgrades let a player who invests in the factory keep more stock.
+ */
+export const WAREHOUSE_LEVELS: ReadonlyArray<UpgradeLevel> = [
+	{ price: 0, value: 1_000 },
+	{ price: 2_000, value: 2_000 },
+	{ price: 10_000, value: 4_000 },
+	{ price: 50_000, value: 8_000 },
+];
+
+export function isUpgradeTrack(value: unknown): value is UpgradeTrack {
+	return value === "speed" || value === "queue";
+}

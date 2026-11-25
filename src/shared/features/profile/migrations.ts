@@ -15,7 +15,30 @@ export interface Migration {
  * Example for later (bumping CURRENT_SCHEMA_VERSION to 2):
  *   { from: 1, apply: (data) => { data.gold = data.coins; data.coins = undefined; } }
  */
-export const MIGRATIONS: ReadonlyArray<Migration> = [];
+export const MIGRATIONS: ReadonlyArray<Migration> = [
+	{
+		// Version 2 (machine upgrades): adds levels.warehouse and each machine's speedLevel/queueLevel, and raises the
+		// machine queue cap. The bump itself matters: an older server must refuse a v2 save instead of clamping the
+		// longer queue and deleting crafts.
+		from: 1,
+		apply: (data) => {
+			const levels = data.levels;
+			if (typeIs(levels, "table") && (levels as PlainTable).warehouse === undefined) {
+				(levels as PlainTable).warehouse = 1;
+			}
+			const machines = data.machines;
+			if (typeIs(machines, "table")) {
+				for (const [, machine] of pairs(machines as PlainTable)) {
+					if (typeIs(machine, "table")) {
+						const fields = machine as PlainTable;
+						fields.speedLevel = fields.speedLevel ?? 1;
+						fields.queueLevel = fields.queueLevel ?? 1;
+					}
+				}
+			}
+		},
+	},
+];
 
 export type MigrationFailure = "invalid-version" | "future-version" | "migration-failed";
 

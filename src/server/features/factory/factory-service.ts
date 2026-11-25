@@ -4,9 +4,9 @@ import {
 	MACHINE_IDS,
 	MachineId,
 	RECIPES,
-	WAREHOUSE_CAPACITY,
 	isMachineId,
 	isRecipeId,
+	isUpgradeTrack,
 } from "shared/config/machines";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORE_IDS } from "shared/config/ores";
@@ -20,13 +20,20 @@ import {
 	FACTORY_DISTANCE,
 	MAX_ENQUEUE_PER_REQUEST,
 	SELL_WAREHOUSE_REMOTE,
+	UPGRADE_MACHINE_REMOTE,
+	UPGRADE_WAREHOUSE_REMOTE,
 	advance,
 	cancelLast,
 	collect,
 	depositAll,
 	enqueue,
 	newMachineState,
+	nextMachineUpgrade,
+	nextWarehouseUpgrade,
+	queueLimitOf,
+	setSpeedLevel,
 	storageTotal,
+	warehouseCapacity,
 } from "shared/features/factory";
 import { ProfileData } from "shared/features/profile";
 import { previewSale } from "shared/features/selling";
@@ -77,11 +84,11 @@ function handleDeposit(player: Player, args: Array<unknown>): void {
 		logAbuse(player, "DepositBag away from the warehouse");
 		return;
 	}
-	const moved = depositAll(data.bag, data.warehouse, ORE_IDS, WAREHOUSE_CAPACITY);
+	const moved = depositAll(data.bag, data.warehouse, ORE_IDS, warehouseCapacity(data.levels.warehouse));
 	if (moved > 0) {
 		markDirty(player);
 		notify(player, `На склад: ${moved} шт.`, "success");
-	} else if (storageTotal(data.warehouse) >= WAREHOUSE_CAPACITY) {
+	} else if (storageTotal(data.warehouse) >= warehouseCapacity(data.levels.warehouse)) {
 		notify(player, "Склад повний. Продай або переплав щось.", "error");
 	}
 }
@@ -174,7 +181,7 @@ function handleEnqueue(player: Player, args: Array<unknown>): void {
 		recipeId,
 		count,
 		now(),
-		MACHINES[RECIPES[recipeId].machine].queueLimit,
+		queueLimitOf(RECIPES[recipeId].machine, state.queueLevel),
 	);
 	if (result.ok) {
 		markDirty(player);
@@ -194,7 +201,7 @@ function handleCollect(player: Player, args: Array<unknown>): void {
 	if (state === undefined) {
 		return;
 	}
-	const moved = collect(state, data.warehouse, WAREHOUSE_CAPACITY);
+	const moved = collect(state, data.warehouse, warehouseCapacity(data.levels.warehouse));
 	markDirty(player);
 	if (moved > 0) {
 		notify(player, `На склад: ${moved} шт.`, "success");
@@ -212,11 +219,76 @@ function handleCancel(player: Player, args: Array<unknown>): void {
 	if (state === undefined) {
 		return;
 	}
-	if (cancelLast(state, data.warehouse, WAREHOUSE_CAPACITY)) {
+	if (cancelLast(state, data.warehouse, warehouseCapacity(data.levels.warehouse))) {
 		markDirty(player);
 	} else {
 		notify(player, "Нема чого скасувати (або склад повний).", "info");
 	}
+}
+
+// ---------------------------------------------------------------- upgrades
+
+function handleUpgradeMachine(player: Player, args: Array<unknown>): void {
+	const [machineId, track] = args;
+	if (args.size() !== 2 || !isMachineId(machineId) || !isUpgradeTrack(track)) {
+		logAbuse(player, "bad UpgradeMachine arguments");
+		return;
+	}
+	const data = getProfileData(player);
+	if (data === undefined) {
+		return;
+	}
+	// Also settles finished crafts at the OLD speed before the level changes.
+	const state = ownedMachineNearby(player, data, machineId, "UpgradeMachine");
+	if (state === undefined) {
+		return;
+	}
+	const step = nextMachineUpgrade(machineId, state, track);
+	if (step === undefined) {
+		notify(player, "Це покращення вже на максимумі.", "info");
+		return;
+	}
+	if (data.money < step.price) {
+		notify(player, "Не вистачає грошей.", "error");
+		return;
+	}
+	// Same frame, no yields: the money goes and the level rises together.
+	data.money -= step.price;
+	if (track === "speed") {
+		setSpeedLevel(state, step.level, now());
+	} else {
+		state.queueLevel = step.level;
+	}
+	markDirty(player);
+	notify(player, `Покращено: ${MACHINES[machineId].name}, рівень ${step.level}!`, "success");
+}
+
+function handleUpgradeWarehouse(player: Player, args: Array<unknown>): void {
+	if (args.size() !== 0) {
+		logAbuse(player, "bad UpgradeWarehouse arguments");
+		return;
+	}
+	const data = getProfileData(player);
+	if (data === undefined) {
+		return;
+	}
+	if (!nearWarehouse(player)) {
+		logAbuse(player, "UpgradeWarehouse away from the warehouse");
+		return;
+	}
+	const step = nextWarehouseUpgrade(data.levels.warehouse);
+	if (step === undefined) {
+		notify(player, "Склад вже найбільший.", "info");
+		return;
+	}
+	if (data.money < step.price) {
+		notify(player, "Не вистачає грошей.", "error");
+		return;
+	}
+	data.money -= step.price;
+	data.levels.warehouse = step.level;
+	markDirty(player);
+	notify(player, `Склад збільшено: до ${step.value} місць!`, "success");
 }
 
 // ---------------------------------------------------------------- lifecycle
@@ -230,6 +302,8 @@ export function startFactoryService(): void {
 	onClientRequest(ENQUEUE_REMOTE, new RateLimiter(10, 4), handleEnqueue);
 	onClientRequest(COLLECT_REMOTE, new RateLimiter(6, 2), handleCollect);
 	onClientRequest(CANCEL_REMOTE, new RateLimiter(10, 4), handleCancel);
+	onClientRequest(UPGRADE_MACHINE_REMOTE, new RateLimiter(4, 1), handleUpgradeMachine);
+	onClientRequest(UPGRADE_WAREHOUSE_REMOTE, new RateLimiter(3, 1), handleUpgradeWarehouse);
 
 	const addWarehousePrompt = (instance: Instance) => ensurePrompt(instance, "Відкрити", "Склад");
 	CollectionService.GetTagged(TAGS.Warehouse).forEach(addWarehousePrompt);
