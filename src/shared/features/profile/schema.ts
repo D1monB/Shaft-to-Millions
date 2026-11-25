@@ -90,6 +90,8 @@ const profileDataShape = t.interface({
 	deepestMeters: t.integer,
 	drills: t.table,
 	line: t.interface({
+		intake: t.array(t.string),
+		beltProgress: t.number,
 		machines: t.array(
 			t.interface({
 				speed: t.integer,

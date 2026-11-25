@@ -1,13 +1,12 @@
-// The tycoon line on the server (decisions 027): plot ownership, buying machines and dropping ore through the
-// ProximityPrompts on the machine models, upgrades through a remote, the production tick and the offline run.
-// Everything that moves value happens here; the client only sees the result in its view and the machine attributes.
+// The tycoon line on the server (decisions 027): choosing a plot, building it for its owner, buying machines and
+// dropping ore through ProximityPrompts, upgrades through a remote, the production tick and the offline run.
+// Everything that moves value happens here; the client sees the result in its view and in the built plot.
 import { Players } from "@rbxts/services";
 import { LINE_MACHINES } from "shared/config/line";
 import { PLOT_ATTRIBUTES } from "shared/config/map-contract";
 import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
 import {
 	LINE_DISTANCE,
-	LineState,
 	UPGRADE_LINE_MACHINE_REMOTE,
 	advanceLine,
 	advanceOffline,
@@ -16,7 +15,6 @@ import {
 	depositOre,
 	isLineIdle,
 	lineIncome,
-	machineAction,
 	tryBuyLineMachine,
 	tryLineUpgrade,
 } from "shared/features/line";
@@ -25,6 +23,8 @@ import { formatMoney } from "shared/lib/format";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { MAX_COUNTER } from "shared/lib/repair";
 import { isIntegerInRange } from "shared/lib/validate";
+import { hasRespawnCamp } from "server/features/layers";
+import { resetMovementBaseline } from "server/features/movement";
 import {
 	getLoadedPlayers,
 	getProfileData,
@@ -34,14 +34,13 @@ import {
 } from "server/features/profile";
 import { getSellMultiplier } from "server/features/selling";
 import { notify } from "server/lib/notify";
-import { getInstancePosition, getRootPosition } from "server/lib/proximity";
+import { getRootPosition } from "server/lib/proximity";
 import { logAbuse, onClientRequest } from "server/lib/remotes";
-import { Plot, loadPlots } from "./plots";
+import { Plot, buildBase, clearBase, loadPlots, placeMachine, slotCFrame, spawnPosition } from "./plots";
 
 const TICK_SECONDS = 1;
-
-/** Name of the prompt this service creates, so a prompt the map author adds never blocks ours. */
-const PROMPT_NAME = "LineMachinePrompt";
+/** How close (studs) to a plot's sign the player must stand to claim it. */
+const CLAIM_DISTANCE = 40;
 
 let plots: Plot[] = [];
 const plotOf = new Map<Player, Plot>();
@@ -55,6 +54,11 @@ function nowUnix(): number {
 	return os.time();
 }
 
+function ownerOf(plot: Plot): number {
+	const owner = plot.model.GetAttribute(PLOT_ATTRIBUTES.Owner);
+	return typeIs(owner, "number") ? owner : 0;
+}
+
 /** Adds line income (after the pet bonus) to money and lifetime earnings. Returns what was added. */
 function credit(player: Player, data: ProfileData, money: number): number {
 	const income = lineIncome(money, getSellMultiplier(player));
@@ -65,55 +69,107 @@ function credit(player: Player, data: ProfileData, money: number): number {
 	return income;
 }
 
-function isNearMachine(player: Player, plot: Plot, stage: number): boolean {
-	const machine = plot.machines.get(stage);
+function isNear(player: Player, position: Vector3 | undefined, distance: number): boolean {
 	const root = getRootPosition(player);
-	const target = machine !== undefined ? getInstancePosition(machine) : undefined;
-	return root !== undefined && target !== undefined && target.sub(root).Magnitude <= LINE_DISTANCE;
+	return root !== undefined && position !== undefined && position.sub(root).Magnitude <= distance;
 }
 
-// ---- visuals: prompts, bought machines, belts ----
-
-/** The prompt this service put on a machine (it lives on the machine's main part, see addPrompts). */
-function promptOf(machine: Model): ProximityPrompt | undefined {
-	const prompt = machine.FindFirstChild(PROMPT_NAME, true);
-	return prompt !== undefined && prompt.IsA("ProximityPrompt") ? prompt : undefined;
+/** Moves a live character to a position without tripping the movement check. */
+function teleport(player: Player, position: Vector3): void {
+	const character = player.Character;
+	if (character === undefined || character.Parent === undefined) {
+		return;
+	}
+	character.PivotTo(new CFrame(position));
+	resetMovementBaseline(player);
 }
 
-/** Updates prompts, the Bought attribute of every machine and the belts of a plot for its owner's line. */
-function refreshPlot(plot: Plot, line: LineState | undefined): void {
-	for (const [stage, machine] of plot.machines) {
-		const def = LINE_MACHINES[stage - 1];
-		const bought = line !== undefined && stage <= line.machines.size();
-		if (machine.GetAttribute(PLOT_ATTRIBUTES.Bought) !== bought) {
-			machine.SetAttribute(PLOT_ATTRIBUTES.Bought, bought);
+// ---- invisible anchors for prompts on the plot (the intake and the slot of the next machine) ----
+
+function makeAnchor(parent: Instance, name: string, cframe: CFrame): BasePart {
+	const part = new Instance("Part");
+	part.Name = name;
+	part.Anchored = true;
+	part.CanCollide = false;
+	part.CanQuery = false;
+	part.CanTouch = false;
+	part.Transparency = 1;
+	part.Size = new Vector3(4, 4, 4);
+	part.CFrame = cframe;
+	part.Parent = parent;
+	return part;
+}
+
+function makePrompt(parent: Instance, action: string, object: string, onTriggered: (player: Player) => void): void {
+	const prompt = new Instance("ProximityPrompt");
+	prompt.ActionText = action;
+	prompt.ObjectText = object;
+	prompt.RequiresLineOfSight = false;
+	prompt.HoldDuration = 0;
+	prompt.MaxActivationDistance = LINE_DISTANCE - 4;
+	prompt.Parent = parent;
+	prompt.Triggered.Connect((player) => {
+		if (!promptLimiter.tryTake(player.UserId, os.clock())) {
+			return;
 		}
-		const prompt = promptOf(machine);
-		if (prompt === undefined || def === undefined) {
-			continue;
+		const [ok, err] = pcall(onTriggered, player);
+		if (!ok) {
+			warn(`[line] prompt failed: ${err}`);
 		}
-		const action = line !== undefined ? machineAction(line, stage - 1) : undefined;
-		prompt.Enabled = action !== undefined && action.kind !== "locked";
-		prompt.ObjectText = def.name;
-		if (action?.kind === "buy") {
-			prompt.ActionText = `Купити за ${formatMoney(action.price)}`;
-		} else if (action?.kind === "deposit") {
-			prompt.ActionText = "Скинути руду із сумки";
-		} else {
-			prompt.ActionText = "Покращення";
+	});
+}
+
+/** The slot of the next machine: an invisible anchor at its place with a "buy" prompt. Removed when all are bought. */
+function refreshBuySlot(plot: Plot, owned: number): void {
+	plot.built?.FindFirstChild("BuySlot")?.Destroy();
+	const def = LINE_MACHINES[owned];
+	const cframe = slotCFrame(plot, owned + 1);
+	if (plot.built === undefined || def === undefined || cframe === undefined) {
+		return;
+	}
+	const slot = makeAnchor(plot.built, "BuySlot", cframe);
+	makePrompt(slot, `Купити за ${formatMoney(def.price)}`, def.name, (player) => buyNext(player, plot));
+}
+
+/** Builds the plot for its owner: belt and SellStation, every bought machine, the intake and the next slot. */
+function buildFor(plot: Plot, data: ProfileData): void {
+	const built = buildBase(plot);
+	for (let stage = 1; stage <= data.line.machines.size(); stage++) {
+		placeMachine(plot, stage);
+	}
+	// The belt always runs (decisions 027): ore can ride it even before the first machine.
+	for (const part of built.GetDescendants()) {
+		if (part.IsA("BasePart") && part.GetAttribute("ConveyorFlow") !== undefined) {
+			part.SetAttribute(PLOT_ATTRIBUTES.ConveyorOn, true);
 		}
 	}
-	const running = line !== undefined && line.machines.size() > 0 && !isLineIdle(line);
-	for (const conveyor of plot.conveyors) {
-		if (conveyor.GetAttribute(PLOT_ATTRIBUTES.ConveyorOn) !== running) {
-			conveyor.SetAttribute(PLOT_ATTRIBUTES.ConveyorOn, running);
-		}
+	const intakeAt = slotCFrame(plot, 1);
+	if (intakeAt !== undefined) {
+		const intake = makeAnchor(built, "Intake", intakeAt);
+		makePrompt(intake, "Скинути руду із сумки", "Початок стрічки", (player) => dropOre(player, plot));
 	}
+	refreshBuySlot(plot, data.line.machines.size());
 }
 
 // ---- prompt actions (server-side Triggered: the engine tells us who pressed it) ----
 
-function buyNext(player: Player, plot: Plot, data: ProfileData): void {
+/** Common checks for actions on a plot: it is the player's own, the profile is loaded, the player is close. */
+function ownData(player: Player, plot: Plot, at: Vector3 | undefined): ProfileData | undefined {
+	if (plotOf.get(player) !== plot) {
+		notify(player, "Це чужа ділянка.", "error");
+		return undefined;
+	}
+	const data = getProfileData(player);
+	return data !== undefined && isNear(player, at, LINE_DISTANCE) ? data : undefined;
+}
+
+function buyNext(player: Player, plot: Plot): void {
+	const current = getProfileData(player);
+	const nextStage = current !== undefined ? current.line.machines.size() + 1 : 0;
+	const data = ownData(player, plot, slotCFrame(plot, nextStage)?.Position);
+	if (data === undefined) {
+		return;
+	}
 	const result = tryBuyLineMachine(data.line, data.money);
 	if (!result.ok) {
 		if (result.reason === "not-enough-money") {
@@ -125,11 +181,16 @@ function buyNext(player: Player, plot: Plot, data: ProfileData): void {
 	data.money = result.money;
 	applyBuyLineMachine(data.line);
 	markDirty(player);
-	refreshPlot(plot, data.line);
+	placeMachine(plot, data.line.machines.size());
+	refreshBuySlot(plot, data.line.machines.size());
 	notify(player, `Збудовано: ${result.def.name}!`, "success");
 }
 
-function dropOre(player: Player, plot: Plot, data: ProfileData): void {
+function dropOre(player: Player, plot: Plot): void {
+	const data = ownData(player, plot, slotCFrame(plot, 1)?.Position);
+	if (data === undefined) {
+		return;
+	}
 	const taken = depositOre(data.line, data.bag, ORE_IDS);
 	let total = 0;
 	for (const [ore, amount] of taken) {
@@ -142,58 +203,13 @@ function dropOre(player: Player, plot: Plot, data: ProfileData): void {
 		const empty = ORE_IDS.every((id) => (data.bag[id] ?? 0) <= 0);
 		notify(
 			player,
-			empty ? "Сумка порожня: спершу накопай руди." : "Приймач повний: зачекай, поки лінія розбере руду.",
+			empty ? "Сумка порожня: спершу накопай руди." : "Стрічка заповнена: зачекай, поки руда проїде.",
 			"error",
 		);
 		return;
 	}
 	markDirty(player);
-	refreshPlot(plot, data.line);
-	notify(player, `У приймач поїхало ${total} шт. руди.`, "success");
-}
-
-function onPrompt(player: Player, plot: Plot, stage: number): void {
-	if (!promptLimiter.tryTake(player.UserId, os.clock())) {
-		return;
-	}
-	if (plotOf.get(player) !== plot) {
-		notify(player, "Це чужа ділянка.", "error");
-		return;
-	}
-	const data = getProfileData(player);
-	if (data === undefined || !isNearMachine(player, plot, stage)) {
-		return;
-	}
-	const action = machineAction(data.line, stage - 1);
-	if (action.kind === "buy") {
-		buyNext(player, plot, data);
-	} else if (action.kind === "deposit") {
-		dropOre(player, plot, data);
-	}
-	// "upgrade" opens the panel on the client; "locked" prompts are disabled.
-}
-
-function addPrompts(plot: Plot): void {
-	for (const [stage, machine] of plot.machines) {
-		const anchor = machine.PrimaryPart ?? machine.FindFirstChildWhichIsA("BasePart", true);
-		if (anchor === undefined || promptOf(machine) !== undefined) {
-			continue;
-		}
-		const prompt = new Instance("ProximityPrompt");
-		prompt.Name = PROMPT_NAME;
-		prompt.RequiresLineOfSight = false;
-		prompt.HoldDuration = 0;
-		prompt.MaxActivationDistance = LINE_DISTANCE - 4;
-		prompt.Enabled = false;
-		// A prompt must sit on a part to be shown in the world, so it goes on the machine's main part.
-		prompt.Parent = anchor;
-		prompt.Triggered.Connect((player) => {
-			const [ok, err] = pcall(onPrompt, player, plot, stage);
-			if (!ok) {
-				warn(`[line] prompt failed: ${err}`);
-			}
-		});
-	}
+	notify(player, `На стрічку поїхало ${total} шт. руди.`, "success");
 }
 
 // ---- upgrades (remote from the UI) ----
@@ -209,7 +225,7 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 	if (plot === undefined || data === undefined) {
 		return;
 	}
-	if (!isNearMachine(player, plot, index + 1)) {
+	if (!isNear(player, slotCFrame(plot, index + 1)?.Position, LINE_DISTANCE)) {
 		logAbuse(player, "UpgradeLineMachine away from the machine");
 		return;
 	}
@@ -228,20 +244,61 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 	notify(player, `Покращено до рівня ${result.upgrade.level}!`, "success");
 }
 
-// ---- plots ----
+// ---- plots: claim, release, spawn ----
 
-function claimPlot(player: Player): Plot | undefined {
-	const existing = plotOf.get(player);
-	if (existing !== undefined) {
-		return existing;
+function claimAnchor(plot: Plot): BasePart {
+	const sign = plot.model.FindFirstChild("Sign");
+	return sign !== undefined && sign.IsA("BasePart") ? sign : plot.base;
+}
+
+function setClaimPromptEnabled(plot: Plot, enabled: boolean): void {
+	const prompt = claimAnchor(plot).FindFirstChild("ClaimPrompt");
+	if (prompt !== undefined && prompt.IsA("ProximityPrompt")) {
+		prompt.Enabled = enabled;
 	}
-	const free = plots.find((plot) => plot.model.GetAttribute(PLOT_ATTRIBUTES.Owner) === 0);
-	if (free === undefined) {
-		return undefined;
+}
+
+function claim(player: Player, plot: Plot): void {
+	const data = getProfileData(player);
+	if (data === undefined || ownerOf(plot) !== 0 || !isNear(player, claimAnchor(plot).Position, CLAIM_DISTANCE)) {
+		return;
 	}
-	free.model.SetAttribute(PLOT_ATTRIBUTES.Owner, player.UserId);
-	plotOf.set(player, free);
-	return free;
+	if (plotOf.has(player)) {
+		notify(player, "У тебе вже є ділянка.", "error");
+		return;
+	}
+	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, player.UserId);
+	plotOf.set(player, plot);
+	setClaimPromptEnabled(plot, false);
+	// A broken template must not leave the plot owned and half built: undo the claim and let anyone retry.
+	const [built, err] = pcall(buildFor, plot, data);
+	if (!built) {
+		warn(`[line] building ${plot.model.Name} failed: ${err}`);
+		releasePlot(player);
+		notify(player, "Не вдалося збудувати ділянку, спробуй іншу.", "error");
+		return;
+	}
+	notify(player, "Ділянка твоя! Кидай руду на стрічку або купи першу машину.", "success");
+}
+
+function addClaimPrompt(plot: Plot): void {
+	const prompt = new Instance("ProximityPrompt");
+	prompt.Name = "ClaimPrompt";
+	prompt.ActionText = "Зайняти ділянку";
+	prompt.ObjectText = `Ділянка ${tostring(plot.model.GetAttribute(PLOT_ATTRIBUTES.PlotIndex) ?? "")}`;
+	prompt.RequiresLineOfSight = false;
+	prompt.HoldDuration = 0.5;
+	prompt.MaxActivationDistance = CLAIM_DISTANCE - 5;
+	prompt.Parent = claimAnchor(plot);
+	prompt.Triggered.Connect((player) => {
+		if (!promptLimiter.tryTake(player.UserId, os.clock())) {
+			return;
+		}
+		const [ok, err] = pcall(claim, player, plot);
+		if (!ok) {
+			warn(`[line] claim failed: ${err}`);
+		}
+	});
 }
 
 function releasePlot(player: Player): void {
@@ -251,7 +308,31 @@ function releasePlot(player: Player): void {
 	}
 	plotOf.delete(player);
 	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
-	refreshPlot(plot, undefined);
+	clearBase(plot);
+	setClaimPromptEnabled(plot, true);
+}
+
+/** Where the player appears: their own plot, or else the first free one (to take it or walk to another). */
+function spawnFor(player: Player): Vector3 | undefined {
+	const own = plotOf.get(player);
+	if (own !== undefined) {
+		return spawnPosition(own);
+	}
+	const free = plots.find((plot) => ownerOf(plot) === 0);
+	return free !== undefined ? spawnPosition(free) : undefined;
+}
+
+function onCharacterAdded(player: Player): void {
+	// A player with an opened camp respawns there (layers feature); everyone else at a plot.
+	if (hasRespawnCamp(player) || getProfileData(player) === undefined) {
+		return;
+	}
+	task.defer(() => {
+		const position = spawnFor(player);
+		if (position !== undefined) {
+			teleport(player, position);
+		}
+	});
 }
 
 // ---- production ----
@@ -268,10 +349,6 @@ function tickPlayer(player: Player, seconds: number): void {
 	const result = advanceLine(data.line, seconds, valueOf, roll);
 	credit(player, data, result.money);
 	markDirty(player);
-	const plot = plotOf.get(player);
-	if (plot !== undefined) {
-		refreshPlot(plot, data.line);
-	}
 }
 
 function onLoaded(player: Player): void {
@@ -289,20 +366,21 @@ function onLoaded(player: Player): void {
 	}
 	data.lastSeen = nowUnix();
 	markDirty(player);
-	const plot = claimPlot(player);
-	if (plot === undefined) {
-		notify(player, "Вільних ділянок немає: лінія працює, але приймач недоступний.", "error");
+	// The first character spawned before the profile loaded: put it on a free plot now.
+	const position = spawnFor(player);
+	if (position === undefined) {
+		notify(player, "Вільних ділянок немає: лінія працює, але кидати руду ніде.", "error");
 		return;
 	}
-	refreshPlot(plot, data.line);
+	teleport(player, position);
+	notify(player, "Обери ділянку: підійди до таблички й натисни E.", "info");
 }
 
 export function startLineService(): void {
 	plots = loadPlots();
 	for (const plot of plots) {
 		plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
-		addPrompts(plot);
-		refreshPlot(plot, undefined);
+		addClaimPrompt(plot);
 	}
 	onClientRequest(UPGRADE_LINE_MACHINE_REMOTE, new RateLimiter(6, 3), handleUpgrade);
 	onProfileLoaded(onLoaded);
@@ -312,7 +390,13 @@ export function startLineService(): void {
 			data.lastSeen = nowUnix();
 		}
 	});
-	Players.PlayerRemoving.Connect(releasePlot);
+	const watch = (player: Player) => player.CharacterAdded.Connect(() => onCharacterAdded(player));
+	Players.PlayerAdded.Connect(watch);
+	Players.GetPlayers().forEach(watch);
+	Players.PlayerRemoving.Connect((player) => {
+		releasePlot(player);
+		promptLimiter.forget(player.UserId);
+	});
 
 	task.spawn(() => {
 		let last = os.clock();

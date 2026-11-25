@@ -10,7 +10,7 @@ export interface DrillState {
 	lastTick: number;
 	/** Seconds already worked toward the next piece. */
 	progress: number;
-	/** Pieces waiting for space in the line hopper (or for the first line machine to be bought). */
+	/** Pieces waiting for space in the line hopper (the start of the belt). */
 	buffer: number;
 }
 
@@ -59,7 +59,7 @@ export function advanceDrill(state: DrillState, layer: number, now: number): num
 	return produced;
 }
 
-/** Conveyor: moves the buffer into the line hopper as far as it has room. Returns pieces moved. */
+/** Conveyor: moves the buffer onto the start of the belt as far as it has room. Returns pieces moved. */
 export function deliverDrill(state: DrillState, line: LineState): number {
 	const moved = depositOre(line, { [state.oreId]: state.buffer }, [state.oreId]).get(state.oreId) ?? 0;
 	state.buffer -= moved;

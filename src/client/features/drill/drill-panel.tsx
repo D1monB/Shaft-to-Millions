@@ -13,7 +13,7 @@ import {
 	isDrillUnlocked,
 	secondsPerPiece,
 } from "shared/features/drill";
-import { queueLimit } from "shared/features/line";
+import { intakeRoom } from "shared/features/line";
 import { getPickaxe, hitsRequired } from "shared/features/mining";
 import { walkSpeedFor } from "shared/features/movement";
 import { PlayerView } from "shared/features/profile";
@@ -44,7 +44,7 @@ function DrillShop(props: { layer: number; view: PlayerView }) {
 	return (
 		<>
 			<Label
-				text="Автобур добуває руду цього шару сам і везе її конвеєром у приймач твоєї лінії, навіть коли тебе немає (до 8 год)."
+				text="Автобур добуває руду цього шару сам і везе її конвеєром на стрічку твоєї ділянки, навіть коли тебе немає (до 8 год)."
 				tone="muted"
 				order={1}
 			/>
@@ -108,10 +108,7 @@ function DrillPanel(props: { layer: number }) {
 	const ore = ORES[state.oreId];
 	const perPiece = secondsPerPiece(layer, state.oreId);
 	const manual = hitsRequired(ore.hardness, pickaxe.power) * pickaxe.swingSeconds;
-	const hopper = view.line.machines[0];
-	const noLine = hopper === undefined;
-	const hopperFull = hopper !== undefined && hopper.queue.size() >= queueLimit(view.line, 0);
-	const blocked = noLine || hopperFull;
+	const blocked = intakeRoom(view.line) <= 0;
 
 	return (
 		<>
@@ -130,15 +127,7 @@ function DrillPanel(props: { layer: number }) {
 					order={5}
 				/>
 				{blocked && (
-					<Label
-						text={
-							noLine
-								? "Купи першу машину лінії: доти руда чекає в бурі."
-								: "Приймач лінії повний: конвеєр стоїть, бур скоро зупиниться."
-						}
-						tone="danger"
-						order={6}
-					/>
+					<Label text="Початок стрічки заповнений: бур чекає, поки руда проїде." tone="danger" order={6} />
 				)}
 			</Card>
 			<Label text="Що добувати:" display={true} order={2} />

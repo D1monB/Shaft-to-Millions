@@ -1,5 +1,5 @@
 import { Assert, Test } from "@rbxts/lunit";
-import { HOPPER_CAPACITY, LINE_MACHINES, LINE_UPGRADES } from "shared/config/line";
+import { BELT_SECONDS_PER_ITEM, HOPPER_CAPACITY, LINE_MACHINES, LINE_UPGRADES } from "shared/config/line";
 import { PlainTable } from "shared/lib/tables";
 import { loadProfileData } from "./load-profile-data";
 import { createDefaultProfileData } from "./schema";
@@ -81,14 +81,19 @@ class SanitizeLineTests {
 	public queuesKeepOnlyKnownOreWithinTheLimit() {
 		const result = loadWith((raw) => {
 			raw.line = {
+				intake: [...repeatOre("copper", HOPPER_CAPACITY + 50), "coal", 7],
+				beltProgress: 99,
 				machines: [
-					machine({ queue: [...repeatOre("copper", HOPPER_CAPACITY + 50), "coal", 7] }),
+					machine({ queue: repeatOre("iron", 50) }),
 					machine({ queue: ["iron", "mystery", 3, "gold", ...repeatOre("gold", 500)] }),
 				],
 			};
 		});
-		const [hopper, second] = result.data.line.machines;
-		Assert.equal(hopper.queue.size(), HOPPER_CAPACITY);
+		const line = result.data.line;
+		const [first, second] = line.machines;
+		Assert.equal(line.intake.size(), HOPPER_CAPACITY);
+		Assert.true(line.beltProgress <= BELT_SECONDS_PER_ITEM);
+		Assert.equal(first.queue.size(), LINE_UPGRADES.capacity[0].value);
 		Assert.equal(second.queue.size(), LINE_UPGRADES.capacity[0].value);
 		Assert.equal(second.queue[0], "iron");
 		Assert.equal(second.queue[1], "gold");
@@ -107,7 +112,11 @@ class SanitizeLineTests {
 	@Test
 	public aValidLineLoadsWithoutRepairs() {
 		const result = loadWith((raw) => {
-			raw.line = { machines: [machine({ speed: 2, queue: ["copper", "iron"] }), machine({ progress: 0.5 })] };
+			raw.line = {
+				intake: ["gold"],
+				beltProgress: 0,
+				machines: [machine({ speed: 2, queue: ["copper", "iron"] }), machine({ progress: 0.5 })],
+			};
 			raw.lastSeen = 1_800_000_000;
 		});
 		Assert.equal(result.repairs.size(), 0);

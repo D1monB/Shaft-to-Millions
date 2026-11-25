@@ -1,7 +1,10 @@
 // Pure rules of the tycoon line (decisions 027). No Roblox API here, so everything is unit tested.
-// The line is a chain of owned machines; each has a FIFO queue of ore ids waiting for it. An item in the queue of
-// machine i has stage i (it passed machines 0..i-1). The last owned machine sells what it makes.
+// The belt always exists: ore dropped at its start waits in the intake. Bought machines sit on the belt in order; each
+// has a FIFO queue of ore ids waiting for it. An item in the queue of machine i has stage i (it passed machines
+// 0..i-1). What leaves the last bought machine falls into the SellStation; with no machine the raw ore rides the belt
+// to the SellStation at BELT_SECONDS_PER_ITEM each.
 import {
+	BELT_SECONDS_PER_ITEM,
 	HOPPER_CAPACITY,
 	LINE_MACHINES,
 	LINE_MAX_STEP,
@@ -26,8 +29,12 @@ export interface LineMachineState {
 	queue: string[];
 }
 
-/** Machines bought so far, in line order. Their number is the next machine to buy. */
 export interface LineState {
+	/** Ore dropped at the start of the belt, front first. */
+	intake: string[];
+	/** Seconds of belt travel toward the next raw sale (only used while no machine is bought). */
+	beltProgress: number;
+	/** Machines bought so far, in line order. Their number is the next machine to buy. */
 	machines: LineMachineState[];
 }
 
@@ -38,7 +45,7 @@ export type OreValueOf = (ore: string) => number | undefined;
 export type RandomFn = () => number;
 
 export function newLineState(): LineState {
-	return { machines: [] };
+	return { intake: [], beltProgress: 0, machines: [] };
 }
 
 function newMachine(): LineMachineState {
@@ -138,18 +145,20 @@ export function applyLineUpgrade(state: LineState, index: number, track: LineUpg
 
 // ---- queues ----
 
-/** How many items may wait for machine `index`: the hopper for the first one, the capacity track for the rest. */
+/** How many items may wait for machine `index` (its capacity level). 0 for a machine not bought. */
 export function queueLimit(state: LineState, index: number): number {
 	const machine = state.machines[index];
-	if (machine === undefined) {
-		return 0;
-	}
-	return index === 0 ? HOPPER_CAPACITY : upgradeValue("capacity", machine.capacity);
+	return machine === undefined ? 0 : upgradeValue("capacity", machine.capacity);
+}
+
+/** Free room at the start of the belt. */
+export function intakeRoom(state: LineState): number {
+	return math.max(HOPPER_CAPACITY - state.intake.size(), 0);
 }
 
 /**
- * Puts ore into the hopper, in the given order, up to its free space. Returns how many of each ore were taken,
- * so the caller removes exactly that from the bag. Needs at least one owned machine.
+ * Puts ore at the start of the belt, in the given order, up to its free room. Returns how many of each ore were
+ * taken, so the caller removes exactly that from the bag. Works with or without machines (the belt always exists).
  */
 export function depositOre(
 	state: LineState,
@@ -157,17 +166,13 @@ export function depositOre(
 	order: ReadonlyArray<string>,
 ): Map<string, number> {
 	const taken = new Map<string, number>();
-	const hopper = state.machines[0];
-	if (hopper === undefined) {
-		return taken;
-	}
-	let free = queueLimit(state, 0) - hopper.queue.size();
+	let free = intakeRoom(state);
 	for (const ore of order) {
 		const raw = counts[ore];
 		const have = isFiniteNumber(raw) && raw > 0 ? math.floor(raw) : 0;
 		const amount = math.min(have, math.max(free, 0));
 		for (let i = 0; i < amount; i++) {
-			hopper.queue.push(ore);
+			state.intake.push(ore);
 		}
 		if (amount > 0) {
 			taken.set(ore, amount);
@@ -180,8 +185,9 @@ export function depositOre(
 // ---- value ----
 
 /**
- * Sale value of one item of `ore` that left machine `lastIndex` (so its stage is lastIndex + 1): base value x stage
- * multiplier x the quality bonus of every machine it passed. Undefined for an unknown ore.
+ * Sale value of one item of `ore` that left machine `lastIndex` (so its stage is lastIndex + 1; -1 = raw ore straight
+ * off the belt): base value x stage multiplier x the quality bonus of every machine it passed. Undefined for an
+ * unknown ore.
  */
 export function itemValue(state: LineState, ore: string, lastIndex: number, valueOf: OreValueOf): number | undefined {
 	const base = valueOf(ore);
@@ -211,13 +217,16 @@ export interface LineTickResult {
 /**
  * Advances the line by `seconds` (clamped to [0, LINE_MAX_STEP]). Machines run downstream first, so an item moves
  * at most one machine per step and a machine sees the space freed by the next one. A machine whose next queue is
- * full stops (keeps its item), it never throws ore away.
+ * full stops (keeps its item), it never throws ore away. Before the machines, the intake feeds the first machine, or
+ * with no machine the raw ore rides the belt to the SellStation.
  */
 export function advanceLine(state: LineState, seconds: number, valueOf: OreValueOf, random: RandomFn): LineTickResult {
 	const dt = isFiniteNumber(seconds) ? math.clamp(seconds, 0, LINE_MAX_STEP) : 0;
+	// The intake first: ore just dropped on the belt reaches the first machine in the same step.
+	const raw = feedFromIntake(state, dt, valueOf);
 	const last = state.machines.size() - 1;
-	let money = 0;
-	let sold = 0;
+	let money = raw.money;
+	let sold = raw.sold;
 	for (let i = last; i >= 0; i--) {
 		const machine = state.machines[i];
 		const def = LINE_MACHINES[i];
@@ -260,6 +269,39 @@ export function advanceLine(state: LineState, seconds: number, valueOf: OreValue
 	return { money, sold };
 }
 
+/** The intake: ore moves onto the first machine as far as its queue has room, or sells raw without machines. */
+function feedFromIntake(state: LineState, dt: number, valueOf: OreValueOf): LineTickResult {
+	const first = state.machines[0];
+	if (first !== undefined) {
+		state.beltProgress = 0;
+		const room = queueLimit(state, 0) - first.queue.size();
+		for (let n = 0; n < room && state.intake.size() > 0; n++) {
+			first.queue.push(state.intake.remove(0) as string);
+		}
+		return { money: 0, sold: 0 };
+	}
+	if (state.intake.size() === 0) {
+		state.beltProgress = 0;
+		return { money: 0, sold: 0 };
+	}
+	let money = 0;
+	let sold = 0;
+	state.beltProgress += dt;
+	while (state.beltProgress >= BELT_SECONDS_PER_ITEM && state.intake.size() > 0) {
+		const ore = state.intake.remove(0) as string;
+		const value = itemValue(state, ore, -1, valueOf);
+		if (value !== undefined) {
+			money += math.round(value);
+			sold += 1;
+		}
+		state.beltProgress -= BELT_SECONDS_PER_ITEM;
+	}
+	if (state.intake.size() === 0) {
+		state.beltProgress = 0;
+	}
+	return { money, sold };
+}
+
 /**
  * What the line made while the player was away: `elapsed` real seconds (capped at OFFLINE_MAX_SECONDS) run at
  * OFFLINE_SPEED, in steps of LINE_MAX_STEP. Broken input (negative, NaN, clock went back) counts as no time.
@@ -287,22 +329,19 @@ export function advanceOffline(
 	return { money, sold };
 }
 
-/** True when no machine has anything to do. */
+/** True when nothing is on the belt or waiting for a machine. */
 export function isLineIdle(state: LineState): boolean {
-	return state.machines.every((machine) => machine.queue.size() === 0);
+	return state.intake.size() === 0 && state.machines.every((machine) => machine.queue.size() === 0);
 }
 
 // ---- what the prompt at a machine does ----
 
 export type MachineAction =
-	| { readonly kind: "buy"; readonly price: number }
-	| { readonly kind: "locked" }
-	| { readonly kind: "deposit" }
-	| { readonly kind: "upgrade" };
+	{ readonly kind: "buy"; readonly price: number } | { readonly kind: "locked" } | { readonly kind: "upgrade" };
 
 /**
  * What the prompt at machine `index` (0-based) does for this line: the next machine is for sale, later ones are
- * locked (machines are bought in order), the first owned one takes ore from the bag, other owned ones open upgrades.
+ * locked (machines are bought in order), owned ones open upgrades. Dropping ore is the intake's own prompt.
  */
 export function machineAction(state: LineState, index: number): MachineAction {
 	const owned = state.machines.size();
@@ -316,7 +355,7 @@ export function machineAction(state: LineState, index: number): MachineAction {
 	if (index > owned) {
 		return { kind: "locked" };
 	}
-	return index === 0 ? { kind: "deposit" } : { kind: "upgrade" };
+	return { kind: "upgrade" };
 }
 
 /** Line income after the sell bonus (pets), in whole dollars. A broken multiplier counts as 1. */

@@ -53,6 +53,12 @@ function onCampTouched(camp: Instance, hit: BasePart): void {
 	}
 }
 
+/** True when the player has an opened camp to respawn at (then the camp, not the plot, is their spawn). */
+export function hasRespawnCamp(player: Player): boolean {
+	const camp = respawnCamp.get(player);
+	return camp !== undefined && camp.IsDescendantOf(game.Workspace);
+}
+
 /** After a respawn, moves the new character to the player's camp (if they have one). */
 function onCharacterAdded(player: Player, character: Model): void {
 	const camp = respawnCamp.get(player);

@@ -43,7 +43,7 @@ function tickDrills(data: ProfileData): [number, number] {
 			continue;
 		}
 		produced += advanceDrill(state, layer, time);
-		// Conveyor to the line hopper. Whatever does not fit (or no line yet) stays in the drill's buffer.
+		// Conveyor to the line hopper. Whatever does not fit stays in the drill's buffer.
 		delivered += deliverDrill(state, data.line);
 	}
 	return [produced, delivered];
@@ -81,7 +81,7 @@ function handleBuy(player: Player, args: Array<unknown>): void {
 	data.money -= def.price;
 	data.drills[drillKey(layer)] = newDrillState(firstOre, now());
 	markDirty(player);
-	notify(player, `Збудовано: ${def.name}! Конвеєр везе руду в приймач твоєї лінії.`, "success");
+	notify(player, `Збудовано: ${def.name}! Конвеєр везе руду на стрічку твоєї ділянки.`, "success");
 }
 
 function handleSelect(player: Player, args: Array<unknown>): void {

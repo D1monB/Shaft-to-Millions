@@ -319,3 +319,10 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   prices. The profile gets `line` (bought machines, levels, queues) and `lastSeen` (for the offline run). Drills now
   deliver into the hopper of the line; without a line machine the ore waits in the drill buffer. The tags `Warehouse`,
   `Machine` and the attribute `MachineId` are gone from the map contract (plot tags come with the line service).
+- **Plots (step 4b, developer's design 2026-11-25):** plots start empty; the map author's Factory is a template kept in
+  ServerStorage. A player claims a free plot by holding E on its sign; then the belt and the SellStation are built,
+  and each machine appears on its place only after it is bought (strictly in order). The belt always runs: ore is
+  dropped at the start of the belt (the first machine's place); with no machine raw ore sells at the SellStation, each
+  bought machine raises the value. New players appear on the first free plot, owners on their plot (an opened camp
+  still wins). The line state gained `intake` and `beltProgress` (v5 was not released, so no new schema version).
+- **Open:** AFK plot squatting (an idle owner keeps a plot until they leave); an idle timeout is a later task.

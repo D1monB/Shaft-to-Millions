@@ -1,5 +1,6 @@
 import { Assert, Test } from "@rbxts/lunit";
 import {
+	BELT_SECONDS_PER_ITEM,
 	HOPPER_CAPACITY,
 	LINE_MACHINES,
 	LINE_MAX_STEP,
@@ -15,6 +16,7 @@ import {
 	applyBuyLineMachine,
 	applyLineUpgrade,
 	depositOre,
+	intakeRoom,
 	isLineIdle,
 	itemValue,
 	lineIncome,
@@ -162,14 +164,39 @@ class LineTests {
 	// ---- hopper ----
 
 	@Test
-	public depositNeedsAMachineAndRespectsTheHopper() {
-		Assert.equal(0, depositOre(newLineState(), { copper: 5 }, ["copper"]).size());
-		const state = lineWith(1);
+	public depositWorksWithoutMachinesAndRespectsTheIntake() {
+		// The belt always exists: ore can be dropped before any machine is bought.
+		const state = newLineState();
 		const taken = depositOre(state, { copper: HOPPER_CAPACITY - 2, iron: 10 }, ["copper", "iron"]);
 		Assert.equal(HOPPER_CAPACITY - 2, taken.get("copper"));
 		Assert.equal(2, taken.get("iron"));
-		Assert.equal(HOPPER_CAPACITY, state.machines[0].queue.size());
+		Assert.equal(HOPPER_CAPACITY, state.intake.size());
+		Assert.equal(0, intakeRoom(state));
 		Assert.equal(0, depositOre(state, { copper: 1 }, ["copper"]).size());
+	}
+
+	@Test
+	public withoutMachinesRawOreRidesTheBeltToTheSellStation() {
+		const state = newLineState();
+		depositOre(state, { copper: 5 }, ["copper"]);
+		const result = advanceLine(state, BELT_SECONDS_PER_ITEM * 3, valueOf, never);
+		Assert.equal(3, result.sold);
+		Assert.equal(3 * 10 * STAGE_VALUE[0], result.money);
+		Assert.equal(2, state.intake.size());
+		// The first machine takes over: from now on the intake feeds it instead of selling raw.
+		applyBuyLineMachine(state);
+		advanceLine(state, 0, valueOf, never);
+		Assert.equal(0, state.intake.size());
+		Assert.equal(2, state.machines[0].queue.size());
+	}
+
+	@Test
+	public intakeFeedsTheFirstMachineOnlyAsFarAsItHasRoom() {
+		const state = lineWith(1);
+		depositOre(state, { copper: 40 }, ["copper"]);
+		advanceLine(state, 0, valueOf, never);
+		Assert.equal(queueLimit(state, 0), state.machines[0].queue.size());
+		Assert.equal(40 - queueLimit(state, 0), state.intake.size());
 	}
 
 	@Test
@@ -336,7 +363,7 @@ class LineTests {
 		Assert.true(first.kind === "buy" && first.price === LINE_MACHINES[0].price);
 		Assert.equal("locked", machineAction(state, 1).kind);
 		applyBuyLineMachine(state);
-		Assert.equal("deposit", machineAction(state, 0).kind);
+		Assert.equal("upgrade", machineAction(state, 0).kind);
 		Assert.equal("buy", machineAction(state, 1).kind);
 		applyBuyLineMachine(state);
 		Assert.equal("upgrade", machineAction(state, 1).kind);

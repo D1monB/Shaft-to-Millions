@@ -2,7 +2,13 @@ import { INVENTORY_HARD_LIMIT, ITEMS, ItemKind, isItemId } from "shared/config/i
 import { DRILLS, drillKey } from "shared/config/drills";
 import { LAYER_COUNT, MAX_DEPTH_METERS } from "shared/config/layers";
 import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
-import { HOPPER_CAPACITY, LINE_MACHINES, LINE_UPGRADES, LINE_UPGRADE_TRACKS } from "shared/config/line";
+import {
+	BELT_SECONDS_PER_ITEM,
+	HOPPER_CAPACITY,
+	LINE_MACHINES,
+	LINE_UPGRADES,
+	LINE_UPGRADE_TRACKS,
+} from "shared/config/line";
 import { GEAR_SLOTS, findGear, starterOf } from "shared/features/upgrades";
 import { MAX_COUNTER, repairCountMap, repairInteger, repairNumber, repairTable } from "shared/lib/repair";
 import { PlainTable } from "shared/lib/tables";
@@ -88,15 +94,15 @@ function repairGear(data: PlainTable, repairs: string[]): void {
 // Latest sane unix time we accept (year ~2100). Anything later is a corrupted timestamp.
 const MAX_TIMESTAMP = 4_102_444_800;
 
-/** Longest queue any line machine can have (the hopper or the top capacity level). */
-const MAX_LINE_QUEUE = math.max(HOPPER_CAPACITY, LINE_UPGRADES.capacity[LINE_UPGRADES.capacity.size() - 1].value);
-
 /**
- * The tycoon line: at most one entry per machine in the config, levels within each track, progress within the
- * machine time, queues of known ores within the queue limit of the machine's own capacity level.
+ * The tycoon line: the intake (known ores, at most HOPPER_CAPACITY), at most one entry per machine in the config,
+ * levels within each track, progress within the machine time, queues of known ores within the queue limit of the
+ * machine's own capacity level.
  */
 function repairLine(data: PlainTable, repairs: string[]): void {
 	const line = repairTable(data, "line", "line", repairs);
+	line.intake = repairOreList(line.intake, HOPPER_CAPACITY, "line.intake", repairs);
+	repairNumber(line, "beltProgress", 0, BELT_SECONDS_PER_ITEM, 0, "line.beltProgress", repairs);
 	const raw = line.machines;
 	const machines: PlainTable[] = [];
 	if (typeIs(raw, "table")) {
@@ -121,21 +127,25 @@ function repairLine(data: PlainTable, repairs: string[]): void {
 			repairInteger(machine, track, 1, LINE_UPGRADES[track].size(), 1, `${path}.${track}`, repairs);
 		}
 		repairNumber(machine, "progress", 0, LINE_MACHINES[index].seconds, 0, `${path}.progress`, repairs);
-		const limit = index === 0 ? HOPPER_CAPACITY : LINE_UPGRADES.capacity[(machine.capacity as number) - 1].value;
-		const queue = machine.queue;
-		const clean: string[] = [];
-		if (typeIs(queue, "table")) {
-			for (const ore of queue as unknown[]) {
-				if (isOreId(ore) && clean.size() < math.min(limit, MAX_LINE_QUEUE)) {
-					clean.push(ore);
-				}
+		const limit = LINE_UPGRADES.capacity[(machine.capacity as number) - 1].value;
+		machine.queue = repairOreList(machine.queue, limit, `${path}.queue`, repairs);
+	});
+}
+
+/** A list of known ore ids, cut to `limit` entries. */
+function repairOreList(raw: unknown, limit: number, path: string, repairs: string[]): string[] {
+	const clean: string[] = [];
+	if (typeIs(raw, "table")) {
+		for (const ore of raw as unknown[]) {
+			if (isOreId(ore) && clean.size() < limit) {
+				clean.push(ore);
 			}
 		}
-		if (!typeIs(queue, "table") || clean.size() !== (queue as unknown[]).size()) {
-			repairs.push(`${path}.queue`);
-		}
-		machine.queue = clean;
-	});
+	}
+	if (!typeIs(raw, "table") || clean.size() !== (raw as unknown[]).size()) {
+		repairs.push(path);
+	}
+	return clean;
 }
 
 /**

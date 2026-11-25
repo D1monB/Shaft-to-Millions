@@ -6,6 +6,7 @@ export {
 	applyBuyLineMachine,
 	applyLineUpgrade,
 	depositOre,
+	intakeRoom,
 	isLineIdle,
 	itemValue,
 	lineIncome,

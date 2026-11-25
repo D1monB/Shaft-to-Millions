@@ -79,8 +79,11 @@ export const LINE_UPGRADES: { readonly [K in LineUpgradeTrack]: ReadonlyArray<Li
 	],
 };
 
-/** Items the hopper (queue of the first machine) holds: a full bag fits. The capacity track does not apply to it. */
+/** Items the start of the belt (intake) holds: a full bag fits. */
 export const HOPPER_CAPACITY = 500;
+
+/** Seconds the belt needs per raw ore while no machine is bought (it rides straight to the SellStation). */
+export const BELT_SECONDS_PER_ITEM = 0.5;
 
 /** The line runs at this share of its speed while the player is offline. */
 export const OFFLINE_SPEED = 0.5;

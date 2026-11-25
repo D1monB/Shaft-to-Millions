@@ -95,18 +95,15 @@ class DrillTests {
 	public conveyorDeliversOnlyWhatFits() {
 		const state = newDrillState("iron", 0);
 		state.buffer = 10;
-		// No line machine yet: the drill keeps everything.
+		// The belt always exists, so a drill delivers even before any machine is bought, up to the intake room.
 		const line = newLineState();
-		Assert.equal(deliverDrill(state, line), 0);
-		Assert.equal(state.buffer, 10);
-		applyBuyLineMachine(line);
 		for (let i = 0; i < HOPPER_CAPACITY - 4; i++) {
-			line.machines[0].queue.push("copper");
+			line.intake.push("copper");
 		}
 		Assert.equal(deliverDrill(state, line), 4);
 		Assert.equal(state.buffer, 6);
-		Assert.equal(line.machines[0].queue[HOPPER_CAPACITY - 1], "iron");
-		Assert.equal(deliverDrill(state, line), 0, "a full hopper takes nothing");
+		Assert.equal(line.intake[HOPPER_CAPACITY - 1], "iron");
+		Assert.equal(deliverDrill(state, line), 0, "a full intake takes nothing");
 	}
 
 	@Test
@@ -118,7 +115,7 @@ class DrillTests {
 			state.buffer = buffer;
 			Assert.equal(deliverDrill(state, line), 0);
 		}
-		Assert.equal(line.machines[0].queue.size(), 0);
+		Assert.equal(line.intake.size(), 0);
 	}
 
 	@Test
