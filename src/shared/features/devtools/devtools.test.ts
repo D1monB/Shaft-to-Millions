@@ -5,7 +5,7 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
 import { createDefaultProfileData } from "shared/features/profile";
 import { MAX_COUNTER } from "shared/lib/repair";
-import { DEV_MATERIAL_AMOUNT, DEV_MONEY_AMOUNTS, applyDevCommand, parseDevCommand } from "./devtools";
+import { DEV_MONEY_AMOUNTS, DEV_ORE_AMOUNT, applyDevCommand, parseDevCommand } from "./devtools";
 
 class DevtoolsTests {
 	// ---- parsing: the only input that comes from the client ----
@@ -26,8 +26,9 @@ class DevtoolsTests {
 		const same = data;
 		applyDevCommand(data, { kind: "money", amount: DEV_MONEY_AMOUNTS[2] });
 		applyDevCommand(data, { kind: "maxGear" });
-		applyDevCommand(data, { kind: "materials" });
+		applyDevCommand(data, { kind: "ores" });
 		applyDevCommand(data, { kind: "openLayers" });
+		data.line.machines.push({ speed: 2, duplicate: 1, quality: 1, capacity: 1, progress: 0, queue: ["copper"] });
 		data.stats.totalEarned = 500;
 		data.deepestMeters = 80;
 		data.inventory.push({ uid: "i1", item: "pet_mole" });
@@ -42,7 +43,8 @@ class DevtoolsTests {
 		Assert.equal(data.inventory.size(), 0);
 		Assert.equal(data.nextUid, 1);
 		Assert.deepEqual(data.gear, fresh.gear);
-		Assert.deepEqual(data.warehouse, {});
+		Assert.deepEqual(data.bag, {});
+		Assert.deepEqual(data.line, fresh.line);
 	}
 
 	@Test
@@ -116,19 +118,20 @@ class DevtoolsTests {
 	}
 
 	@Test
-	public materialsAddEveryOreAndProduct() {
+	public oresFillTheBagWithEveryOre() {
 		const data = createDefaultProfileData();
-		Assert.equal(parseDevCommand(["materials"])?.kind, "materials");
-		Assert.undefined(parseDevCommand(["materials", 99]));
-		applyDevCommand(data, { kind: "materials" });
-		Assert.equal(data.warehouse.iron_ingot, DEV_MATERIAL_AMOUNT);
-		Assert.equal(data.warehouse.gold_circuit, DEV_MATERIAL_AMOUNT);
-		// Raw ore too, so the furnace can be tried right away.
-		Assert.equal(data.warehouse.titanium, DEV_MATERIAL_AMOUNT);
-		Assert.equal(data.warehouse.copper, DEV_MATERIAL_AMOUNT);
+		Assert.equal(parseDevCommand(["ores"])?.kind, "ores");
+		Assert.undefined(parseDevCommand(["ores", 99]));
+		Assert.undefined(parseDevCommand(["materials"]));
+		applyDevCommand(data, { kind: "ores" });
+		Assert.equal(data.bag.copper, DEV_ORE_AMOUNT);
+		Assert.equal(data.bag.etherium, DEV_ORE_AMOUNT);
 		// A second press adds again (it is a top-up button), never above the counter cap.
-		applyDevCommand(data, { kind: "materials" });
-		Assert.equal(data.warehouse.titanium, DEV_MATERIAL_AMOUNT * 2);
+		applyDevCommand(data, { kind: "ores" });
+		Assert.equal(data.bag.titanium, DEV_ORE_AMOUNT * 2);
+		data.bag.titanium = MAX_COUNTER;
+		applyDevCommand(data, { kind: "ores" });
+		Assert.equal(data.bag.titanium, MAX_COUNTER);
 	}
 
 	@Test

@@ -64,6 +64,16 @@ function load(raw: PlainTable) {
  */
 const V4_PAYOUT = 8 + 24 + 2 + 36;
 
+/**
+ * What the version 5 migration (no recipe factory, no warehouse) pays for the release-2 fixture: 3 copper ingots in the
+ * warehouse (3 x $24), warehouse level 2 ($2 000), and the furnace: price $400, speed level 2 ($1 500), queue level 2
+ * ($1 000), 2 finished copper ingots (2 x $24) and the queued smelt_copper ($15) and smelt_iron ($24).
+ */
+const V5_PAYOUT_V2 = 72 + 2_000 + 400 + 1_500 + 1_000 + 48 + 15 + 24;
+
+/** The release-1 fixture has no warehouse or machine levels, so only the stock, the furnace price and its crafts. */
+const V5_PAYOUT_V1 = 72 + 400 + 48 + 15 + 24;
+
 class LegacySaveTests {
 	@Test
 	public version2SaveLoadsAtTheCurrentVersionWithoutRepairs() {
@@ -76,25 +86,16 @@ class LegacySaveTests {
 	@Test
 	public version2SaveKeepsEverythingThatIsNotGear() {
 		const data = load(version2Save()).data;
-		Assert.equal(data.money, 12_345 + V4_PAYOUT);
+		Assert.equal(data.money, 12_345 + V4_PAYOUT + V5_PAYOUT_V2);
 		Assert.equal(data.stats.totalEarned, 98_765);
 		Assert.equal(data.stats.oresMined, 321);
 		Assert.equal(data.bag.iron, 7);
-		Assert.equal(data.levels.warehouse, 2);
-		Assert.equal(data.warehouse.copper_ingot, 3);
 		Assert.equal(data.deepestLayer, 2);
 		Assert.equal(data.nextUid, 3);
 		Assert.equal(data.inventory.size(), 2);
 		Assert.deepEqual(data.purchaseIds, ["receipt-abc"]);
 		Assert.equal(data.equipped.speedAura, "i2");
 		Assert.deepEqual(data.equipped.pets, ["i1"]);
-		const furnace = data.machines.furnace;
-		Assert.notUndefined(furnace);
-		Assert.equal(furnace?.queue.size(), 2);
-		Assert.equal(furnace?.speedLevel, 2);
-		Assert.equal(furnace?.queueLevel, 2);
-		Assert.equal(furnace?.startedAt, 1_700_000_000);
-		Assert.equal(furnace?.ready.copper_ingot, 2);
 	}
 
 	@Test
@@ -107,24 +108,27 @@ class LegacySaveTests {
 		for (const id of [data.gear.equipped.pickaxe, data.gear.equipped.bag, data.gear.equipped.shoes]) {
 			Assert.true(data.gear.owned.includes(id), `${id} is equipped but not owned`);
 		}
-		// The old per-slot levels are gone: no leftover fields the new code would misread.
-		const levels = data.levels as unknown as PlainTable;
-		Assert.undefined(levels.pickaxe);
-		Assert.undefined(levels.bag);
-		Assert.undefined(levels.shoes);
+		// The old levels are gone entirely (gear in v3, the warehouse level in v5).
+		Assert.undefined((data as unknown as PlainTable).levels);
 	}
 
 	@Test
 	public version4RemovedOresArePaidOutAndDrillsFollowTheirLayer() {
 		const data = load(version2Save()).data;
 		const bag = data.bag as unknown as PlainTable;
-		const warehouse = data.warehouse as unknown as PlainTable;
 		Assert.undefined(bag.coal);
-		Assert.undefined(warehouse.coal);
 		Assert.equal(data.drills.layer1?.oreId, "copper");
 		Assert.equal(data.drills.layer1?.buffer, 0);
-		// Kept recipes stay queued; only the coal they no longer take is paid back.
-		Assert.equal(data.machines.furnace?.queue.size(), 2);
+	}
+
+	@Test
+	public version5RemovesTheFactoryAndStartsAnEmptyLine() {
+		const raw = load(version2Save()).data as unknown as PlainTable;
+		Assert.undefined(raw.warehouse);
+		Assert.undefined(raw.machines);
+		const data = load(version2Save()).data;
+		Assert.equal(data.line.machines.size(), 0);
+		Assert.equal(data.lastSeen, 0);
 	}
 
 	@Test
@@ -138,9 +142,7 @@ class LegacySaveTests {
 		const result = load(version1Save());
 		Assert.equal(result.data.schemaVersion, CURRENT_SCHEMA_VERSION);
 		Assert.equal(result.repairs.size(), 0);
-		Assert.equal(result.data.money, 12_345 + V4_PAYOUT);
-		Assert.equal(result.data.levels.warehouse, 1);
-		Assert.equal(result.data.machines.furnace?.speedLevel, 1);
+		Assert.equal(result.data.money, 12_345 + V4_PAYOUT + V5_PAYOUT_V1);
 		Assert.equal(result.data.gear.equipped.pickaxe, "pickaxe_iron");
 	}
 

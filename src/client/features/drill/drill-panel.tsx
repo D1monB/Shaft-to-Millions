@@ -13,7 +13,7 @@ import {
 	isDrillUnlocked,
 	secondsPerPiece,
 } from "shared/features/drill";
-import { storageTotal, warehouseCapacity } from "shared/features/factory";
+import { queueLimit } from "shared/features/line";
 import { getPickaxe, hitsRequired } from "shared/features/mining";
 import { walkSpeedFor } from "shared/features/movement";
 import { PlayerView } from "shared/features/profile";
@@ -44,7 +44,7 @@ function DrillShop(props: { layer: number; view: PlayerView }) {
 	return (
 		<>
 			<Label
-				text="Автобур добуває руду цього шару сам і везе її конвеєром на склад, навіть коли тебе немає (до 8 год)."
+				text="Автобур добуває руду цього шару сам і везе її конвеєром у приймач твоєї лінії, навіть коли тебе немає (до 8 год)."
 				tone="muted"
 				order={1}
 			/>
@@ -108,11 +108,14 @@ function DrillPanel(props: { layer: number }) {
 	const ore = ORES[state.oreId];
 	const perPiece = secondsPerPiece(layer, state.oreId);
 	const manual = hitsRequired(ore.hardness, pickaxe.power) * pickaxe.swingSeconds;
-	const warehouseFull = storageTotal(view.warehouse) >= warehouseCapacity(view.levels.warehouse);
+	const hopper = view.line.machines[0];
+	const noLine = hopper === undefined;
+	const hopperFull = hopper !== undefined && hopper.queue.size() >= queueLimit(view.line, 0);
+	const blocked = noLine || hopperFull;
 
 	return (
 		<>
-			<Card order={1} accent={warehouseFull ? COLORS.canyon : COLORS.gold}>
+			<Card order={1} accent={blocked ? COLORS.canyon : COLORS.gold}>
 				<Label text={`⚙️ Добуває: ${ore.name}`} display={true} size={TEXT_SIZES.large} order={1} />
 				<Label text={`Бур: 1 шт. за ${perPiece} с (~${math.floor(3600 / perPiece)} шт./год)`} order={2} />
 				<Label
@@ -126,8 +129,16 @@ function DrillPanel(props: { layer: number }) {
 					tone={state.buffer > 0 ? "danger" : "muted"}
 					order={5}
 				/>
-				{warehouseFull && (
-					<Label text="Склад повний: конвеєр стоїть, бур скоро зупиниться." tone="danger" order={6} />
+				{blocked && (
+					<Label
+						text={
+							noLine
+								? "Купи першу машину лінії: доти руда чекає в бурі."
+								: "Приймач лінії повний: конвеєр стоїть, бур скоро зупиниться."
+						}
+						tone="danger"
+						order={6}
+					/>
 				)}
 			</Card>
 			<Label text="Що добувати:" display={true} order={2} />

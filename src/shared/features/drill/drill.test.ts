@@ -12,6 +12,8 @@ import {
 	secondsPerPiece,
 	selectDrillOre,
 } from "./drill";
+import { HOPPER_CAPACITY } from "shared/config/line";
+import { applyBuyLineMachine, newLineState } from "shared/features/line";
 
 function layerOneDrill() {
 	const def = DRILLS[1];
@@ -93,13 +95,30 @@ class DrillTests {
 	public conveyorDeliversOnlyWhatFits() {
 		const state = newDrillState("iron", 0);
 		state.buffer = 10;
-		const warehouse: { [id: string]: number | undefined } = {};
-		Assert.equal(deliverDrill(state, warehouse, 4), 4);
-		Assert.equal(warehouse.iron, 4);
+		// No line machine yet: the drill keeps everything.
+		const line = newLineState();
+		Assert.equal(deliverDrill(state, line), 0);
+		Assert.equal(state.buffer, 10);
+		applyBuyLineMachine(line);
+		for (let i = 0; i < HOPPER_CAPACITY - 4; i++) {
+			line.machines[0].queue.push("copper");
+		}
+		Assert.equal(deliverDrill(state, line), 4);
 		Assert.equal(state.buffer, 6);
-		Assert.equal(deliverDrill(state, warehouse, 0), 0);
-		Assert.equal(deliverDrill(state, warehouse, -5), 0);
-		Assert.equal(deliverDrill(state, warehouse, 0 / 0), 0);
+		Assert.equal(line.machines[0].queue[HOPPER_CAPACITY - 1], "iron");
+		Assert.equal(deliverDrill(state, line), 0, "a full hopper takes nothing");
+	}
+
+	@Test
+	public conveyorIgnoresABrokenBuffer() {
+		const line = newLineState();
+		applyBuyLineMachine(line);
+		const state = newDrillState("iron", 0);
+		for (const buffer of [-5, 0 / 0, math.huge]) {
+			state.buffer = buffer;
+			Assert.equal(deliverDrill(state, line), 0);
+		}
+		Assert.equal(line.machines[0].queue.size(), 0);
 	}
 
 	@Test

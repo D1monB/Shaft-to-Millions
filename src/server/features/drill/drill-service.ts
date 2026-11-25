@@ -14,7 +14,6 @@ import {
 	newDrillState,
 	selectDrillOre,
 } from "shared/features/drill";
-import { storageFree, warehouseCapacity } from "shared/features/factory";
 import { getPickaxe } from "shared/features/mining";
 import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
@@ -44,12 +43,8 @@ function tickDrills(data: ProfileData): [number, number] {
 			continue;
 		}
 		produced += advanceDrill(state, layer, time);
-		// Conveyor to the warehouse. Whatever does not fit stays in the drill's buffer.
-		delivered += deliverDrill(
-			state,
-			data.warehouse,
-			storageFree(data.warehouse, warehouseCapacity(data.levels.warehouse)),
-		);
+		// Conveyor to the line hopper. Whatever does not fit (or no line yet) stays in the drill's buffer.
+		delivered += deliverDrill(state, data.line);
 	}
 	return [produced, delivered];
 }
@@ -86,7 +81,7 @@ function handleBuy(player: Player, args: Array<unknown>): void {
 	data.money -= def.price;
 	data.drills[drillKey(layer)] = newDrillState(firstOre, now());
 	markDirty(player);
-	notify(player, `Збудовано: ${def.name}! Конвеєр везе руду на склад.`, "success");
+	notify(player, `Збудовано: ${def.name}! Конвеєр везе руду в приймач твоєї лінії.`, "success");
 }
 
 function handleSelect(player: Player, args: Array<unknown>): void {
@@ -113,7 +108,7 @@ function handleSelect(player: Player, args: Array<unknown>): void {
 		markDirty(player);
 		notify(player, `Бур тепер добуває: ${ORES[oreId].name}.`, "success");
 	} else {
-		notify(player, "Спершу звільни склад: у бурі ще лежить руда.", "error");
+		notify(player, "Спершу звільни приймач лінії: у бурі ще лежить руда.", "error");
 	}
 }
 

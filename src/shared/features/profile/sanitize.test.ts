@@ -95,7 +95,6 @@ class SanitizeGearAndBagTests {
 			raw.levels = undefined;
 		});
 		Assert.deepEqual(result.data.bag, {});
-		Assert.equal(result.data.levels.warehouse, 1);
 		Assert.equal(result.data.gear.equipped.shoes, SHOES[0].id);
 	}
 }

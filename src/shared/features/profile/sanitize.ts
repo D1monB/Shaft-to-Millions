@@ -1,9 +1,8 @@
 import { INVENTORY_HARD_LIMIT, ITEMS, ItemKind, isItemId } from "shared/config/items";
-import { MACHINE_UPGRADES, MACHINE_IDS, RECIPES, WAREHOUSE_LEVELS, isRecipeId } from "shared/config/machines";
 import { DRILLS, drillKey } from "shared/config/drills";
 import { LAYER_COUNT, MAX_DEPTH_METERS } from "shared/config/layers";
 import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
-import { RESOURCE_IDS } from "shared/config/resources";
+import { HOPPER_CAPACITY, LINE_MACHINES, LINE_UPGRADES, LINE_UPGRADE_TRACKS } from "shared/config/line";
 import { GEAR_SLOTS, findGear, starterOf } from "shared/features/upgrades";
 import { MAX_COUNTER, repairCountMap, repairInteger, repairNumber, repairTable } from "shared/lib/repair";
 import { PlainTable } from "shared/lib/tables";
@@ -12,7 +11,7 @@ import { PlainTable } from "shared/lib/tables";
  * Forces known fields into their valid ranges and types. Runs after migration, before the data is used.
  * Returns the paths it had to repair, so the caller can log them (an exploit or a bug may be behind it).
  * Unknown keys are left alone.
- * Level caps come from the config arrays: adding a level there raises the cap, which is a schema bump
+ * Level caps come from the config arrays (gear, line upgrades): adding a level there raises the cap, which is a schema bump
  * (see schema.ts) so an older server does not clamp the new level away.
  */
 export function sanitize(data: PlainTable): string[] {
@@ -26,8 +25,6 @@ export function sanitize(data: PlainTable): string[] {
 
 	repairCountMap(data, "bag", ORE_IDS, "bag", repairs);
 
-	const levels = repairTable(data, "levels", "levels", repairs);
-	repairInteger(levels, "warehouse", 1, WAREHOUSE_LEVELS.size(), 1, "levels.warehouse", repairs);
 	repairInteger(data, "deepestLayer", 1, LAYER_COUNT, 1, "deepestLayer", repairs);
 	repairInteger(data, "deepestMeters", 0, MAX_DEPTH_METERS, 0, "deepestMeters", repairs);
 	repairGear(data, repairs);
@@ -35,9 +32,13 @@ export function sanitize(data: PlainTable): string[] {
 	repairInventory(data, repairs);
 	repairEquipped(data, repairs);
 	repairPurchaseIds(data, repairs);
-
-	repairCountMap(data, "warehouse", RESOURCE_IDS, "warehouse", repairs);
-	repairMachines(data, repairs);
+	repairLine(data, repairs);
+	// An infinite time is broken, not "far future": clamping it to the cap would block offline income for decades.
+	if (data.lastSeen === math.huge) {
+		data.lastSeen = 0;
+		repairs.push("lastSeen");
+	}
+	repairNumber(data, "lastSeen", 0, MAX_TIMESTAMP, 0, "lastSeen", repairs);
 
 	return repairs;
 }
@@ -87,40 +88,54 @@ function repairGear(data: PlainTable, repairs: string[]): void {
 // Latest sane unix time we accept (year ~2100). Anything later is a corrupted timestamp.
 const MAX_TIMESTAMP = 4_102_444_800;
 
+/** Longest queue any line machine can have (the hopper or the top capacity level). */
+const MAX_LINE_QUEUE = math.max(HOPPER_CAPACITY, LINE_UPGRADES.capacity[LINE_UPGRADES.capacity.size() - 1].value);
+
 /**
- * Each owned machine: a queue of known recipes for THAT machine (capped at its limit), a sane start time
- * and finished output counts. Unknown machine ids are left alone (newer server data).
+ * The tycoon line: at most one entry per machine in the config, levels within each track, progress within the
+ * machine time, queues of known ores within the queue limit of the machine's own capacity level.
  */
-function repairMachines(data: PlainTable, repairs: string[]): void {
-	const machines = repairTable(data, "machines", "machines", repairs);
-	for (const machineId of MACHINE_IDS) {
-		const raw = machines[machineId];
-		if (raw === undefined) {
-			continue;
+function repairLine(data: PlainTable, repairs: string[]): void {
+	const line = repairTable(data, "line", "line", repairs);
+	const raw = line.machines;
+	const machines: PlainTable[] = [];
+	if (typeIs(raw, "table")) {
+		for (const entry of raw as unknown[]) {
+			if (machines.size() >= LINE_MACHINES.size()) {
+				break;
+			}
+			// A hole in the array would shift every later machine; stop at the first non-table.
+			if (!typeIs(entry, "table")) {
+				break;
+			}
+			machines.push(entry as PlainTable);
 		}
-		const path = `machines.${machineId}`;
-		const machine = repairTable(machines, machineId, path, repairs);
-		// Levels first: the queue is cut to the limit of the machine's own queue level.
-		const upgrades = MACHINE_UPGRADES[machineId];
-		repairInteger(machine, "speedLevel", 1, upgrades.speed.size(), 1, `${path}.speedLevel`, repairs);
-		repairInteger(machine, "queueLevel", 1, upgrades.queue.size(), 1, `${path}.queueLevel`, repairs);
-		const queueLimit = upgrades.queue[(machine.queueLevel as number) - 1].value;
+	}
+	if (!typeIs(raw, "table") || machines.size() !== (raw as unknown[]).size()) {
+		repairs.push("line.machines");
+	}
+	line.machines = machines;
+	machines.forEach((machine, index) => {
+		const path = `line.machines.${index}`;
+		for (const track of LINE_UPGRADE_TRACKS) {
+			repairInteger(machine, track, 1, LINE_UPGRADES[track].size(), 1, `${path}.${track}`, repairs);
+		}
+		repairNumber(machine, "progress", 0, LINE_MACHINES[index].seconds, 0, `${path}.progress`, repairs);
+		const limit = index === 0 ? HOPPER_CAPACITY : LINE_UPGRADES.capacity[(machine.capacity as number) - 1].value;
 		const queue = machine.queue;
-		const cleanQueue: string[] = [];
+		const clean: string[] = [];
 		if (typeIs(queue, "table")) {
-			for (const recipeId of queue as unknown[]) {
-				if (isRecipeId(recipeId) && RECIPES[recipeId].machine === machineId && cleanQueue.size() < queueLimit) {
-					cleanQueue.push(recipeId);
+			for (const ore of queue as unknown[]) {
+				if (isOreId(ore) && clean.size() < math.min(limit, MAX_LINE_QUEUE)) {
+					clean.push(ore);
 				}
 			}
 		}
-		if (!typeIs(queue, "table") || cleanQueue.size() !== (queue as unknown[]).size()) {
+		if (!typeIs(queue, "table") || clean.size() !== (queue as unknown[]).size()) {
 			repairs.push(`${path}.queue`);
 		}
-		machine.queue = cleanQueue;
-		repairNumber(machine, "startedAt", 0, MAX_TIMESTAMP, 0, `${path}.startedAt`, repairs);
-		repairCountMap(machine, "ready", RESOURCE_IDS, `${path}.ready`, repairs);
-	}
+		machine.queue = clean;
+	});
 }
 
 /**

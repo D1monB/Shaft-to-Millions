@@ -298,6 +298,72 @@ class MigrationsTests {
 		Assert.equal(data.money, 10 * 2);
 	}
 
+	// ---- version 5: the tycoon line replaces the recipe factory (decisions 027) ----
+
+	private migrateV5(data: PlainTable): PlainTable {
+		data.schemaVersion = 4;
+		const result = migrate(data, MIGRATIONS, 5);
+		Assert.true(result.ok);
+		return result.ok ? result.data : {};
+	}
+
+	@Test
+	public version5PaysBackMachinesUpgradesAndStock() {
+		const data = this.migrateV5({
+			money: 10,
+			levels: { warehouse: 4 },
+			warehouse: { copper: 10, gold_circuit: 1, unknown_thing: 50 },
+			machines: {
+				furnace: { speedLevel: 4, queueLevel: 1, queue: ["smelt_gold"], ready: { gold_ingot: 2 } },
+				workbench: { speedLevel: 1, queueLevel: 2, queue: [], ready: {} },
+			},
+		});
+		const warehouse = 10 * 5 + 520 + (2_000 + 10_000 + 50_000);
+		const furnace = 400 + (1_500 + 6_000 + 25_000) + 60 + 2 * 140;
+		const workbench = 3_000 + 5_000;
+		Assert.equal(data.money, 10 + warehouse + furnace + workbench);
+		Assert.undefined(data.warehouse);
+		Assert.undefined(data.machines);
+		Assert.undefined(data.levels);
+	}
+
+	@Test
+	public migrationsNeverPayForMoreThanTheOldGameAllowed() {
+		// Regression (security review): a save broken by an old dupe must not be laundered into money.
+		const v4 = this.migrateV4({ money: 0, bag: { coal: 1e9 }, warehouse: { silver_contact: 1e9 } });
+		Assert.equal(v4.money, 800 * 2 + 8_000 * 230);
+		const v5 = this.migrateV5({
+			money: 0,
+			warehouse: { gold_circuit: 1e9, copper: 1e9 },
+			machines: { furnace: { ready: { gold_ingot: 1e9 } } },
+		});
+		// The best pieces first: 8 000 circuits fill the warehouse cap, copper gets nothing; 30 ingots in the furnace.
+		Assert.equal(v5.money, 8_000 * 520 + 400 + 30 * 140);
+	}
+
+	@Test
+	public version5WithoutAFactoryPaysNothing() {
+		const data = this.migrateV5({ money: 77 });
+		Assert.equal(data.money, 77);
+	}
+
+	@Test
+	public version5SurvivesBrokenData() {
+		const broken = [
+			{ money: 0 / 0, levels: "x", warehouse: 5, machines: "y" },
+			{ levels: { warehouse: math.huge }, machines: { furnace: { speedLevel: 0 / 0, queue: "x", ready: 3 } } },
+			{ machines: { furnace: "x", laser: { speedLevel: 4 } }, warehouse: { copper: -5, gold: 0 / 0 } },
+		];
+		for (const save of broken) {
+			const data = this.migrateV5(save as unknown as PlainTable);
+			const money = data.money as number;
+			Assert.true(money === money && money >= 0 && money < math.huge, `money ${money}`);
+		}
+		// An infinite warehouse level is broken data: it counts as level 1 (nothing paid), never as infinite money.
+		const top = this.migrateV5({ money: 0, levels: { warehouse: math.huge } });
+		Assert.equal(top.money, 0);
+	}
+
 	@Test
 	public version4SurvivesBrokenData() {
 		const broken = [

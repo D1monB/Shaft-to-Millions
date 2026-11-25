@@ -314,3 +314,8 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   moved to another layer switches to the layer ore and its buffer is paid out. The bump also raises the layer cap
   from 3 to 5. Gear item ids are kept (saved in profiles); only display names changed (silver -> steel, the old
   obsidian/cobalt pickaxes are now titanium/obsidian).
+- **Schema v5 (step 3, line state):** the furnace, the workbench and the warehouse are removed. Their price, every
+  upgrade level paid, the warehouse level, the stock and the queued and finished crafts are paid back at version 4
+  prices. The profile gets `line` (bought machines, levels, queues) and `lastSeen` (for the offline run). Drills now
+  deliver into the hopper of the line; without a line machine the ore waits in the drill buffer. The tags `Warehouse`,
+  `Machine` and the attribute `MachineId` are gone from the map contract (plot tags come with the line service).

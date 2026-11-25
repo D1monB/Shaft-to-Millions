@@ -1,19 +1,8 @@
-// How ores and factory products look in the UI: a coloured square with an icon and a count, plus a drawn arrow
-// for recipes ("ore → ingot"). The colour comes from the ore, or from the metal a product is made of.
+// How ores look in the UI: a coloured square with an icon and a count, plus a drawn arrow for "ore → product".
+// The colour comes from the ore config.
 import React from "@rbxts/react";
-import { ORES, OreId, isOreId } from "shared/config/ores";
-import { ProductId } from "shared/config/products";
-import { ResourceId } from "shared/config/resources";
+import { ORES, OreId } from "shared/config/ores";
 import { COLORS, FONTS, RADIUS, STROKE, rampSequence } from "./ui-kit";
-
-const PRODUCT_LOOK: { readonly [K in ProductId]: { readonly metal: OreId; readonly icon: string } } = {
-	copper_ingot: { metal: "copper", icon: "🧱" },
-	iron_ingot: { metal: "iron", icon: "🧱" },
-	gold_ingot: { metal: "gold", icon: "🧱" },
-	copper_wire: { metal: "copper", icon: "➰" },
-	iron_gear: { metal: "iron", icon: "⚙️" },
-	gold_circuit: { metal: "gold", icon: "💾" },
-};
 
 // Each ore has its own glyph, not only its own colour. Only emoji from old Unicode versions: newer ones (e.g. the
 // rock, Unicode 13) are missing from the Roblox emoji font and draw an empty square.
@@ -26,18 +15,17 @@ const ORE_ICONS: { readonly [K in OreId]: string } = {
 	etherium: "💎",
 };
 
-function colorOf(id: ResourceId): Color3 {
-	const ore = isOreId(id) ? id : PRODUCT_LOOK[id as ProductId].metal;
-	const [r, g, b] = ORES[ore].color;
+function colorOf(id: OreId): Color3 {
+	const [r, g, b] = ORES[id].color;
 	return Color3.fromRGB(r, g, b);
 }
 
-export function resourceIcon(id: ResourceId): string {
-	return isOreId(id) ? ORE_ICONS[id] : PRODUCT_LOOK[id as ProductId].icon;
+export function resourceIcon(id: OreId): string {
+	return ORE_ICONS[id];
 }
 
 export interface ResourceTileProps {
-	readonly id: ResourceId;
+	readonly id: OreId;
 	/** Side of the square in pixels. */
 	readonly size: number;
 	/** Small badge in the corner, e.g. "×3". */

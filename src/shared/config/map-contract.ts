@@ -12,10 +12,6 @@ export const TAGS = {
 	CampSpawn: "CampSpawn",
 	/** Where fast travel to the surface puts the player. One Part is enough. */
 	SurfaceSpawn: "SurfaceSpawn",
-	/** Base storage on the surface: the bag is unloaded here for the factory. */
-	Warehouse: "Warehouse",
-	/** A factory machine spot. Attribute MachineId. */
-	Machine: "Machine",
 	/** Where an auto drill can be built. Attribute LayerId. */
 	DrillSite: "DrillSite",
 	/** A chest stand. Attribute ChestId. */
@@ -25,6 +21,5 @@ export const TAGS = {
 export const ATTRIBUTES = {
 	OreId: "OreId",
 	LayerId: "LayerId",
-	MachineId: "MachineId",
 	ChestId: "ChestId",
 } as const;

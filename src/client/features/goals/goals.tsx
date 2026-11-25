@@ -2,7 +2,6 @@
 // Features register where goals come from; the shared pickGoalInfo chooses exactly one.
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
-import { MACHINE_IDS } from "shared/config/machines";
 import { ORES, ORE_IDS } from "shared/config/ores";
 import { PickaxeDef } from "shared/config/pickaxes";
 import { bagCapacity, bagTotal } from "shared/features/bag";
@@ -49,9 +48,9 @@ function gearGoals(view: PlayerView): GoalCandidate[] {
 		ORE_IDS.some((id) => ORES[id].requiredTier > current.tier && ORES[id].requiredTier <= upcoming.tier);
 	const pickaxe = gearGoal(view, "pickaxe", unlocksOre ? 0 : 2);
 	const bag = gearGoal(view, "bag", 1);
-	// Shoes only shorten trips, so they are hinted after the first machine. Earlier, the cheapest-goal rule would make
+	// Shoes only shorten trips, so they are hinted after the first line machine. Earlier, the cheapest-goal rule would make
 	// the cheap shoes the first target of a new player instead of the bag and the first pickaxe.
-	const ownsMachine = MACHINE_IDS.some((id) => view.machines[id] !== undefined);
+	const ownsMachine = view.line.machines.size() > 0;
 	const shoes = ownsMachine ? gearGoal(view, "shoes", 2) : undefined;
 	for (const goal of [pickaxe, bag, shoes]) {
 		if (goal !== undefined) {

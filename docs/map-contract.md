@@ -13,8 +13,6 @@
 | Блок руди            | `OreNode`   | `OreId` (string)           | Part або Model                                | додає ClickDetector, підпис над блоком              |
 | Магазин спорядження  | `Shop`      | немає                      | Part або Model                                | ProximityPrompt «Відкрити»                          |
 | Зона скупки          | `SellZone`  | немає                      | Part (можна прозору, `CanCollide = false`)     | ProximityPrompt «Продати»                           |
-| Склад на поверхні    | `Warehouse` | немає                      | Part або Model                                | ProximityPrompt «Склад»                             |
-| Машина фабрики       | `Machine`   | `MachineId` (string)       | Part або Model                                | ProximityPrompt з назвою машини                     |
 | Табір шару           | `CampSpawn` | `LayerId` (number)         | Part або SpawnLocation (код вимикає `Enabled`) | дотик відкриває шар і ставить точку відродження     |
 | Точка на поверхні (подорож) | `SurfaceSpawn` | немає                | Part (одна)                                    | сюди телепортує швидка подорож «Поверхня»           |
 | Майданчик автобура   | `DrillSite` | `LayerId` (number)         | Part або Model                                | ProximityPrompt «Автобур»                           |
@@ -26,7 +24,6 @@
 | ----------- | ------------------------------------------------------------------------------------------- |
 | `OreId`     | `copper` (шар 1) · `iron` (шар 2) · `gold` (шар 3) · `titanium` (шар 4) · `obsidian`, `etherium` (шар 5) |
 | `LayerId`   | `1` Сірі Пласти, `2` Іржаві Порожнини, `3` Базальтова Глибина, `4` Титанові Ребра, `5` Ефірне Дно (назви 4–5 пропозиції) |
-| `MachineId` | `furnace` (Горн), `workbench` (Верстат)                                                     |
 | `ChestId`   | `pet_chest`, `speed_chest`, `pickaxe_chest`                                                  |
 
 Неправильний або відсутній атрибут не ламає гру: сервер пише одне попередження в Output і пропускає об'єкт.
@@ -35,7 +32,7 @@
 
 ```
 Workspace
-  Surface/            поверхня: магазин, скупка, склад, машини, скрині
+  Surface/            поверхня: магазин, скупка, скрині (ділянки з лінією: теги буде додано окремо)
   Layers/
     Layer1/           один шар = одна модель (щоб потім вантажити шари частинами, StreamingEnabled)
       Ores/

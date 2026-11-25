@@ -4,7 +4,6 @@ import { useViewport } from "@rbxts/pretty-react-hooks";
 import React from "@rbxts/react";
 import { createPortal, createRoot } from "@rbxts/react-roblox";
 import { Players } from "@rbxts/services";
-import { MachineBoards } from "client/features/factory";
 import { GoalBanner } from "client/features/goals";
 import { Hud } from "client/features/hud";
 import { PanelHost, ToastHost } from "client/lib/ui-kit";
@@ -40,7 +39,6 @@ function App() {
 				<ToastHost />
 				<PanelHost />
 			</frame>
-			<MachineBoards />
 		</screengui>
 	);
 }

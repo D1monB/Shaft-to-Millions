@@ -7,7 +7,7 @@ export interface DrillDef {
 	readonly price: number;
 	/** Seconds of drilling per point of ore hardness: copper (3) takes 3x this, iron (6) takes 6x. */
 	readonly secondsPerHardness: number;
-	/** Pieces the drill holds when the warehouse is full. */
+	/** Pieces the drill holds while the line hopper is full or missing. */
 	readonly bufferCapacity: number;
 }
 
