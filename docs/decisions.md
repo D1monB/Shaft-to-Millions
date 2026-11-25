@@ -231,7 +231,6 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the play-test checklist is long; clicks by path do not break when the layout or window size changes.
   Everything else that changes the place or the account stays denied.
 
-
 ## 023. Gear reachability fix and open balance questions
 
 - **Date:** 2026-11-25
@@ -242,3 +241,15 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   (the gold and obsidian pickaxes need tier 3 ore), the hand drill is the first way to tier 4; the light pickaxe, the copper
   pickaxe and a few shoe/bag steps give little for their price; the first furnace comes at about 7-9 minutes, tight against
   the 10-minute rule. Numbers to tune after timing a real run: first stone pickaxe, leather bag, furnace, iron pickaxe.
+
+## 024. Early-game price trim (draft, check)
+
+- **Date:** 2026-11-25 (draft, check)
+- **Decision:** furnace $500 -> $400; copper pickaxe $200 + 5 copper ingots -> $120 + 3 ingots; iron pickaxe 8 -> 6 iron
+  ingots. The goal hint (`nextGearToBuy` with the pickaxe tier) now skips items whose materials the current tier cannot
+  reach, and prefers a cheaper higher-tier side pickaxe (the hammer, $15 000) over the main line item (the drill, $200 000).
+- **Why:** the balance-analyst model estimated the first furnace at about 8 minutes and the iron pickaxe at 11-12 minutes,
+  against the 10-minute rule; the copper pickaxe gave only about +14 $/min. The hint pointed at items the player could not
+  yet buy.
+- **Left unchanged on purpose:** bags above 150, shoes Riveted/Silver, the light pickaxe. Tune them only after a timed
+  Play-test measures the real trip time and seconds per node (the model is not a measurement).

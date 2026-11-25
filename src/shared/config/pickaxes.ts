@@ -20,8 +20,8 @@ export const PICKAXES: ReadonlyArray<PickaxeDef> = [
 		tier: 1,
 		power: 2,
 		swingSeconds: 0.45,
-		price: 200,
-		materials: { copper_ingot: 5 },
+		price: 120,
+		materials: { copper_ingot: 3 },
 	},
 	{
 		id: "pickaxe_iron",
@@ -30,7 +30,7 @@ export const PICKAXES: ReadonlyArray<PickaxeDef> = [
 		power: 3,
 		swingSeconds: 0.45,
 		price: 600,
-		materials: { iron_ingot: 8 },
+		materials: { iron_ingot: 6 },
 	},
 	{
 		id: "pickaxe_light",
