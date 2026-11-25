@@ -15,6 +15,6 @@ export const BAGS: ReadonlyArray<BagDef> = [
 	{ id: "bag_reinforced", name: "Посилений рюкзак", capacity: 200, price: 8_000 },
 	{ id: "bag_silver", name: "Сталевий ранець", capacity: 300, price: 20_000 },
 	{ id: "bag_cargo", name: "Вантажний ранець", capacity: 400, price: 50_000 },
-	{ id: "bag_obsidian", name: "Обсидіановий контейнер", capacity: 600, price: 150_000 },
+	{ id: "bag_obsidian", name: "Титановий контейнер", capacity: 600, price: 150_000 },
 	{ id: "bag_gravity", name: "Гравітаційний контейнер", capacity: 800, price: 400_000 },
 ];

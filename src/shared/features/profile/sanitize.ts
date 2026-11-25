@@ -163,8 +163,9 @@ function repairDrills(data: PlainTable, repairs: string[]): void {
 		const path = "drills." + key;
 		const drill = repairTable(drills, key, path, repairs);
 		const oreId = drill.oreId;
-		if (!isOreId(oreId) || ORES[oreId].layer !== layer) {
-			drill.oreId = ORE_IDS.find((id) => ORES[id].layer === layer) ?? "copper";
+		// A drill may only sit on a drillable ore of its own layer (iridium is mined by hand, decisions 031).
+		if (!isOreId(oreId) || ORES[oreId].layer !== layer || ORES[oreId].drillable === false) {
+			drill.oreId = ORE_IDS.find((id) => ORES[id].layer === layer && ORES[id].drillable !== false) ?? "copper";
 			repairs.push(path + ".oreId");
 		}
 		repairNumber(drill, "lastTick", 0, MAX_TIMESTAMP, 0, path + ".lastTick", repairs);

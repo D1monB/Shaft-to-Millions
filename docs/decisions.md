@@ -366,8 +366,11 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 
 - **What:** layers 1-5 hold copper, iron, silver, gold, titanium (one ore each); iridium grows only in the portal zone
   at the bottom of layer 5 and is never drilled (`drillable: false`). Prices 5 / 12 / 30 / 70 / 150 / 400. Ore ids
-  match the map author's `ServerStorage.ItemTemplates/<ore>` folders. Schema v6 renames saved ore at the same price:
-  obsidian -> titanium ($150), etherium -> iridium ($400), in the bag, the belt intake, machine queues and drills.
+  match the map author's `ServerStorage.ItemTemplates/<ore>` folders. Schema v6 shifts every saved ore to the ore with
+  the same price, all at once: gold $30 -> silver, titanium $70 -> gold, obsidian $150 -> titanium, etherium $400 ->
+  iridium (bag, belt intake, machine queues, drills; an etherium drill moves to titanium, iridium is never drilled).
+  First version renamed only obsidian/etherium and would have repriced old gold and titanium 2x (security review).
+  Pickaxe and bag display names follow the ores (ids unchanged): tier 3 "Срібна", tier 4 "Золота", tier 5 "Титанова".
   Ore blocks stay as before: any Part/Model tagged `OreNode` with an `OreId` attribute.
 - **Why:** the developer and the map author changed the design (each ore on its own layer, iridium only near the
   portal); the earlier per-spawn ore tables were dropped. Renaming by price means no player loses value.

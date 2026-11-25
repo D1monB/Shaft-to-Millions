@@ -247,41 +247,66 @@ function refundMachineV4(machineId: unknown, machine: unknown): number {
 }
 
 /**
- * Version 6 (decisions 031): obsidian and etherium are gone; silver and iridium came. Old ore becomes the new ore
- * with the SAME price at version 6 (obsidian $150 = titanium, etherium $400 = iridium), so nobody loses value.
- * Frozen: never edit this table.
+ * Version 6 (decisions 031): ores moved one layer down and got new prices. Every saved ore becomes the new ore with
+ * the SAME price, all at once (read the old id, write the new one, so nothing is renamed twice):
+ * gold $30 -> silver, titanium $70 -> gold, obsidian $150 -> titanium, etherium $400 -> iridium.
+ * Copper and iron did not change. Frozen: never edit these tables.
  */
-const V6_RENAMED: { readonly [id: string]: string | undefined } = { obsidian: "titanium", etherium: "iridium" };
+const V6_SHIFT: { readonly [id: string]: string | undefined } = {
+	gold: "silver",
+	titanium: "gold",
+	obsidian: "titanium",
+	etherium: "iridium",
+};
 
-function renamedOre(id: unknown): unknown {
-	return typeIs(id, "string") ? (V6_RENAMED[id] ?? id) : id;
+/** Ids that did not exist in version 5: a stray key with one of these names is junk and is dropped. */
+const V6_NEW_IDS: ReadonlyArray<string> = ["silver", "iridium"];
+
+/**
+ * A drill keeps working on the shifted ore, except etherium: iridium is never drilled (decisions 031), so an
+ * etherium drill moves to titanium, the other layer-5 ore. Frozen.
+ */
+const V6_DRILL_SHIFT: { readonly [id: string]: string | undefined } = { ...V6_SHIFT, etherium: "titanium" };
+
+function shifted(id: unknown, shift: { readonly [id: string]: string | undefined }): unknown {
+	return typeIs(id, "string") ? (shift[id] ?? id) : id;
 }
 
-/** Moves the counts of renamed ores onto their new id (adding to what is there). Broken counts are left to sanitize. */
-function renameCounts(map: unknown): void {
+/** Builds the new counts from a snapshot of the old ones, so a shifted id never collides with an unshifted one. */
+function shiftCounts(map: unknown): void {
 	if (!typeIs(map, "table")) {
 		return;
 	}
 	const counts = map as PlainTable;
-	for (const [oldId, newId] of pairs(V6_RENAMED)) {
-		const moved = counts[oldId];
-		if (moved === undefined) {
+	const snapshot: PlainTable = {};
+	for (const [id, value] of pairs(counts)) {
+		snapshot[id as string] = value;
+	}
+	for (const [id] of pairs(snapshot)) {
+		counts[id as string] = undefined;
+	}
+	for (const [id, value] of pairs(snapshot)) {
+		const key = id as string;
+		if (V6_NEW_IDS.includes(key)) {
 			continue;
 		}
-		const amount = countOf(moved);
-		counts[oldId] = undefined;
-		counts[newId] = countOf(counts[newId]) + amount;
+		const target = shifted(key, V6_SHIFT) as string;
+		if (target === key) {
+			counts[key] = value; // untouched ore (copper, iron) or an unknown id: kept as is for sanitize
+		} else {
+			counts[target] = countOf(counts[target]) + countOf(value);
+		}
 	}
 }
 
-/** Renames ore ids inside a list (the belt intake, a machine queue), keeping the order. */
-function renameList(list: unknown): void {
+/** Shifts ore ids inside a list (the belt intake, a machine queue), keeping the order. */
+function shiftList(list: unknown): void {
 	if (!typeIs(list, "table")) {
 		return;
 	}
 	const items = list as unknown[];
 	for (let i = 0; i < items.size(); i++) {
-		items[i] = renamedOre(items[i]);
+		items[i] = shifted(items[i], V6_SHIFT);
 	}
 }
 
@@ -389,18 +414,19 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
 		},
 	},
 	{
-		// Version 6 (decisions 031): obsidian -> titanium, etherium -> iridium everywhere ore ids are saved (same
-		// price). Drills follow their layer's ore in sanitize; the bump stops an older server from deleting the new ids.
+		// Version 6 (decisions 031): every saved ore id shifts to the ore with the same price (V6_SHIFT), in the bag, the
+		// belt intake, machine queues and drills. Drills on another layer's ore are fixed by sanitize; the bump stops an
+		// older server from deleting the new ids.
 		from: 5,
 		apply: (data) => {
-			renameCounts(data.bag);
+			shiftCounts(data.bag);
 			if (typeIs(data.line, "table")) {
 				const line = data.line as PlainTable;
-				renameList(line.intake);
+				shiftList(line.intake);
 				if (typeIs(line.machines, "table")) {
 					for (const machine of line.machines as unknown[]) {
 						if (typeIs(machine, "table")) {
-							renameList((machine as PlainTable).queue);
+							shiftList((machine as PlainTable).queue);
 						}
 					}
 				}
@@ -409,7 +435,7 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
 				for (const [, drill] of pairs(data.drills as PlainTable)) {
 					if (typeIs(drill, "table")) {
 						const fields = drill as PlainTable;
-						fields.oreId = renamedOre(fields.oreId);
+						fields.oreId = shifted(fields.oreId, V6_DRILL_SHIFT);
 					}
 				}
 			}

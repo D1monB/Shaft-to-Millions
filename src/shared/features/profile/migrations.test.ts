@@ -386,28 +386,40 @@ class MigrationsTests {
 	}
 
 	@Test
-	public version6RenamesOldOresAtTheSamePrice() {
+	public version6ShiftsEveryOreToTheSamePrice() {
+		// Regression (security review 2026-11-25): only renaming obsidian/etherium repriced old gold and titanium 2x.
 		const data = this.migrateV6({
-			bag: { obsidian: 7, etherium: 2, titanium: 3, copper: 1 },
+			bag: { copper: 1, iron: 2, gold: 3, titanium: 4, obsidian: 5, etherium: 6, silver: 999, iridium: 999 },
 			line: {
-				intake: ["copper", "obsidian", "etherium"],
+				intake: ["copper", "gold", "titanium", "obsidian", "etherium"],
 				beltProgress: 0,
-				machines: [{ queue: ["etherium", "iron"] }, { queue: ["obsidian"] }],
+				machines: [{ queue: ["etherium", "iron"] }, { queue: ["gold"] }],
 			},
-			drills: { layer5: { oreId: "obsidian", buffer: 4 }, layer2: { oreId: "iron" } },
+			drills: {
+				layer3: { oreId: "gold" },
+				layer4: { oreId: "titanium" },
+				layer5: { oreId: "etherium", buffer: 4 },
+				layer2: { oreId: "iron" },
+			},
 		});
 		const bag = data.bag as PlainTable;
-		Assert.equal(bag.titanium, 10);
-		Assert.equal(bag.iridium, 2);
 		Assert.equal(bag.copper, 1);
+		Assert.equal(bag.iron, 2);
+		Assert.equal(bag.silver, 3); // old gold ($30), the stray "silver: 999" was junk and is gone
+		Assert.equal(bag.gold, 4); // old titanium ($70)
+		Assert.equal(bag.titanium, 5); // old obsidian ($150)
+		Assert.equal(bag.iridium, 6); // old etherium ($400), the stray "iridium: 999" is gone
 		Assert.undefined(bag.obsidian);
 		Assert.undefined(bag.etherium);
 		const line = data.line as PlainTable;
-		Assert.deepEqual(line.intake, ["copper", "titanium", "iridium"]);
+		Assert.deepEqual(line.intake, ["copper", "silver", "gold", "titanium", "iridium"]);
 		const machines = line.machines as PlainTable[];
 		Assert.deepEqual(machines[0].queue, ["iridium", "iron"]);
-		Assert.deepEqual(machines[1].queue, ["titanium"]);
+		Assert.deepEqual(machines[1].queue, ["silver"]);
 		const drills = data.drills as PlainTable;
+		Assert.equal((drills.layer3 as PlainTable).oreId, "silver");
+		Assert.equal((drills.layer4 as PlainTable).oreId, "gold");
+		// Iridium is never drilled: an etherium drill moves to titanium.
 		Assert.equal((drills.layer5 as PlainTable).oreId, "titanium");
 		Assert.equal((drills.layer2 as PlainTable).oreId, "iron");
 	}
