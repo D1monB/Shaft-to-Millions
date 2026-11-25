@@ -24,12 +24,6 @@ export class WrittenScores {
 	public set(board: BoardId, userId: number, score: number): void {
 		this.written.set(`${board}:${userId}`, score);
 	}
-
-	public forget(userId: number): void {
-		for (const board of BOARD_IDS) {
-			this.written.delete(`${board}:${userId}`);
-		}
-	}
 }
 
 /**

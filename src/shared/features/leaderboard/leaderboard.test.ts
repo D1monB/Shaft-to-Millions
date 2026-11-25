@@ -4,6 +4,7 @@ import { MAX_COUNTER } from "shared/lib/repair";
 import {
 	cleanRows,
 	decodeDepthScore,
+	depthLimit,
 	depthMeters,
 	depthScore,
 	higherScore,
@@ -64,6 +65,16 @@ class LeaderboardTests {
 		Assert.undefined(recordDepth(0, math.huge, 100));
 		Assert.undefined(recordDepth(NAN, 10, 100));
 		Assert.undefined(recordDepth(0, -5, 100));
+	}
+
+	@Test
+	public missingCampMeansNoRecord() {
+		// Regression (exploit review): a missing camp used to remove the cap entirely.
+		Assert.undefined(depthLimit(1, undefined));
+		Assert.undefined(depthLimit(LAYER_COUNT - 1, NAN));
+		Assert.equal(depthLimit(1, 120), 120);
+		Assert.equal(depthLimit(LAYER_COUNT, undefined), MAX_DEPTH_METERS);
+		Assert.undefined(depthLimit(NAN, 120));
 	}
 
 	@Test

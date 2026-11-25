@@ -7,6 +7,7 @@ import {
 	LEADERBOARD_REMOTE,
 	LeaderboardSnapshot,
 	SYNC_INTERVAL,
+	depthLimit,
 	depthMeters,
 	depthScore,
 	recordDepth,
@@ -22,6 +23,9 @@ import { LeaderboardStore } from "./ports";
 
 const FALLBACK_NAME = "Гравець";
 
+/** Extra studs below the feet the ground raycast reaches (slopes, stairs, a small hop). */
+const GROUND_SLACK_STUDS = 3;
+
 const written = new WrittenScores();
 const names = new NameCache((userId) => {
 	// A player on this server needs no web call.
@@ -31,47 +35,83 @@ const names = new NameCache((userId) => {
 }, FALLBACK_NAME);
 let snapshot: LeaderboardSnapshot = emptySnapshot();
 
-// Logged at most once per round, so an outage cannot flood the output.
+// Logged at most once per outage, so a DataStore problem cannot flood the output.
 let failureLogged = false;
+let errorLogged = false;
 
-/** Height of the surface: depth is measured from the SurfaceSpawn. Undefined until the map has one. */
-function surfaceY(): number | undefined {
-	const spawn = CollectionService.GetTagged(TAGS.SurfaceSpawn)[0];
-	return spawn === undefined ? undefined : getInstancePosition(spawn)?.Y;
+/** Logs the first error of a broken round, then stays quiet until a round works again. */
+function runLogged<A extends unknown[]>(label: string, work: (...args: A) => void, ...args: A): void {
+	const [ok, err] = pcall(work, ...args);
+	if (!ok && !errorLogged) {
+		warn(`[leaderboard] ${label} failed: ${err}`);
+		errorLogged = true;
+	}
 }
 
-/**
- * Deepest meters the player may have reached: the camp of the first layer they have NOT opened.
- * Walking or falling past a locked camp never becomes a record. No such camp (last layer open) = no cap.
- */
-function depthCap(surface: number, deepestLayer: number): number {
-	for (const camp of CollectionService.GetTagged(TAGS.CampSpawn)) {
-		if (camp.GetAttribute(ATTRIBUTES.LayerId) === deepestLayer + 1) {
-			const position = getInstancePosition(camp);
-			if (position !== undefined) {
-				return depthMeters(surface, position.Y);
+/** Map heights, read once per sync round instead of on every movement sample. */
+interface MapHeights {
+	readonly surfaceY: number | undefined;
+	/** Depth in meters of the camp of each layer that has one. */
+	readonly campMeters: ReadonlyMap<number, number>;
+}
+
+let heights: MapHeights = { surfaceY: undefined, campMeters: new Map() };
+
+function readMapHeights(): MapHeights {
+	// The highest SurfaceSpawn, so several of them (placeholders and a real one) give a stable surface.
+	let surface: number | undefined;
+	for (const spawn of CollectionService.GetTagged(TAGS.SurfaceSpawn)) {
+		const y = getInstancePosition(spawn)?.Y;
+		if (y !== undefined && (surface === undefined || y > surface)) {
+			surface = y;
+		}
+	}
+	const campMeters = new Map<number, number>();
+	if (surface !== undefined) {
+		for (const camp of CollectionService.GetTagged(TAGS.CampSpawn)) {
+			const layer = camp.GetAttribute(ATTRIBUTES.LayerId);
+			const y = getInstancePosition(camp)?.Y;
+			if (typeIs(layer, "number") && y !== undefined) {
+				campMeters.set(layer, depthMeters(surface, y));
 			}
 		}
 	}
-	return math.huge;
+	return { surfaceY: surface, campMeters };
+}
+
+/**
+ * True when the character stands on real map geometry, checked by the server itself.
+ * Why not Humanoid.FloorMaterial: the client simulates its own character, so that value is the client's word.
+ * A server raycast only sees parts that exist on the server, and anchored ones cannot be moved by a client.
+ */
+function standsOnMap(character: Model, root: BasePart, humanoid: Humanoid): boolean {
+	const params = new RaycastParams();
+	params.FilterType = Enum.RaycastFilterType.Exclude;
+	params.FilterDescendantsInstances = [character];
+	const reach = humanoid.HipHeight + root.Size.Y / 2 + GROUND_SLACK_STUDS;
+	const hit = game.Workspace.Raycast(root.Position, new Vector3(0, -reach, 0), params);
+	return hit !== undefined && hit.Instance.Anchored;
 }
 
 function onSample(player: Player, position: Vector3): void {
-	// Only standing on something counts. Mid-air (jumping, falling into the void) is never a record.
-	const humanoid = player.Character?.FindFirstChildOfClass("Humanoid");
+	const character = player.Character;
+	const humanoid = character?.FindFirstChildOfClass("Humanoid");
+	const root = character?.FindFirstChild("HumanoidRootPart");
 	const data = getProfileData(player);
-	const surface = surfaceY();
-	if (humanoid === undefined || humanoid.FloorMaterial === Enum.Material.Air || data === undefined) {
+	const surface = heights.surfaceY;
+	if (character === undefined || humanoid === undefined || root === undefined || !root.IsA("BasePart")) {
 		return;
 	}
-	if (surface === undefined) {
+	if (data === undefined || surface === undefined) {
 		return;
 	}
-	const record = recordDepth(
-		data.deepestMeters,
-		depthMeters(surface, position.Y),
-		depthCap(surface, data.deepestLayer),
-	);
+	const limit = depthLimit(data.deepestLayer, heights.campMeters.get(data.deepestLayer + 1));
+	// Cheap checks first: the raycast only runs when the sample could be a new record at all.
+	const sample = depthMeters(surface, position.Y);
+	if (limit === undefined || sample <= data.deepestMeters || !standsOnMap(character, root, humanoid)) {
+		return;
+	}
+	const record = recordDepth(data.deepestMeters, sample, limit);
 	if (record !== undefined) {
 		// Saved with the profile. No markDirty: the client does not show it live, and a descent would
 		// otherwise send the whole profile several times a second.
@@ -93,6 +133,7 @@ function writePlayer(activeStore: LeaderboardStore, player: Player): number {
 }
 
 function syncRound(activeStore: LeaderboardStore): void {
+	heights = readMapHeights();
 	let failed = 0;
 	for (const player of getLoadedPlayers()) {
 		failed += writePlayer(activeStore, player);
@@ -105,6 +146,7 @@ function syncRound(activeStore: LeaderboardStore): void {
 	}
 	snapshot = readBoards(activeStore, names, snapshot);
 	remoteEvent(LEADERBOARD_REMOTE).FireAllClients(snapshot);
+	errorLogged = false;
 }
 
 export function startLeaderboardService(): void {
@@ -113,7 +155,7 @@ export function startLeaderboardService(): void {
 
 	onHonestSample((player, position) => {
 		// pcall: a broken character must not stop the movement check of everyone else.
-		pcall(onSample, player, position);
+		runLogged("depth sample", onSample, player, position);
 	});
 
 	// A new player sees the current boards right away instead of waiting for the next round.
@@ -123,20 +165,29 @@ export function startLeaderboardService(): void {
 		// Read the scores now, while the data is still there; the write itself yields, so it runs in its own thread.
 		const scores = scoresOf(player);
 		const userId = player.UserId;
+		// The written scores are NOT forgotten: a rejoin on this server then writes only what grew,
+		// so join/leave spam cannot burn the DataStore budget of everyone else.
 		task.spawn(() => {
 			if (scores !== undefined) {
 				writeScores(activeStore, written, userId, scores);
 			}
-			written.forget(userId);
 		});
 	});
 
 	task.spawn(() => {
 		// First read at once, so the boards are not empty for a whole minute after a server starts.
-		pcall(syncRound, activeStore);
+		runLogged("sync round", syncRound, activeStore);
 		for (;;) {
 			task.wait(SYNC_INTERVAL);
-			pcall(syncRound, activeStore);
+			runLogged("sync round", syncRound, activeStore);
+		}
+	});
+
+	// On shutdown, write once more for everyone still here. Best effort: Roblox gives BindToClose about 30 s
+	// and the profile service saves in parallel; a lost write only costs the last minute of a board score.
+	game.BindToClose(() => {
+		for (const player of getLoadedPlayers()) {
+			pcall(writePlayer, activeStore, player);
 		}
 	});
 }

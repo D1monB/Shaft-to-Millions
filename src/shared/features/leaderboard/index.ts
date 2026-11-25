@@ -4,6 +4,7 @@ export {
 	BOARD_IDS,
 	cleanRows,
 	decodeDepthScore,
+	depthLimit,
 	depthMeters,
 	depthScore,
 	higherScore,

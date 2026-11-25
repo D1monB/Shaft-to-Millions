@@ -35,6 +35,22 @@ export function recordDepth(current: number, sample: number, cap: number): numbe
 	return value > current ? value : undefined;
 }
 
+/**
+ * How deep a record may go for a player whose deepest opened layer is `deepestLayer`.
+ * `nextCampMeters` is the depth of the camp of the next (locked) layer, undefined when the map has none.
+ * Fail-closed: a missing camp of a layer that exists in the config means "no record at all", so a map that is
+ * still being built can never turn into an unlimited depth board. Only the last layer has no camp to stop at.
+ */
+export function depthLimit(deepestLayer: number, nextCampMeters: number | undefined): number | undefined {
+	if (!isFiniteNumber(deepestLayer)) {
+		return undefined;
+	}
+	if (deepestLayer >= LAYER_COUNT) {
+		return MAX_DEPTH_METERS;
+	}
+	return isFiniteNumber(nextCampMeters) ? nextCampMeters : undefined;
+}
+
 /** The depth board score: the layer decides first, meters break ties. Broken input is repaired, never thrown. */
 export function depthScore(layer: number, meters: number): number {
 	const safeLayer = isFiniteNumber(layer) ? math.clamp(math.floor(layer), 1, LAYER_COUNT) : 1;

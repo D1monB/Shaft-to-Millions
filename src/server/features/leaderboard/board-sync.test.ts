@@ -86,16 +86,6 @@ class BoardSyncTests {
 	}
 
 	@Test
-	public forgetMakesTheNextSessionWriteAgain() {
-		const store = fakeStore();
-		const written = new WrittenScores();
-		writeScores(store, written, 1, { depth: 100_001, wealth: 10 });
-		written.forget(1);
-		writeScores(store, written, 1, { depth: 100_001, wealth: 10 });
-		Assert.equal(store.writes, 4);
-	}
-
-	@Test
 	public readsRankedRowsWithNames() {
 		const store = fakeStore();
 		for (let id = 1; id <= LEADERBOARD_SIZE + 3; id++) {
