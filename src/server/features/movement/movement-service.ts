@@ -1,6 +1,6 @@
 // Movement on the server: applies WalkSpeed from shoes (and later a speed aura) and checks that the character
 // really moves that fast. The server owns WalkSpeed; the check pulls back a client that teleports or outruns it.
-import { Players } from "@rbxts/services";
+import { Players, RunService } from "@rbxts/services";
 import { beginMoveState, checkMove, CHECK_INTERVAL, MoveState, walkSpeedFor } from "shared/features/movement";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { getLoadedPlayers, getProfileData } from "server/features/profile";
@@ -94,6 +94,15 @@ function checkPosition(player: Player): void {
 		}
 	}
 	if (result.verdict !== "rubberband") {
+		return;
+	}
+	// In Studio only warn: the developer moves and scales characters with Studio tools while testing, and a pull-back
+	// would fight them. Live servers always pull back.
+	if (RunService.IsStudio()) {
+		if (logLimiter.tryTake(player.UserId, os.clock())) {
+			warn(`[movement] user ${player.UserId} moved faster than allowed (Studio: not pulled back)`);
+		}
+		states.set(player, { x: position.X, y: position.Y, z: position.Z, time: sample.time, strikes: 0 });
 		return;
 	}
 	// Move back to the last honest spot (keeping where the player faces) and stop any speed the client built up.

@@ -120,7 +120,7 @@ class MoveCheckTests {
 
 	@Test
 	public speedFromAuraIsAllowedWhenTheServerSaysSo() {
-		const fast = 30;
+		const fast = 60;
 		const result = checkMove(start(), at(fast * 0.25, 0.25), fast);
 		Assert.equal(result.verdict, "ok");
 		// The same move is suspicious for a slow player.

@@ -330,3 +330,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   and placed in its belt gap, ore dropped and sold (balance grew by the line price). Two fixes: the claim prompt moved
   from the sign (50 studs up, unreachable) to a ground point at the plot spawn; players standing on a new machine are
   moved aside. Not tested: save across sessions (Studio API access is off in the friend's experience).
+
+## 028. Faster walking, softer movement check (2026-11-25)
+
+- **What:** shoes now go from 20 (start) to 50 (best), was 16..30; the cap after a speed aura is 65 (50 x 1.3).
+  The movement check allows 1.8x the walk speed (was 1.5x), 8 studs of slack (was 4: the belt carries players) and
+  treats a single jump of 80+ studs over the allowance as a teleport (was 50). In Studio the check only warns and
+  never pulls back.
+- **Why:** the developer found walking too slow for a deep shaft, and the pull-back fought Studio tools (moving or
+  scaling a character during Play) and could catch players carried by the belt. Live servers still pull back.
