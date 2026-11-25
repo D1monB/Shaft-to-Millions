@@ -13,5 +13,5 @@ export {
 } from "./leaderboard";
 export type { BoardId, BoardRow, DepthRecord } from "./leaderboard";
 export { LEADERBOARD_SIZE, SYNC_INTERVAL } from "./tuning";
-export { LEADERBOARD_REMOTE } from "./network";
+export { LEADERBOARD_REMOTE, parseSnapshot } from "./network";
 export type { LeaderboardRow, LeaderboardSnapshot } from "./network";
