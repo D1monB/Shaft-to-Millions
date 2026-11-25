@@ -113,7 +113,7 @@ function DrillPanel(props: { layer: number }) {
 	return (
 		<>
 			<Card order={1} accent={warehouseFull ? COLORS.canyon : COLORS.gold}>
-				<Label text={`⚙ Добуває: ${ore.name}`} display={true} size={TEXT_SIZES.large} order={1} />
+				<Label text={`⚙️ Добуває: ${ore.name}`} display={true} size={TEXT_SIZES.large} order={1} />
 				<Label text={`Бур: 1 шт. за ${perPiece} с (~${math.floor(3600 / perPiece)} шт./год)`} order={2} />
 				<Label
 					text={`Вручну: ~${string.format("%.1f", manual)} с на шматок, без дороги`}
@@ -139,7 +139,7 @@ function DrillPanel(props: { layer: number }) {
 						key={oreId}
 						text={
 							selected
-								? `✔ ${ORES[oreId].name}`
+								? `✅ ${ORES[oreId].name}`
 								: `${ORES[oreId].name} (${formatMoney(ORES[oreId].price)})`
 						}
 						variant={selected ? "success" : "secondary"}
@@ -164,7 +164,7 @@ export function startDrillController(): void {
 			openPanel({
 				key: `drill_${layer}`,
 				title: `Автобур: ${LAYERS[layer]?.name ?? layer}`,
-				icon: "⚙",
+				icon: "⚙️",
 				render: () => <DrillPanel layer={layer} />,
 			});
 		}

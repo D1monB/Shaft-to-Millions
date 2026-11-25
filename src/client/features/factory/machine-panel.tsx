@@ -110,7 +110,7 @@ function RecipeCard(props: {
 			<Label text={outputName(props.recipeId)} display={true} size={TEXT_SIZES.large} order={1} />
 			<RecipeTiles recipeId={props.recipeId} view={props.view} order={2} />
 			<Label
-				text={`⏱ ${string.format("%.1f", seconds)} с · ${formatMoney(amountsValue(recipe.inputs))} → ${formatMoney(amountsValue(recipe.outputs))}`}
+				text={`⏱ ${string.format("%.1f", seconds)} с · було ${formatMoney(amountsValue(recipe.inputs))}, стане ${formatMoney(amountsValue(recipe.outputs))}`}
 				tone="success"
 				size={TEXT_SIZES.small + 2}
 				order={3}
@@ -345,7 +345,7 @@ function UpgradeStrip(props: {
 function UpgradeCard(props: { machineId: MachineId; state: MachineState; view: PlayerView; order: number }) {
 	return (
 		<Card order={props.order} accent={COLORS.gold} gap={14}>
-			<Label text="⚙ Покращення" display={true} size={TEXT_SIZES.large} order={1} />
+			<Label text="⚙️ Покращення" display={true} size={TEXT_SIZES.large} order={1} />
 			<UpgradeStrip {...props} track="speed" order={2} />
 			<UpgradeStrip {...props} track="queue" order={3} />
 		</Card>

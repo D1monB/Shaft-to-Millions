@@ -4,7 +4,7 @@
 //   right edge, vertically centred: the coloured dock of menu buttons;
 //   bottom centre: the goal (goals feature).
 // Other features plug in their own stats and buttons, so the HUD knows nothing about factories or chests.
-import React from "@rbxts/react";
+import React, { useEffect, useState } from "@rbxts/react";
 import { UserInputService } from "@rbxts/services";
 import { bagCapacity, bagTotal } from "shared/features/bag";
 import { PlayerView } from "shared/features/profile";
@@ -188,15 +188,26 @@ function TopCentre(props: { view: PlayerView }) {
  */
 const PHONE_DOCK_CENTRE = 0.38;
 
-function isPhone(): boolean {
-	return UserInputService.TouchEnabled && !UserInputService.KeyboardEnabled;
+/**
+ * True while touch is the player's main input. PreferredInput follows the device actually in use; TouchEnabled only
+ * says a touch screen exists (a touch laptop has one too), so it would move the dock for keyboard players.
+ */
+function useTouchFirst(): boolean {
+	const read = () => UserInputService.PreferredInput === Enum.PreferredInput.Touch;
+	const [touch, setTouch] = useState(read);
+	useEffect(() => {
+		const connection = UserInputService.GetPropertyChangedSignal("PreferredInput").Connect(() => setTouch(read()));
+		return () => connection.Disconnect();
+	}, []);
+	return touch;
 }
 
 function Dock() {
+	const touch = useTouchFirst();
 	return (
 		<frame
 			AnchorPoint={new Vector2(1, 0.5)}
-			Position={new UDim2(1, -18, isPhone() ? PHONE_DOCK_CENTRE : 0.5, 0)}
+			Position={new UDim2(1, -18, touch ? PHONE_DOCK_CENTRE : 0.5, 0)}
 			Size={new UDim2(0, MENU_BUTTON_SIZE, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.Y}
 			BackgroundTransparency={1}

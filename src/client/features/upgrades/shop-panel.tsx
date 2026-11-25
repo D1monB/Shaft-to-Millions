@@ -7,7 +7,6 @@ import { GearBase } from "shared/config/gear";
 import { Rarity } from "shared/config/items";
 import { TAGS } from "shared/config/map-contract";
 import { PICKAXES } from "shared/config/pickaxes";
-import { RESOURCES } from "shared/config/resources";
 import { SHOES } from "shared/config/shoes";
 import {
 	BUY_GEAR_REMOTE,
@@ -23,6 +22,7 @@ import { PlayerView } from "shared/features/profile";
 import { formatPercent } from "shared/lib/format";
 import { useView } from "client/features/profile";
 import { ITEM_CARD_HEIGHT, RarityCard } from "client/lib/item-card";
+import { ResourceTile } from "client/lib/resource-tile";
 import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
 import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
@@ -30,14 +30,15 @@ import { sendToServer } from "client/lib/remotes";
 import { BuyButton, Button, COLORS, Card, FONTS, Label, TEXT_SIZES, Tabs } from "client/lib/ui-kit";
 
 const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: string; readonly icon: string }> = [
-	{ key: "pickaxe", label: "⛏ Кирки", icon: "⛏" },
+	{ key: "pickaxe", label: "⛏️ Кирки", icon: "⛏️" },
 	{ key: "bag", label: "🎒 Сумки", icon: "🎒" },
 	{ key: "shoes", label: "👟 Взуття", icon: "👟" },
 ];
 
-/** Footer: one line of materials above the button. */
-const MATERIALS_LINE = 24;
-const FOOTER_HEIGHT = 66 + MATERIALS_LINE;
+/** Footer: a row of material tiles (with "have/need" under each) above the button. */
+const MATERIAL_TILE = 30;
+const MATERIALS_ROW = MATERIAL_TILE + 24;
+const FOOTER_HEIGHT = MATERIALS_ROW + 64;
 const BASE_WALK_SPEED = 16;
 
 /** Card colours climb the rarity ramp along the catalogue, so the best gear looks the best. */
@@ -67,19 +68,6 @@ function statsOf(slot: GearSlot, index: number): { pill: string; effect: string 
 	};
 }
 
-/** "Мідний злиток 3/5 · Вугілля 10/10": green when there is enough, red when not. */
-function materialsText(def: GearBase, view: PlayerView): { text: string; enough: boolean } {
-	const list = materialList(def.materials);
-	if (list.size() === 0) {
-		return { text: "Без матеріалів", enough: true };
-	}
-	const parts = list.map((entry) => {
-		const have = math.min(view.warehouse[entry.id] ?? 0, entry.amount);
-		return `${RESOURCES[entry.id].name} ${have}/${entry.amount}`;
-	});
-	return { text: parts.join(" · "), enough: missingMaterials(def, view.warehouse).size() === 0 };
-}
-
 /** A line of text in the card footer, where a button would be. */
 function FooterNote(props: { text: string; color: Color3 }) {
 	return (
@@ -98,36 +86,69 @@ function FooterNote(props: { text: string; color: Color3 }) {
 	);
 }
 
+/** The button area at the bottom of the footer, so buttons line up across cards. */
+function ButtonSlot(props: React.PropsWithChildren) {
+	return (
+		<frame
+			BackgroundTransparency={1}
+			Position={new UDim2(0, 0, 0, MATERIALS_ROW)}
+			Size={new UDim2(1, 0, 1, -MATERIALS_ROW)}
+		>
+			{props.children}
+		</frame>
+	);
+}
+
+/** Each material as a small tile; "have/need" under it is green when there is enough, red when not. */
+function MaterialTiles(props: { def: GearBase; view: PlayerView }) {
+	const list = materialList(props.def.materials);
+	if (list.size() === 0) {
+		return (
+			<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, MATERIALS_ROW)}>
+				<FooterNote text="Лише гроші" color={COLORS.textMuted} />
+			</frame>
+		);
+	}
+	return (
+		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, MATERIALS_ROW)}>
+			<uilistlayout
+				FillDirection={Enum.FillDirection.Horizontal}
+				HorizontalAlignment={Enum.HorizontalAlignment.Center}
+				Padding={new UDim(0, 14)}
+				SortOrder={Enum.SortOrder.LayoutOrder}
+			/>
+			{list.map((entry, index) => {
+				const have = props.view.warehouse[entry.id] ?? 0;
+				return (
+					<ResourceTile
+						key={entry.id}
+						id={entry.id}
+						size={MATERIAL_TILE}
+						caption={`${math.min(have, entry.amount)}/${entry.amount}`}
+						captionColor={have >= entry.amount ? COLORS.success : COLORS.danger}
+						order={index}
+					/>
+				);
+			})}
+		</frame>
+	);
+}
+
 function ForSaleFooter(props: { def: GearBase; view: PlayerView }) {
-	const materials = materialsText(props.def, props.view);
+	const enough = missingMaterials(props.def, props.view.warehouse).size() === 0;
 	return (
 		<>
-			<textlabel
-				BackgroundTransparency={1}
-				Size={new UDim2(1, 0, 0, MATERIALS_LINE - 4)}
-				Font={FONTS.display}
-				Text={materials.text}
-				TextColor3={materials.enough ? COLORS.success : COLORS.danger}
-				TextScaled={true}
-				ZIndex={8}
-			>
-				<uitextsizeconstraint MaxTextSize={14} MinTextSize={9} />
-				<uistroke Color={COLORS.outline} Thickness={1.5} />
-			</textlabel>
-			<frame
-				BackgroundTransparency={1}
-				Position={new UDim2(0, 0, 0, MATERIALS_LINE)}
-				Size={new UDim2(1, 0, 1, -MATERIALS_LINE)}
-			>
+			<MaterialTiles def={props.def} view={props.view} />
+			<ButtonSlot>
 				<BuyButton
 					price={props.def.price}
 					money={props.view.money}
 					verb="Купити"
-					blocked={!materials.enough}
+					blocked={!enough}
 					textSize={TEXT_SIZES.small}
 					onClick={() => sendToServer(BUY_GEAR_REMOTE, props.def.id)}
 				/>
-			</frame>
+			</ButtonSlot>
 		</>
 	);
 }
@@ -139,18 +160,14 @@ function footerOf(def: GearBase, view: PlayerView): React.Element {
 	}
 	if (state === "owned") {
 		return (
-			<frame
-				BackgroundTransparency={1}
-				Position={new UDim2(0, 0, 0, MATERIALS_LINE)}
-				Size={new UDim2(1, 0, 1, -MATERIALS_LINE)}
-			>
+			<ButtonSlot>
 				<Button
 					text="Надіти"
 					variant="success"
 					textSize={TEXT_SIZES.small + 2}
 					onClick={() => sendToServer(EQUIP_GEAR_REMOTE, def.id)}
 				/>
-			</frame>
+			</ButtonSlot>
 		);
 	}
 	return <ForSaleFooter def={def} view={view} />;
@@ -174,12 +191,12 @@ function GearCard(props: { slot: GearSlot; icon: string; index: number; view: Pl
 			highlighted={state === "equipped"}
 			topLeft={
 				state === "equipped"
-					? { text: "✔ НАДІТО", color: COLORS.success }
+					? { text: "✅ НАДІТО", color: COLORS.success }
 					: state === "owned"
 						? { text: "КУПЛЕНО", color: COLORS.textMuted }
 						: undefined
 			}
-			topRight={def.special !== undefined ? { text: "⚡ ОСОБЛИВА", color: COLORS.gold } : undefined}
+			topRight={def.special !== undefined ? { text: "⚡", color: COLORS.gold } : undefined}
 			footer={footerOf(def, props.view)}
 			footerHeight={FOOTER_HEIGHT}
 			order={props.index}

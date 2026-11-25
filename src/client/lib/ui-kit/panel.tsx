@@ -44,7 +44,7 @@ export function Panel(props: PanelProps) {
 			<frame
 				AnchorPoint={new Vector2(0.5, 0.5)}
 				Position={new UDim2(0.5, 0, 0.5, RIBBON_OVERHANG / 2)}
-				Size={new UDim2(0.94, 0, 0.8, 0)}
+				Size={new UDim2(0.94, 0, 0.88, 0)}
 				BackgroundTransparency={1}
 			>
 				<uiscale Scale={scale} />

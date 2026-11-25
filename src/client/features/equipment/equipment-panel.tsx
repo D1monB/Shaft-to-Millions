@@ -55,11 +55,11 @@ function Summary(props: { view: PlayerView }) {
 				/>
 			)}
 			<Label
-				text={`👟 Швидкість ${base} → ${math.floor(walkSpeedFor(view.gear.equipped.shoes, bonuses.speedBonus))}`}
+				text={`👟 Швидкість ${base}, з аурою ${math.floor(walkSpeedFor(view.gear.equipped.shoes, bonuses.speedBonus))}`}
 				order={4}
 			/>
 			<Label
-				text={`⛏ Руда з блоку: ~${string.format("%.2f", 1 + bonuses.yieldBonus)} шт. (${hitsRequired(ORES.iron.hardness, pickaxe.power)} ударів по залізу)`}
+				text={`⛏️ Руда з блоку: ~${string.format("%.2f", 1 + bonuses.yieldBonus)} шт. (${hitsRequired(ORES.iron.hardness, pickaxe.power)} ударів по залізу)`}
 				order={5}
 			/>
 		</Card>
@@ -115,7 +115,7 @@ function InventoryCard(props: { group: ItemGroup; order: number }) {
 	return (
 		<ItemCard
 			item={group.item}
-			topLeft={group.equipped ? { text: "✔ НАДІТО", color: COLORS.success } : undefined}
+			topLeft={group.equipped ? { text: "✅ НАДІТО", color: COLORS.success } : undefined}
 			topRight={count > 1 ? { text: `×${count}`, color: COLORS.gold } : undefined}
 			highlighted={group.equipped}
 			footer={footer}

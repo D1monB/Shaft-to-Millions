@@ -32,7 +32,7 @@ function SellPanel() {
 	}
 	const preview = previewSale(view.bag, ORE_IDS, ORES, multiplierOf(view));
 	if (preview.itemCount === 0) {
-		return <Label text="Сумка порожня. Повертайся з рудою! ⛏" tone="muted" align="center" />;
+		return <Label text="Сумка порожня. Повертайся з рудою! ⛏️" tone="muted" align="center" />;
 	}
 
 	const extraBlocks: React.Element[] = [];

@@ -90,7 +90,7 @@ function Showcase() {
 				<Label text="Шкали прогресу" display={true} order={1} />
 				<ProgressBar progress={progress} order={2} />
 				<ProgressBar progress={progress} color={COLORS.gold} height={20} text="12/25" order={3} />
-				<ProgressBar progress={0 / 0} color={COLORS.canyon} height={20} text="NaN → порожня" order={4} />
+				<ProgressBar progress={0 / 0} color={COLORS.canyon} height={20} text="NaN = порожня" order={4} />
 				<Button
 					text="Випадкове значення"
 					variant="secondary"

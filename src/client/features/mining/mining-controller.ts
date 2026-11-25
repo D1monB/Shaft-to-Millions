@@ -236,7 +236,7 @@ export function startMiningController(): void {
 	registerHudStat(20, (view) => {
 		const name = getPickaxe(view.gear.equipped.pickaxe).name;
 		// The first word fits on the tile ("Залізна"); the whole name is in the tooltip.
-		return { icon: "⛏", text: `Кирка: ${name}`, short: name.split(" ")[0] ?? name };
+		return { icon: "⛏️", text: `Кирка: ${name}`, short: name.split(" ")[0] ?? name };
 	});
 
 	onViewChanged(refreshAllLabels);

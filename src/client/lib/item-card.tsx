@@ -3,7 +3,7 @@
 import React from "@rbxts/react";
 import { ITEMS, ItemId, RARITY_NAMES } from "shared/config/items";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText } from "./item-display";
-import { COLORS, FONTS, RADIUS, Ramp, STROKE, Sunburst, rampSequence } from "./ui-kit";
+import { COLORS, FONTS, RADIUS, Ramp, STROKE, Sunburst, TEXT_SIZES, rampSequence } from "./ui-kit";
 
 /** Height of the card without a footer. */
 export const ITEM_CARD_HEIGHT = 200;
@@ -19,7 +19,7 @@ export interface CornerPill {
 interface CardDecor {
 	/** Top-right pill, e.g. the chance "45%" or the count "×3". */
 	readonly topRight?: CornerPill;
-	/** Top-left pill, e.g. "✔ НАДІТО". */
+	/** Top-left pill, e.g. "✅ НАДІТО". */
 	readonly topLeft?: CornerPill;
 	/** Green outline: the item is in use. */
 	readonly highlighted?: boolean;
@@ -68,7 +68,7 @@ function Pill(props: { pill: CornerPill; left: boolean }) {
 				AutomaticSize={Enum.AutomaticSize.X}
 				Font={FONTS.display}
 				Text={props.pill.text}
-				TextSize={16}
+				TextSize={TEXT_SIZES.small}
 				TextColor3={props.pill.color}
 				ZIndex={5}
 			/>
@@ -100,7 +100,7 @@ function Content(props: RarityCardProps) {
 				TextScaled={true}
 				ZIndex={3}
 			>
-				<uitextsizeconstraint MaxTextSize={21} MinTextSize={12} />
+				<uitextsizeconstraint MaxTextSize={21} MinTextSize={14} />
 				<uistroke Color={COLORS.outline} Thickness={2} />
 			</textlabel>
 			<frame
@@ -120,7 +120,7 @@ function Content(props: RarityCardProps) {
 					AutomaticSize={Enum.AutomaticSize.X}
 					Font={FONTS.display}
 					Text={props.pill}
-					TextSize={13}
+					TextSize={15}
 					TextColor3={props.light}
 					ZIndex={4}
 				/>
@@ -144,7 +144,7 @@ function Content(props: RarityCardProps) {
 				TextWrapped={true}
 				ZIndex={3}
 			>
-				<uitextsizeconstraint MaxTextSize={15} MinTextSize={10} />
+				<uitextsizeconstraint MaxTextSize={16} MinTextSize={12} />
 				<uistroke Color={COLORS.outline} Thickness={1.5} />
 			</textlabel>
 			{props.dimmed === true && (
