@@ -15,7 +15,6 @@ import {
 	COLORS,
 	Card,
 	CurrencyLabel,
-	FONT_CANDIDATES,
 	Label,
 	ProgressBar,
 	StatChip,
@@ -108,24 +107,6 @@ function Showcase() {
 					order={8}
 				/>
 				<BuyButton price={money + 999} money={money} verb="Купити" onClick={() => undefined} order={9} />
-			</Card>
-			<Card order={6}>
-				<Label text="Шрифти (перевірка кирилиці)" display={true} order={1} />
-				{FONT_CANDIDATES.map((candidate, index) => (
-					<textlabel
-						key={candidate.name}
-						BackgroundTransparency={1}
-						Size={new UDim2(1, 0, 0, 0)}
-						AutomaticSize={Enum.AutomaticSize.Y}
-						Font={candidate.font}
-						Text={`${candidate.name}\nЗалізна кирка · Горн · Верстак · Купити за $1 250\nЇЄІҐ їєіґ 0123456789`}
-						TextSize={TEXT_SIZES.body}
-						TextColor3={COLORS.text}
-						TextWrapped={true}
-						TextXAlignment={Enum.TextXAlignment.Left}
-						LayoutOrder={index + 2}
-					/>
-				))}
 			</Card>
 			<Card order={5}>
 				<Label text="Значки HUD" display={true} order={1} />

@@ -164,4 +164,17 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   The UI showcase (Dev panel) shows 12 fonts with Ukrainian letters for choosing the final font.
 - **Why:** on a 720 px high window the old scale gave about 12 px chip text; on a phone it shrank to 0.6 and gave about 10 px.
   `FredokaOne` has no Cyrillic, so titles used a fallback font. The font is chosen by the player in the showcase, not guessed.
-- **Open:** the final font (`FONTS` in `client/lib/ui-kit/theme.ts`).
+- **Font:** BuilderSans (ExtraBold for titles and numbers, Bold for text), chosen by the developer in the showcase.
+
+## 019. "Juicy" 2.5D UI style
+
+- **Date:** 2026-11-25
+- **Decision:** the UI follows the developer's HTML reference (Pet Simulator / Mining Simulator style): thick dark outlines,
+  a dark block under every button, ribbon and panel ("3D" depth), top-to-bottom colour ramps, a glossy highlight on buttons,
+  white outlined text, a gold ribbon title over each panel, a big red close button, dark inset wells for grouped content,
+  and a light sweep on the main buy button. All of it is in `client/lib/ui-kit` (`theme.ts` ramps, `effects.tsx`), so
+  features get the style without changes.
+- **How (Roblox limits):** outlines are UIStroke, ramps are a UIGradient on a white background, the depth is a dark sibling
+  frame, rays behind legendary items must sit in a CanvasGroup (ClipsDescendants does not clip rotated children).
+- **Not included yet:** custom icons. The reference uses drawings; in Roblox they must be images owned by the game owner.
+  Until the map author draws them, emoji sit inside coloured tiles.

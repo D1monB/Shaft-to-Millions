@@ -40,7 +40,7 @@ export function Label(props: LabelProps) {
 			TextXAlignment={ALIGN[props.align ?? "left"]}
 			LayoutOrder={props.order ?? 0}
 		>
-			{props.outlined === true && <uistroke Color={COLORS.outline} Thickness={2} />}
+			{(props.outlined === true || props.display === true) && <uistroke Color={COLORS.outline} Thickness={2} />}
 		</textlabel>
 	);
 }

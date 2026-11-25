@@ -49,24 +49,25 @@ export interface CardProps extends React.PropsWithChildren {
 	readonly gap?: number;
 }
 
-/** A lighter plank inside a panel that groups related lines. */
+/** A dark inset well inside a panel that groups related lines. A coloured accent outlines it (rarity, "ready"). */
 export function Card(props: CardProps) {
 	return (
 		<frame
-			BackgroundColor3={COLORS.wood}
+			BackgroundColor3={COLORS.well}
+			BackgroundTransparency={0.15}
 			Size={new UDim2(1, 0, 0, 0)}
 			AutomaticSize={Enum.AutomaticSize.Y}
 			LayoutOrder={props.order ?? 0}
 		>
-			<uicorner CornerRadius={RADIUS.medium} />
-			<uistroke Color={props.accent ?? COLORS.outline} Thickness={props.accent ? STROKE.thick : STROKE.thin} />
+			<uicorner CornerRadius={RADIUS.large} />
+			<uistroke Color={props.accent ?? COLORS.outline} Thickness={STROKE.thick} />
 			<uipadding
-				PaddingTop={new UDim(0, 10)}
-				PaddingBottom={new UDim(0, 12)}
-				PaddingLeft={new UDim(0, 12)}
-				PaddingRight={new UDim(0, 12)}
+				PaddingTop={new UDim(0, 12)}
+				PaddingBottom={new UDim(0, 14)}
+				PaddingLeft={new UDim(0, 14)}
+				PaddingRight={new UDim(0, 14)}
 			/>
-			<uilistlayout Padding={new UDim(0, props.gap ?? 6)} SortOrder={Enum.SortOrder.LayoutOrder} />
+			<uilistlayout Padding={new UDim(0, props.gap ?? 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
 			{props.children}
 		</frame>
 	);

@@ -1,16 +1,20 @@
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useState } from "@rbxts/react";
+import { Gloss, Shine } from "./effects";
 import {
-	BUTTON_COLORS,
+	BUTTON_RAMPS,
 	ButtonVariant,
 	COLORS,
-	DISABLED_BUTTON,
+	DEPTH,
+	DISABLED_RAMP,
+	DISABLED_TEXT,
 	FONTS,
 	MIN_TOUCH,
 	RADIUS,
 	SPRINGS,
 	STROKE,
 	TEXT_SIZES,
+	rampSequence,
 } from "./theme";
 
 export interface ButtonProps {
@@ -23,20 +27,18 @@ export interface ButtonProps {
 	readonly width?: UDim;
 	readonly height?: number;
 	readonly textSize?: number;
+	/** A light band sweeps across now and then: only for THE main action of a panel (buy, open). */
+	readonly shine?: boolean;
 }
 
-/** Height of the darker "side" under the face: the button looks like a block that can be pressed in. */
-const DEPTH = 5;
-const GLOSS = Color3.fromRGB(205, 205, 205);
-const GLOSS_HOVER = Color3.fromRGB(235, 235, 235);
-
 /**
- * Chunky 3D button. The face springs down when pressed and grows a little on hover,
- * so every press feels physical. A disabled button stays visible (grey) so the player sees what exists.
+ * Chunky 3D button: a gradient face with a gloss on top, a dark block under it, white outlined text.
+ * The face springs down onto the block when pressed and the whole button grows a little on hover,
+ * so every press feels physical. A disabled button stays visible (slate) so the player sees what exists.
  */
 export function Button(props: ButtonProps) {
 	const disabled = props.disabled === true;
-	const colors = disabled ? DISABLED_BUTTON : BUTTON_COLORS[props.variant ?? "primary"];
+	const ramp = disabled ? DISABLED_RAMP : BUTTON_RAMPS[props.variant ?? "primary"];
 	const height = math.max(props.height ?? MIN_TOUCH, MIN_TOUCH);
 	const [hovered, setHovered] = useState(false);
 	const [press, pressMotion] = useMotion(0);
@@ -53,31 +55,27 @@ export function Button(props: ButtonProps) {
 	return (
 		<frame
 			BackgroundTransparency={1}
-			Size={new UDim2(props.width ?? new UDim(1, 0), new UDim(0, height + DEPTH))}
+			Size={new UDim2(props.width ?? new UDim(1, 0), new UDim(0, height + DEPTH.button))}
 			LayoutOrder={props.order ?? 0}
 		>
 			<uiscale Scale={scale} />
-			{/* The side: a darker block under the face. */}
+			{/* The dark block under the face. */}
 			<frame
-				BackgroundColor3={colors.side}
-				Position={new UDim2(0, 0, 0, DEPTH)}
-				Size={new UDim2(1, 0, 0, height)}
+				BackgroundColor3={COLORS.outline}
 				BorderSizePixel={0}
+				Position={new UDim2(0, 0, 0, DEPTH.button)}
+				Size={new UDim2(1, 0, 0, height)}
 			>
 				<uicorner CornerRadius={RADIUS.medium} />
-				<uistroke Color={COLORS.outline} Thickness={STROKE.thick} />
 			</frame>
 			<textbutton
 				AutoButtonColor={false}
-				BackgroundColor3={colors.face}
+				BackgroundColor3={COLORS.white}
 				BorderSizePixel={0}
-				Position={press.map((p) => new UDim2(0, 0, 0, p * (DEPTH - 1)))}
+				Position={press.map((p) => new UDim2(0, 0, 0, p * (DEPTH.button - 1)))}
 				Size={new UDim2(1, 0, 0, height)}
-				Font={FONTS.display}
-				Text={props.text}
-				TextColor3={colors.text}
-				TextSize={props.textSize ?? TEXT_SIZES.body}
-				TextWrapped={true}
+				Text=""
+				ClipsDescendants={props.shine === true && !disabled}
 				Active={!disabled}
 				Event={{
 					Activated: () => {
@@ -100,19 +98,23 @@ export function Button(props: ButtonProps) {
 					Thickness={STROKE.thick}
 					ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
 				/>
-				<uipadding PaddingLeft={new UDim(0, 8)} PaddingRight={new UDim(0, 8)} />
-				{/* The lower half is slightly darker (a gradient multiplies colours): a cheap "block" look
-				    without images. Hover lightens it so the button reacts on PC. */}
-				<uigradient
-					Rotation={90}
-					Color={
-						new ColorSequence([
-							new ColorSequenceKeypoint(0, COLORS.white),
-							new ColorSequenceKeypoint(0.5, COLORS.white),
-							new ColorSequenceKeypoint(1, hovered && !disabled ? GLOSS_HOVER : GLOSS),
-						])
-					}
-				/>
+				{/* A white face times the gradient shows the ramp exactly; hover lifts it toward white. */}
+				<uigradient Rotation={90} Color={rampSequence(ramp, hovered && !disabled ? 0.12 : 0)} />
+				<Gloss zIndex={2} />
+				{props.shine === true && !disabled && <Shine zIndex={2} />}
+				<textlabel
+					BackgroundTransparency={1}
+					Size={new UDim2(1, -16, 1, 0)}
+					Position={new UDim2(0, 8, 0, 0)}
+					Font={FONTS.display}
+					Text={props.text}
+					TextColor3={disabled ? DISABLED_TEXT : COLORS.white}
+					TextSize={props.textSize ?? TEXT_SIZES.body}
+					TextWrapped={true}
+					ZIndex={3}
+				>
+					<uistroke Color={COLORS.outline} Thickness={2} />
+				</textlabel>
 			</textbutton>
 		</frame>
 	);

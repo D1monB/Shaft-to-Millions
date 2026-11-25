@@ -29,6 +29,7 @@ export function BuyButton(props: BuyButtonProps) {
 			onClick={props.onClick}
 			disabled={!affordable || props.blocked === true}
 			variant="success"
+			shine={affordable && props.blocked !== true}
 			order={props.order}
 			width={props.width}
 		/>

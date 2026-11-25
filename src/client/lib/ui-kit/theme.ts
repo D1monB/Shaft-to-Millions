@@ -1,4 +1,5 @@
-// Visual theme of the whole UI: mine timber, gold and red canyon, matching the map concept.
+// Visual theme of the whole UI: "juicy" 2.5D cartoon style (thick dark outlines, a dark block under every button and
+// panel, top-to-bottom gradients, a glossy highlight), in mine timber, gold and red-canyon colours.
 // Components read colours and fonts only from here, so a restyle is a change in one file.
 
 function rgb(r: number, g: number, b: number): Color3 {
@@ -6,11 +7,14 @@ function rgb(r: number, g: number, b: number): Color3 {
 }
 
 export const COLORS = {
-	// Timber: panels are dark planks, cards are lighter planks on top of them.
+	// Timber: panels are dark planks; cards inside them are darker wells.
 	woodDark: rgb(54, 34, 22),
 	wood: rgb(86, 54, 33),
 	woodLight: rgb(122, 80, 48),
-	outline: rgb(28, 17, 10),
+	/** Inset wells inside panels (lists, card grids). */
+	well: rgb(33, 18, 10),
+	/** Every outline and every "3D" shadow block uses this one colour. */
+	outline: rgb(27, 17, 12),
 
 	gold: rgb(255, 196, 61),
 	goldDark: rgb(186, 120, 18),
@@ -34,12 +38,16 @@ export const COLORS = {
 /** The player's own colour (plot border, accents). Until plots exist everyone is gold. */
 export const DEFAULT_PLAYER_COLOR = COLORS.gold;
 
+/**
+ * BuilderSans has Ukrainian letters (FredokaOne does not and silently fell back to another font).
+ * Chosen after comparing fonts in the UI showcase, see docs/decisions.md 018.
+ */
 export const FONTS = {
-	/** Chunky, rounded: titles, numbers, buttons. */
-	display: Enum.Font.FredokaOne,
+	/** Titles, numbers, buttons: the heaviest weight, always with an outline. */
+	display: Enum.Font.BuilderSansExtraBold,
 	/** Readable body text. */
-	body: Enum.Font.BuilderSansMedium,
-	bodyBold: Enum.Font.BuilderSansBold,
+	body: Enum.Font.BuilderSansBold,
+	bodyBold: Enum.Font.BuilderSansExtraBold,
 };
 
 /** Sizes in design units (see ui-root.tsx for the screen scale). Raised after the first play-test: text was too small. */
@@ -51,36 +59,24 @@ export const TEXT_SIZES = {
 	huge: 40,
 };
 
-/**
- * Fonts to compare in the UI showcase (Dev panel). All of them are checked for Cyrillic there, because a font
- * without Ukrainian letters silently falls back to another one. The chosen font goes into FONTS above.
- */
-export const FONT_CANDIDATES: ReadonlyArray<{ readonly name: string; readonly font: Enum.Font }> = [
-	{ name: "FredokaOne (зараз для заголовків)", font: Enum.Font.FredokaOne },
-	{ name: "BuilderSansMedium (зараз для тексту)", font: Enum.Font.BuilderSansMedium },
-	{ name: "BuilderSansBold", font: Enum.Font.BuilderSansBold },
-	{ name: "BuilderSansExtraBold", font: Enum.Font.BuilderSansExtraBold },
-	{ name: "Nunito", font: Enum.Font.Nunito },
-	{ name: "Ubuntu", font: Enum.Font.Ubuntu },
-	{ name: "Roboto", font: Enum.Font.Roboto },
-	{ name: "SourceSansBold", font: Enum.Font.SourceSansBold },
-	{ name: "Arial", font: Enum.Font.Arial },
-	{ name: "Merriweather", font: Enum.Font.Merriweather },
-	{ name: "Oswald", font: Enum.Font.Oswald },
-	{ name: "GothamBold", font: Enum.Font.GothamBold },
-];
-
 export const RADIUS = {
 	small: new UDim(0, 8),
-	medium: new UDim(0, 12),
+	medium: new UDim(0, 14),
 	large: new UDim(0, 18),
+	xlarge: new UDim(0, 26),
 	round: new UDim(1, 0),
 };
 
 export const STROKE = {
 	thin: 2,
-	thick: 3,
+	thick: 3.5,
 	heavy: 4,
+};
+
+/** How far the dark "3D" block sticks out under buttons, ribbons and panels. */
+export const DEPTH = {
+	button: 6,
+	panel: 8,
 };
 
 /** Minimum touch target on phones (Apple / Google guidelines use 44 pt). */
@@ -107,18 +103,47 @@ export function toneColor(tone: Tone): Color3 {
 	}
 }
 
-/** Button colour pairs: face and the darker "side" that gives the 3D look. */
+/** A top-to-bottom colour ramp. Every juicy surface (button, ribbon, panel, card) is one of these. */
+export interface Ramp {
+	readonly top: Color3;
+	readonly mid: Color3;
+	readonly bottom: Color3;
+}
+
+/**
+ * The ramp as a UIGradient sequence. Used on a WHITE background: a gradient multiplies colours, so white shows the ramp
+ * exactly. `lighten` (0..1) moves every stop toward white, which is how buttons react to hover.
+ */
+export function rampSequence(ramp: Ramp, lighten = 0): ColorSequence {
+	const lift = (color: Color3) => color.Lerp(COLORS.white, lighten);
+	return new ColorSequence([
+		new ColorSequenceKeypoint(0, lift(ramp.top)),
+		new ColorSequenceKeypoint(0.5, lift(ramp.mid)),
+		new ColorSequenceKeypoint(1, lift(ramp.bottom)),
+	]);
+}
+
+export const RAMPS = {
+	panel: { top: rgb(74, 46, 29), mid: rgb(56, 33, 20), bottom: rgb(38, 21, 12) },
+	ribbon: { top: rgb(252, 211, 77), mid: rgb(251, 191, 36), bottom: rgb(249, 115, 22) },
+	close: { top: rgb(251, 113, 133), mid: rgb(239, 68, 68), bottom: rgb(185, 28, 28) },
+	/** Stat tiles and quiet buttons: a lighter plank fading to a dark one. */
+	plank: { top: rgb(107, 68, 48), mid: rgb(74, 46, 30), bottom: rgb(43, 25, 15) },
+} satisfies Record<string, Ramp>;
+
 export type ButtonVariant = "primary" | "secondary" | "success" | "danger" | "crystal";
 
-export const BUTTON_COLORS: { [K in ButtonVariant]: { face: Color3; side: Color3; text: Color3 } } = {
-	primary: { face: COLORS.gold, side: COLORS.goldDark, text: COLORS.textDark },
-	secondary: { face: COLORS.woodLight, side: COLORS.outline, text: COLORS.text },
-	success: { face: COLORS.success, side: COLORS.successDark, text: COLORS.textDark },
-	danger: { face: COLORS.canyon, side: COLORS.canyonDark, text: COLORS.text },
-	crystal: { face: COLORS.crystal, side: COLORS.crystalDark, text: COLORS.textDark },
+/** Button ramps. Text is always white with a dark outline, like the reference design. */
+export const BUTTON_RAMPS: { [K in ButtonVariant]: Ramp } = {
+	primary: { top: rgb(252, 211, 77), mid: rgb(245, 158, 11), bottom: rgb(234, 88, 12) },
+	secondary: RAMPS.plank,
+	success: { top: rgb(52, 211, 153), mid: rgb(34, 197, 94), bottom: rgb(21, 128, 61) },
+	danger: RAMPS.close,
+	crystal: { top: rgb(56, 189, 248), mid: rgb(59, 130, 246), bottom: rgb(37, 99, 235) },
 };
 
-export const DISABLED_BUTTON = { face: COLORS.stone, side: COLORS.stoneDark, text: COLORS.woodDark };
+export const DISABLED_RAMP: Ramp = { top: rgb(100, 116, 139), mid: rgb(71, 85, 105), bottom: rgb(51, 65, 85) };
+export const DISABLED_TEXT = rgb(203, 213, 225);
 
 /** Spring presets for ripple motions. */
 export const SPRINGS = {
