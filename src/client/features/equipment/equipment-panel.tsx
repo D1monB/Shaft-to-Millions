@@ -37,8 +37,8 @@ function bonusesOf(view: PlayerView) {
 function Summary(props: { view: PlayerView }) {
 	const view = props.view;
 	const bonuses = bonusesOf(view);
-	const base = shoesFor(view.levels.shoes).walkSpeed;
-	const pickaxe = getPickaxe(view.levels.pickaxe);
+	const base = shoesFor(view.gear.equipped.shoes).walkSpeed;
+	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
 	return (
 		<Card order={1} accent={COLORS.gold}>
 			<Label text="Активні бонуси" display={true} tone="gold" size={TEXT_SIZES.large} order={1} />
@@ -55,7 +55,7 @@ function Summary(props: { view: PlayerView }) {
 				/>
 			)}
 			<Label
-				text={`👟 Швидкість ${base} → ${math.floor(walkSpeedFor(view.levels.shoes, bonuses.speedBonus))}`}
+				text={`👟 Швидкість ${base} → ${math.floor(walkSpeedFor(view.gear.equipped.shoes, bonuses.speedBonus))}`}
 				order={4}
 			/>
 			<Label

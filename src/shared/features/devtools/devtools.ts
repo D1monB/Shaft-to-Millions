@@ -1,18 +1,21 @@
-// Developer shortcuts for play-testing: money, max gear, all layers open.
+// Developer shortcuts for play-testing: money, max gear, gear materials, all layers open.
 // Pure rules only. The server service registers the remote ONLY in Roblox Studio (RunService.IsStudio()),
 // so on live servers this code is never reachable. Amounts are fixed presets, never a number sent by a client.
 import { LAYER_COUNT } from "shared/config/layers";
-import { BAGS } from "shared/config/bags";
-import { PICKAXES } from "shared/config/pickaxes";
-import { SHOES } from "shared/config/shoes";
+import { ResourceId } from "shared/config/resources";
+import { GEAR_BY_SLOT, GEAR_SLOTS, materialList } from "shared/features/upgrades";
 import type { ProfileData } from "shared/features/profile";
 import { MAX_COUNTER } from "shared/lib/repair";
 
 export const DEV_MONEY_AMOUNTS: ReadonlyArray<number> = [1_000, 100_000, 10_000_000];
 
+/** Pieces of every material that some gear needs, added by one "materials" command. */
+export const DEV_MATERIAL_AMOUNT = 30;
+
 export type DevCommand =
 	| { readonly kind: "money"; readonly amount: number }
 	| { readonly kind: "maxGear" }
+	| { readonly kind: "materials" }
 	| { readonly kind: "openLayers" };
 
 /** Turns raw remote arguments into a command, or undefined when anything is off (count, type, unknown preset). */
@@ -25,7 +28,7 @@ export function parseDevCommand(args: ReadonlyArray<unknown>): DevCommand | unde
 		}
 		return { kind: "money", amount };
 	}
-	if ((kind === "maxGear" || kind === "openLayers") && args.size() === 1) {
+	if ((kind === "maxGear" || kind === "materials" || kind === "openLayers") && args.size() === 1) {
 		return { kind };
 	}
 	return undefined;
@@ -39,9 +42,27 @@ export function applyDevCommand(data: ProfileData, command: DevCommand): void {
 	if (command.kind === "money") {
 		data.money = math.min(data.money + command.amount, MAX_COUNTER);
 	} else if (command.kind === "maxGear") {
-		data.levels.pickaxe = PICKAXES.size();
-		data.levels.bag = BAGS.size();
-		data.levels.shoes = SHOES.size();
+		// Own every item and wear the last (strongest) one of each slot.
+		for (const slot of GEAR_SLOTS) {
+			const items = GEAR_BY_SLOT[slot];
+			for (const def of items) {
+				if (!data.gear.owned.includes(def.id)) {
+					data.gear.owned.push(def.id);
+				}
+			}
+			data.gear.equipped[slot] = items[items.size() - 1].id;
+		}
+	} else if (command.kind === "materials") {
+		// Each material once, however many items use it.
+		const ids = new Set<ResourceId>();
+		for (const slot of GEAR_SLOTS) {
+			for (const def of GEAR_BY_SLOT[slot]) {
+				materialList(def.materials).forEach((entry) => ids.add(entry.id));
+			}
+		}
+		for (const id of ids) {
+			data.warehouse[id] = math.min((data.warehouse[id] ?? 0) + DEV_MATERIAL_AMOUNT, MAX_COUNTER);
+		}
 	} else {
 		data.deepestLayer = LAYER_COUNT;
 	}

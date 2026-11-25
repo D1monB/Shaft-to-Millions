@@ -191,3 +191,23 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Phones first:** the close cross is drawn (BuilderSans has no "✕"), the close button stays inside the board, stat tiles
   start a second column only when a short screen has no room, and on touch screens the dock sits higher, away from the jump
   button.
+
+## 020. Gear catalogue instead of gear levels
+
+- **Date:** 2026-11-25
+- **Decision:** pickaxes, bags and shoes are separate items, not levels 1–6. The developer wanted many of them, like the
+  material ladders in sandbox mining games (wood, stone, copper, iron ...), so the game is more interesting. Names are plain
+  materials, no item names from other games.
+- **Rules (chosen in a poll):** a main line where each item is better, plus side items with a different strength (⚡ the
+  light pickaxe hits fast but weak, the hammer pickaxe is slow but one-shots hard ore). Price = money + materials from the
+  warehouse (ingots from the furnace, ore, parts), so the furnace matters for progress. Everything is for sale at once; the
+  materials themselves gate the order. Bought items are kept forever, the player equips any owned item anywhere.
+- **Data:** profile schema v3: `gear.owned` (ids) + `gear.equipped` (one id per slot) replace `levels.pickaxe/bag/shoes`.
+  The migration turns each old level into the closest new item that is never weaker (old ore tier is kept). Unknown ids are
+  kept in the save (an item from a newer server is never taken away) and fall back to the starter at runtime.
+- **Server:** `BuyGear(id)` checks distance to a shop, money and materials, then takes money and materials and adds the item
+  in one frame (atomic); owning the item already is a refusal, so a double click never charges twice. `EquipGear(id)` only
+  accepts owned items. Both are rate limited.
+- **To check in a play test:** the first 10 minutes. The copper pickaxe and the miner backpack now need copper ingots, so the
+  furnace comes earlier than before; `balance-analyst` should look at it after the play test.
+

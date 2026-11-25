@@ -40,7 +40,7 @@ function DrillShop(props: { layer: number; view: PlayerView }) {
 	if (def === undefined) {
 		return undefined;
 	}
-	const tier = getPickaxe(props.view.levels.pickaxe).tier;
+	const tier = getPickaxe(props.view.gear.equipped.pickaxe).tier;
 	return (
 		<>
 			<Label
@@ -102,7 +102,7 @@ function DrillPanel(props: { layer: number }) {
 		return <DrillShop layer={layer} view={view} />;
 	}
 
-	const pickaxe = getPickaxe(view.levels.pickaxe);
+	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
 	const state = deepCopy(saved);
 	advanceDrill(state, layer, now);
 	const ore = ORES[state.oreId];
@@ -176,7 +176,7 @@ export function startDrillController(): void {
 		short: `${view.deepestLayer}/${LAYER_COUNT}`,
 	}));
 	registerHudStat(25, (view) => {
-		const speed = math.floor(walkSpeedFor(view.levels.shoes, speedBonusOf(view)));
+		const speed = math.floor(walkSpeedFor(view.gear.equipped.shoes, speedBonusOf(view)));
 		return { icon: "👟", text: `Швидкість ходьби: ${speed}`, short: `${speed}` };
 	});
 

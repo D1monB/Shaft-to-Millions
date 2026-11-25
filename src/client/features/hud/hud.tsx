@@ -175,7 +175,7 @@ function TopCentre(props: { view: PlayerView }) {
 				VerticalAlignment={Enum.VerticalAlignment.Top}
 			/>
 			<MoneyCapsule money={props.view.money} />
-			<BagCapsule used={bagTotal(props.view.bag)} capacity={bagCapacity(props.view.levels.bag)} />
+			<BagCapsule used={bagTotal(props.view.bag)} capacity={bagCapacity(props.view.gear.equipped.bag)} />
 		</frame>
 	);
 }

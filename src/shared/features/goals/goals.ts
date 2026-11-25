@@ -7,6 +7,8 @@ export interface GoalCandidate {
 	readonly price: number;
 	/** Lower = more important at the same price range. Unlocking new ore beats a bigger bag. */
 	readonly priority: number;
+	/** Something other than money is still missing, e.g. "Мідний злиток 2/5". Such a goal is never "affordable". */
+	readonly missing?: string;
 }
 
 export interface GoalState {
@@ -53,7 +55,7 @@ export function pickGoalInfo(state: GoalState, candidates: ReadonlyArray<GoalCan
 	}
 	const money = safeMoney(state.money);
 	const valid = candidates.filter((goal) => goal.price === goal.price && goal.price >= 0 && goal.price < math.huge);
-	const affordable = valid.filter((goal) => money >= goal.price);
+	const affordable = valid.filter((goal) => money >= goal.price && goal.missing === undefined);
 	if (affordable.size() > 0) {
 		const best = [...affordable].sort(
 			(a, b) => a.priority < b.priority || (a.priority === b.priority && a.price > b.price),
@@ -70,6 +72,15 @@ export function pickGoalInfo(state: GoalState, candidates: ReadonlyArray<GoalCan
 		const cheapest = [...valid].sort(
 			(a, b) => a.price < b.price || (a.price === b.price && a.priority < b.priority),
 		)[0];
+		if (cheapest.missing !== undefined && money >= cheapest.price) {
+			return {
+				kind: "saving",
+				title: cheapest.label,
+				status: cheapest.missing,
+				progress: 1,
+				text: `Ціль: ${cheapest.label}. Потрібно: ${cheapest.missing}.`,
+			};
+		}
 		const missing = math.ceil(cheapest.price - money);
 		return {
 			kind: "saving",

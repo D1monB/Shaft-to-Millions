@@ -3,7 +3,7 @@
 // Only the server may call loadProfileData and trust its result.
 // Public API of this feature. Other code imports only from this file.
 export { CURRENT_SCHEMA_VERSION, createDefaultProfileData, isProfileData } from "./schema";
-export type { GearLevels, ProfileData, ProfileStats } from "./schema";
+export type { ProfileData, ProfileLevels, ProfileStats } from "./schema";
 export { loadProfileData } from "./load-profile-data";
 export type { LoadFailure, LoadResult } from "./load-profile-data";
 export { toPlayerView } from "./view";

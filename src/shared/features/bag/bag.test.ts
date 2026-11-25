@@ -13,11 +13,12 @@ class BagTests {
 	}
 
 	@Test
-	public capacityClampsLevels() {
-		Assert.equal(bagCapacity(1), BAGS[0].capacity);
-		Assert.equal(bagCapacity(0), BAGS[0].capacity);
-		Assert.equal(bagCapacity(0 / 0), BAGS[0].capacity);
-		Assert.equal(bagCapacity(99), BAGS[BAGS.size() - 1].capacity);
+	public capacityOfABagId() {
+		Assert.equal(bagCapacity(BAGS[0].id), BAGS[0].capacity);
+		Assert.equal(bagCapacity(BAGS[3].id), BAGS[3].capacity);
+		// Unknown ids (broken save, item from a newer server, an id of another slot) fall back to the starter.
+		Assert.equal(bagCapacity(""), BAGS[0].capacity);
+		Assert.equal(bagCapacity("pickaxe_wood"), BAGS[0].capacity);
 	}
 
 	@Test

@@ -5,7 +5,7 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
 import { createDefaultProfileData } from "shared/features/profile";
 import { MAX_COUNTER } from "shared/lib/repair";
-import { DEV_MONEY_AMOUNTS, applyDevCommand, parseDevCommand } from "./devtools";
+import { DEV_MATERIAL_AMOUNT, DEV_MONEY_AMOUNTS, applyDevCommand, parseDevCommand } from "./devtools";
 
 class DevtoolsTests {
 	// ---- parsing: the only input that comes from the client ----
@@ -55,13 +55,30 @@ class DevtoolsTests {
 	}
 
 	@Test
-	public maxGearSetsTheTopLevelOfEveryTrack() {
+	public maxGearOwnsEverythingAndWearsTheBest() {
 		const data = createDefaultProfileData();
 		applyDevCommand(data, { kind: "maxGear" });
-		Assert.equal(data.levels.pickaxe, PICKAXES.size());
-		Assert.equal(data.levels.bag, BAGS.size());
-		Assert.equal(data.levels.shoes, SHOES.size());
+		Assert.equal(data.gear.equipped.pickaxe, PICKAXES[PICKAXES.size() - 1].id);
+		Assert.equal(data.gear.equipped.bag, BAGS[BAGS.size() - 1].id);
+		Assert.equal(data.gear.equipped.shoes, SHOES[SHOES.size() - 1].id);
+		const all = PICKAXES.size() + BAGS.size() + SHOES.size();
+		Assert.equal(data.gear.owned.size(), all);
+		// A second press adds no duplicates.
+		applyDevCommand(data, { kind: "maxGear" });
+		Assert.equal(data.gear.owned.size(), all);
 		Assert.equal(data.money, 0);
+	}
+
+	@Test
+	public materialsAddEachMaterialOnce() {
+		const data = createDefaultProfileData();
+		Assert.equal(parseDevCommand(["materials"])?.kind, "materials");
+		Assert.undefined(parseDevCommand(["materials", 99]));
+		applyDevCommand(data, { kind: "materials" });
+		// Iron ingots are used by several items but are added only once.
+		Assert.equal(data.warehouse.iron_ingot, DEV_MATERIAL_AMOUNT);
+		Assert.equal(data.warehouse.gold_circuit, DEV_MATERIAL_AMOUNT);
+		Assert.undefined(data.warehouse.coal);
 	}
 
 	@Test

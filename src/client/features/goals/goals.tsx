@@ -2,13 +2,14 @@
 // Features register where goals come from; the shared pickGoalInfo chooses exactly one.
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
-import { BAGS } from "shared/config/bags";
 import { MACHINE_IDS } from "shared/config/machines";
 import { ORES, ORE_IDS } from "shared/config/ores";
-import { PICKAXES } from "shared/config/pickaxes";
-import { SHOES } from "shared/config/shoes";
+import { PickaxeDef } from "shared/config/pickaxes";
+import { RESOURCES } from "shared/config/resources";
 import { bagCapacity, bagTotal } from "shared/features/bag";
 import { GoalCandidate, GoalInfo, pickGoalInfo } from "shared/features/goals";
+import { getPickaxe } from "shared/features/mining";
+import { GearSlot, missingMaterials, nextGearToBuy } from "shared/features/upgrades";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
 import {
@@ -31,26 +32,38 @@ export function registerGoalSource(source: (view: PlayerView) => GoalCandidate[]
 	sources.push(source);
 }
 
+/** The next main-line item of a slot as a goal, with the first missing material if any. */
+function gearGoal(view: PlayerView, slot: GearSlot, priority: number): GoalCandidate | undefined {
+	const upcoming = nextGearToBuy(slot, view.gear);
+	if (upcoming === undefined) {
+		return undefined;
+	}
+	const lack = missingMaterials(upcoming, view.warehouse)[0];
+	return {
+		label: upcoming.name,
+		price: upcoming.price,
+		priority,
+		missing: lack === undefined ? undefined : `${RESOURCES[lack.id].name} ${lack.have}/${lack.need}`,
+	};
+}
+
 function gearGoals(view: PlayerView): GoalCandidate[] {
 	const goals: GoalCandidate[] = [];
-	const current = PICKAXES[view.levels.pickaxe - 1];
-	const nextPickaxe = PICKAXES[view.levels.pickaxe];
-	if (current !== undefined && nextPickaxe !== undefined) {
-		const unlocksOre = ORE_IDS.some(
-			(id) => ORES[id].requiredTier > current.tier && ORES[id].requiredTier <= nextPickaxe.tier,
-		);
-		goals.push({ label: nextPickaxe.name, price: nextPickaxe.price, priority: unlocksOre ? 0 : 2 });
-	}
-	const nextBag = BAGS[view.levels.bag];
-	if (nextBag !== undefined) {
-		goals.push({ label: nextBag.name, price: nextBag.price, priority: 1 });
-	}
+	const current = getPickaxe(view.gear.equipped.pickaxe);
+	const upcoming = nextGearToBuy("pickaxe", view.gear) as PickaxeDef | undefined;
+	const unlocksOre =
+		upcoming !== undefined &&
+		ORE_IDS.some((id) => ORES[id].requiredTier > current.tier && ORES[id].requiredTier <= upcoming.tier);
+	const pickaxe = gearGoal(view, "pickaxe", unlocksOre ? 0 : 2);
+	const bag = gearGoal(view, "bag", 1);
 	// Shoes only shorten trips, so they are hinted after the first machine. Earlier, the cheapest-goal rule would make
-	// the $120 shoes the first target of a new player instead of the bag and the first pickaxe.
-	const nextShoes = SHOES[view.levels.shoes];
+	// the cheap shoes the first target of a new player instead of the bag and the first pickaxe.
 	const ownsMachine = MACHINE_IDS.some((id) => view.machines[id] !== undefined);
-	if (nextShoes !== undefined && ownsMachine) {
-		goals.push({ label: nextShoes.name, price: nextShoes.price, priority: 2 });
+	const shoes = ownsMachine ? gearGoal(view, "shoes", 2) : undefined;
+	for (const goal of [pickaxe, bag, shoes]) {
+		if (goal !== undefined) {
+			goals.push(goal);
+		}
 	}
 	return goals;
 }
@@ -63,7 +76,7 @@ function currentGoal(view: PlayerView): GoalInfo {
 		}
 	}
 	return pickGoalInfo(
-		{ money: view.money, bagUsed: bagTotal(view.bag), bagCapacity: bagCapacity(view.levels.bag) },
+		{ money: view.money, bagUsed: bagTotal(view.bag), bagCapacity: bagCapacity(view.gear.equipped.bag) },
 		candidates,
 	);
 }

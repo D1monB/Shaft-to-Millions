@@ -1,13 +1,29 @@
-// upgrades feature (shared): ordered gear levels (pickaxe, bag) and the rules for buying the next one.
+// upgrades feature (shared): shop gear (pickaxes, bags, shoes) bought for money and materials, owned and equipped.
 // Public API of this feature. Other code imports only from this file.
 export {
-	UPGRADE_TRACKS,
-	UPGRADE_TRACK_IDS,
-	isUpgradeTrack,
-	levelState,
-	maxLevel,
-	nextLevelDef,
-	tryBuyUpgrade,
+	GEAR_BY_SLOT,
+	GEAR_SLOTS,
+	applyPurchase,
+	createStarterGear,
+	findGear,
+	gearCardState,
+	isGearSlot,
+	materialList,
+	missingMaterials,
+	nextGearToBuy,
+	starterOf,
+	tryBuyGear,
+	tryEquipGear,
 } from "./upgrades";
-export type { BuyResult, LevelState, UpgradeLevels, UpgradeTrack } from "./upgrades";
-export { BUY_UPGRADE_REMOTE, SHOP_DISTANCE } from "./network";
+export type {
+	BuyGearResult,
+	EquipGearResult,
+	EquippedGear,
+	FoundGear,
+	GearCardState,
+	GearSlot,
+	GearState,
+	MaterialStock,
+	MissingMaterial,
+} from "./upgrades";
+export { BUY_GEAR_REMOTE, EQUIP_GEAR_REMOTE, SHOP_DISTANCE } from "./network";

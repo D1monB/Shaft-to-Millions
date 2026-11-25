@@ -42,6 +42,12 @@ function DevPanel() {
 				order={50}
 			/>
 			<Button
+				text="+30 кожного матеріалу на склад"
+				variant="crystal"
+				onClick={() => sendToServer(DEV_COMMAND_REMOTE, "materials")}
+				order={52}
+			/>
+			<Button
 				text="Відкрити всі шари"
 				variant="crystal"
 				onClick={() => sendToServer(DEV_COMMAND_REMOTE, "openLayers")}

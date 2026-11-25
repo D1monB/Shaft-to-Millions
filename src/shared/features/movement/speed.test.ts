@@ -15,21 +15,21 @@ class SpeedTests {
 
 	@Test
 	public auraMultiplies() {
-		Assert.equal(walkSpeedFor(1, 0), 16);
-		Assert.equal(walkSpeedFor(1, 0.25), 20);
+		Assert.equal(walkSpeedFor(SHOES[0].id, 0), 16);
+		Assert.equal(walkSpeedFor(SHOES[0].id, 0.25), 20);
 	}
 
 	@Test
 	public speedIsCapped() {
-		Assert.equal(walkSpeedFor(SHOES.size(), 10), MAX_WALK_SPEED);
-		Assert.equal(walkSpeedFor(1, math.huge), MAX_WALK_SPEED);
+		Assert.equal(walkSpeedFor(SHOES[SHOES.size() - 1].id, 10), MAX_WALK_SPEED);
+		Assert.equal(walkSpeedFor(SHOES[0].id, math.huge), MAX_WALK_SPEED);
 	}
 
 	@Test
 	public badInputFallsBackSafely() {
-		Assert.equal(walkSpeedFor(0 / 0, 0 / 0), 16);
-		Assert.equal(walkSpeedFor(-3, -1), 16);
-		Assert.equal(shoesFor(999), SHOES[SHOES.size() - 1]);
+		Assert.equal(walkSpeedFor("", 0 / 0), 16);
+		Assert.equal(walkSpeedFor("bag_sack", -1), 16);
+		Assert.equal(shoesFor(SHOES[2].id), SHOES[2]);
 	}
 }
 

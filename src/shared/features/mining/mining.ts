@@ -3,10 +3,9 @@ import { OreDef } from "shared/config/ores";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
 import { SWING_TOLERANCE } from "./tuning";
 
-/** Pickaxe for a saved level. Out-of-range levels fall back to the nearest valid one. */
-export function getPickaxe(level: number): PickaxeDef {
-	const safe = level === level ? math.clamp(math.floor(level), 1, PICKAXES.size()) : 1;
-	return PICKAXES[safe - 1];
+/** The pickaxe with this id. An unknown id (broken save, item from a newer server) falls back to the starter. */
+export function getPickaxe(id: string): PickaxeDef {
+	return PICKAXES.find((def) => def.id === id) ?? PICKAXES[0];
 }
 
 export function canMineTier(ore: OreDef, pickaxe: PickaxeDef): boolean {

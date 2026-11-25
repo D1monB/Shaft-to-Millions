@@ -1,23 +1,26 @@
 import { CollectionService } from "@rbxts/services";
 import { TAGS } from "shared/config/map-contract";
+import { RESOURCES } from "shared/config/resources";
 import {
-	BUY_UPGRADE_REMOTE,
+	BUY_GEAR_REMOTE,
+	EQUIP_GEAR_REMOTE,
 	SHOP_DISTANCE,
-	UPGRADE_TRACKS,
-	isUpgradeTrack,
-	tryBuyUpgrade,
+	applyPurchase,
+	findGear,
+	missingMaterials,
+	tryBuyGear,
+	tryEquipGear,
 } from "shared/features/upgrades";
 import { RateLimiter } from "shared/lib/rate-limiter";
-import { isIntegerInRange } from "shared/lib/validate";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
 import { logAbuse, onClientRequest } from "server/lib/remotes";
 
 function handleBuy(player: Player, args: Array<unknown>): void {
-	const [track, expectedLevel] = args;
-	if (args.size() !== 2 || !isUpgradeTrack(track) || !isIntegerInRange(expectedLevel, 1, 1000)) {
-		logAbuse(player, "bad BuyUpgrade arguments");
+	const [id] = args;
+	if (args.size() !== 1 || findGear(id) === undefined) {
+		logAbuse(player, "bad BuyGear arguments");
 		return;
 	}
 	const data = getProfileData(player);
@@ -25,25 +28,56 @@ function handleBuy(player: Player, args: Array<unknown>): void {
 		return;
 	}
 	if (findNearbyTagged(player, TAGS.Shop, SHOP_DISTANCE) === undefined) {
-		logAbuse(player, "BuyUpgrade away from a shop");
+		logAbuse(player, "BuyGear away from a shop");
 		return;
 	}
 
-	const result = tryBuyUpgrade(track, data.money, data.levels[track], expectedLevel);
+	const result = tryBuyGear(id, data.money, data.warehouse, data.gear);
 	if (result.ok) {
-		// Both writes happen in the same frame with no yield in between, so the purchase is atomic.
+		// Money, materials and ownership change in the same frame with no yield in between: the purchase is atomic.
 		data.money = result.money;
-		data.levels[track] = result.level;
+		applyPurchase(result, data.warehouse, data.gear);
 		markDirty(player);
-		notify(player, `Куплено: ${UPGRADE_TRACKS[track][result.level - 1].name}!`, "success");
+		notify(player, `Куплено й надіто: ${result.def.name}!`, "success");
 	} else if (result.reason === "not-enough-money") {
 		notify(player, "Не вистачає грошей.", "error");
+	} else if (result.reason === "not-enough-materials") {
+		const found = findGear(id);
+		const first = found === undefined ? undefined : missingMaterials(found.def, data.warehouse)[0];
+		notify(
+			player,
+			first === undefined
+				? "Не вистачає матеріалів на складі."
+				: `На складі бракує: ${RESOURCES[first.id].name} (${first.have}/${first.need}).`,
+			"error",
+		);
 	}
-	// "stale-request" (double click) and "max-level" are silently ignored: the UI already shows the truth.
+	// "owned" (a double click) is silently ignored: the UI already shows the truth.
+}
+
+function handleEquip(player: Player, args: Array<unknown>): void {
+	const [id] = args;
+	const found = findGear(id);
+	if (args.size() !== 1 || found === undefined) {
+		logAbuse(player, "bad EquipGear arguments");
+		return;
+	}
+	const data = getProfileData(player);
+	if (data === undefined) {
+		return;
+	}
+	const result = tryEquipGear(id, data.gear);
+	if (result.ok) {
+		data.gear.equipped[result.slot] = found.def.id;
+		markDirty(player);
+	} else if (result.reason === "not-owned") {
+		logAbuse(player, "EquipGear of an item not owned");
+	}
 }
 
 export function startUpgradesService(): void {
-	onClientRequest(BUY_UPGRADE_REMOTE, new RateLimiter(6, 3), handleBuy);
+	onClientRequest(BUY_GEAR_REMOTE, new RateLimiter(6, 3), handleBuy);
+	onClientRequest(EQUIP_GEAR_REMOTE, new RateLimiter(6, 3), handleEquip);
 	const addPrompt = (shop: Instance) => ensurePrompt(shop, "Відкрити", "Магазин спорядження");
 	CollectionService.GetTagged(TAGS.Shop).forEach(addPrompt);
 	CollectionService.GetInstanceAddedSignal(TAGS.Shop).Connect(addPrompt);

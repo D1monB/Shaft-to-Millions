@@ -67,7 +67,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		return;
 	}
 
-	const capacity = bagCapacity(data.levels.bag);
+	const capacity = bagCapacity(data.gear.equipped.bag);
 	if (bagFreeSpace(data.bag, capacity) <= 0) {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
 			notify(player, "Сумка повна! Продай руду або віднеси її на склад.", "error");
@@ -76,7 +76,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	}
 
 	const ore = ORES[oreId];
-	const result = getSession(player).hit(node, ore, getPickaxe(data.levels.pickaxe), os.clock());
+	const result = getSession(player).hit(node, ore, getPickaxe(data.gear.equipped.pickaxe), os.clock());
 
 	if (result.kind === "locked") {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {

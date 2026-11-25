@@ -28,7 +28,7 @@ export function resetMovementBaseline(player: Player): void {
 
 function walkSpeedOf(player: Player): number | undefined {
 	const data = getProfileData(player);
-	return data === undefined ? undefined : walkSpeedFor(data.levels.shoes, speedBonusOf(player));
+	return data === undefined ? undefined : walkSpeedFor(data.gear.equipped.shoes, speedBonusOf(player));
 }
 
 function applySpeed(player: Player): void {

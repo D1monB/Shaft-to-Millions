@@ -77,7 +77,7 @@ function handleBuy(player: Player, args: Array<unknown>): void {
 		notify(player, "Не вистачає грошей.", "error");
 		return;
 	}
-	const tier = getPickaxe(data.levels.pickaxe).tier;
+	const tier = getPickaxe(data.gear.equipped.pickaxe).tier;
 	const firstOre = oresOfLayer(layer).find((oreId) => canDrillOre(layer, oreId, tier));
 	if (firstOre === undefined) {
 		notify(player, "Твоя кирка не бере жодної руди цього шару.", "error");
@@ -104,7 +104,7 @@ function handleSelect(player: Player, args: Array<unknown>): void {
 		logAbuse(player, "SelectDrillOre away from the drill site");
 		return;
 	}
-	if (!canDrillOre(layer, oreId, getPickaxe(data.levels.pickaxe).tier)) {
+	if (!canDrillOre(layer, oreId, getPickaxe(data.gear.equipped.pickaxe).tier)) {
 		notify(player, `${ORES[oreId].name}: потрібна краща кирка.`, "error");
 		return;
 	}

@@ -1,6 +1,7 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { BAGS } from "shared/config/bags";
 import { PICKAXES } from "shared/config/pickaxes";
+import { SHOES } from "shared/config/shoes";
 import { PlainTable } from "shared/lib/tables";
 import { loadProfileData } from "./load-profile-data";
 import { createDefaultProfileData } from "./schema";
@@ -20,27 +21,60 @@ class SanitizeGearAndBagTests {
 	@Test
 	public newPlayerHasStarterGearAndEmptyBag() {
 		const data = createDefaultProfileData();
-		Assert.equal(data.levels.pickaxe, 1);
-		Assert.equal(data.levels.bag, 1);
+		Assert.equal(data.gear.equipped.pickaxe, PICKAXES[0].id);
+		Assert.equal(data.gear.equipped.bag, BAGS[0].id);
+		Assert.equal(data.gear.equipped.shoes, SHOES[0].id);
 		Assert.deepEqual(data.bag, {});
 	}
 
 	@Test
-	public levelsAreClampedToTheConfig() {
+	public equippedItemsMustBeOwnedAndOfTheirSlot() {
 		const result = load((raw) => {
-			raw.levels = { pickaxe: 999, bag: -4 };
+			raw.gear = {
+				owned: [PICKAXES[0].id, BAGS[0].id, SHOES[0].id, BAGS[3].id],
+				// Not owned / a pickaxe in the bag slot / a number.
+				equipped: { pickaxe: PICKAXES[4].id, bag: PICKAXES[0].id, shoes: 5 },
+			};
 		});
-		Assert.equal(result.data.levels.pickaxe, PICKAXES.size());
-		Assert.equal(result.data.levels.bag, 1);
-		Assert.equal(BAGS.size() >= 1, true);
+		Assert.equal(result.data.gear.equipped.pickaxe, PICKAXES[0].id);
+		Assert.equal(result.data.gear.equipped.bag, BAGS[0].id);
+		Assert.equal(result.data.gear.equipped.shoes, SHOES[0].id);
 	}
 
 	@Test
-	public brokenLevelsTableIsReplaced() {
+	public ownedListIsCleanedAndAlwaysHasStarters() {
 		const result = load((raw) => {
-			raw.levels = "max";
+			raw.gear = { owned: [BAGS[2].id, BAGS[2].id, 7, "x".rep(100)], equipped: { bag: BAGS[2].id } };
 		});
-		Assert.equal(result.data.levels.pickaxe, 1);
+		const owned = result.data.gear.owned;
+		Assert.equal(owned.filter((id) => id === BAGS[2].id).size(), 1);
+		Assert.true(owned.includes(PICKAXES[0].id));
+		Assert.true(owned.includes(SHOES[0].id));
+		Assert.equal(owned.size(), 4);
+		Assert.equal(result.data.gear.equipped.bag, BAGS[2].id);
+	}
+
+	@Test
+	public unknownItemFromANewerServerIsKept() {
+		const result = load((raw) => {
+			raw.gear = {
+				owned: [PICKAXES[0].id, BAGS[0].id, SHOES[0].id, "pickaxe_future"],
+				equipped: { pickaxe: "pickaxe_future", bag: BAGS[0].id, shoes: SHOES[0].id },
+			};
+		});
+		Assert.true(result.data.gear.owned.includes("pickaxe_future"));
+		Assert.equal(result.data.gear.equipped.pickaxe, "pickaxe_future");
+	}
+
+	@Test
+	public brokenGearTableIsReplaced() {
+		for (const gear of ["max", 5]) {
+			const result = load((raw) => {
+				raw.gear = gear;
+			});
+			Assert.equal(result.data.gear.equipped.pickaxe, PICKAXES[0].id);
+			Assert.equal(result.data.gear.owned.size(), 3);
+		}
 	}
 
 	@Test
@@ -54,13 +88,15 @@ class SanitizeGearAndBagTests {
 	}
 
 	@Test
-	public saveFromBeforeTheBagExistedLoads() {
+	public saveWithoutBagGearOrLevelsLoads() {
 		const result = load((raw) => {
 			raw.bag = undefined;
+			raw.gear = undefined;
 			raw.levels = undefined;
 		});
 		Assert.deepEqual(result.data.bag, {});
-		Assert.equal(result.data.levels.bag, 1);
+		Assert.equal(result.data.levels.warehouse, 1);
+		Assert.equal(result.data.gear.equipped.shoes, SHOES[0].id);
 	}
 }
 

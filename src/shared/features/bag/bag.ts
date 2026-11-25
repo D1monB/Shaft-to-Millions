@@ -1,13 +1,13 @@
-// Pure bag rules: ore the player carries, limited by the capacity of their bag level.
+// Pure bag rules: ore the player carries, limited by the capacity of the equipped bag.
 import { BAGS } from "shared/config/bags";
 import { ORE_IDS, OreId } from "shared/config/ores";
 
 /** Ore counts by id. Missing id = 0. */
 export type OreCounts = { [K in OreId]?: number };
 
-export function bagCapacity(level: number): number {
-	const safe = level === level ? math.clamp(math.floor(level), 1, BAGS.size()) : 1;
-	return BAGS[safe - 1].capacity;
+/** Capacity of the bag with this id. An unknown id falls back to the starter bag. */
+export function bagCapacity(id: string): number {
+	return (BAGS.find((def) => def.id === id) ?? BAGS[0]).capacity;
 }
 
 /** Total pieces in the bag. Only known ore ids count, so junk keys in a save cannot fill the bag. */

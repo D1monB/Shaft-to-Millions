@@ -1,5 +1,8 @@
-/** Client -> server: (track: UpgradeTrack, expectedLevel: number). Must stand at a Shop. */
-export const BUY_UPGRADE_REMOTE = "BuyUpgrade";
+/** Client -> server: (itemId: string). Must stand at a Shop. Buys the item and equips it. */
+export const BUY_GEAR_REMOTE = "BuyGear";
+
+/** Client -> server: (itemId: string). Equips an owned item. Works anywhere: it only switches between own things. */
+export const EQUIP_GEAR_REMOTE = "EquipGear";
 
 /** How close (studs) the player must be to a Shop to buy. */
 export const SHOP_DISTANCE = 16;

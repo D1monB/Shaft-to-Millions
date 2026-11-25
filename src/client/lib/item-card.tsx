@@ -23,8 +23,10 @@ interface CardDecor {
 	readonly topLeft?: CornerPill;
 	/** Green outline: the item is in use. */
 	readonly highlighted?: boolean;
-	/** Buttons under the effect; the parent grid must make the cell ITEM_CARD_FOOTER taller. */
+	/** Buttons under the effect; the parent grid must make the cell ITEM_CARD_FOOTER (or footerHeight) taller. */
 	readonly footer?: React.Element;
+	/** Height of the footer area, when it holds more than one row of buttons. Default ITEM_CARD_FOOTER. */
+	readonly footerHeight?: number;
 	readonly order?: number;
 }
 
@@ -159,7 +161,7 @@ function Content(props: RarityCardProps) {
 				<frame
 					BackgroundTransparency={1}
 					Position={new UDim2(0, 8, 0, ITEM_CARD_HEIGHT - 4)}
-					Size={new UDim2(1, -16, 0, ITEM_CARD_FOOTER - 6)}
+					Size={new UDim2(1, -16, 0, (props.footerHeight ?? ITEM_CARD_FOOTER) - 6)}
 					ZIndex={7}
 				>
 					{props.footer}

@@ -1,67 +1,86 @@
-// Shop panel: a catalogue. One tab per gear track, every level of the track is its own card
-// (bought and replaced, in use, for sale, locked). Buying sends only the intent (track + the level the player saw);
-// the server checks money and distance.
+// Shop panel: a catalogue. One tab per slot (pickaxes, bags, shoes), one card per item. Everything is for sale
+// at once: an item costs money plus materials from the warehouse, is kept forever and can be equipped any time.
+// Buying and equipping send only the item id; the server checks distance, money, materials and ownership.
 import React, { useState } from "@rbxts/react";
 import { BAGS } from "shared/config/bags";
+import { GearBase } from "shared/config/gear";
 import { Rarity } from "shared/config/items";
 import { TAGS } from "shared/config/map-contract";
-import { ORES, ORE_IDS } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
+import { RESOURCES } from "shared/config/resources";
 import { SHOES } from "shared/config/shoes";
 import {
-	BUY_UPGRADE_REMOTE,
-	LevelState,
-	UPGRADE_TRACKS,
-	UpgradeTrack,
-	isUpgradeTrack,
-	levelState,
+	BUY_GEAR_REMOTE,
+	EQUIP_GEAR_REMOTE,
+	GEAR_BY_SLOT,
+	GearSlot,
+	gearCardState,
+	isGearSlot,
+	materialList,
+	missingMaterials,
 } from "shared/features/upgrades";
+import { PlayerView } from "shared/features/profile";
+import { formatPercent } from "shared/lib/format";
 import { useView } from "client/features/profile";
-import { ITEM_CARD_FOOTER, ITEM_CARD_HEIGHT, RarityCard } from "client/lib/item-card";
+import { ITEM_CARD_HEIGHT, RarityCard } from "client/lib/item-card";
 import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
 import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
-import { BuyButton, COLORS, Card, FONTS, Label, TEXT_SIZES, Tabs } from "client/lib/ui-kit";
+import { BuyButton, Button, COLORS, Card, FONTS, Label, TEXT_SIZES, Tabs } from "client/lib/ui-kit";
 
-const TABS: ReadonlyArray<{ readonly key: UpgradeTrack; readonly label: string; readonly icon: string }> = [
+const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: string; readonly icon: string }> = [
 	{ key: "pickaxe", label: "⛏ Кирки", icon: "⛏" },
 	{ key: "bag", label: "🎒 Сумки", icon: "🎒" },
 	{ key: "shoes", label: "👟 Взуття", icon: "👟" },
 ];
 
-/** Card colours climb the rarity ramp with the level, so the best gear looks the best. */
+/** Footer: one line of materials above the button. */
+const MATERIALS_LINE = 24;
+const FOOTER_HEIGHT = 66 + MATERIALS_LINE;
+const BASE_WALK_SPEED = 16;
+
+/** Card colours climb the rarity ramp along the catalogue, so the best gear looks the best. */
 const COLOUR_STEPS: ReadonlyArray<Rarity> = ["common", "uncommon", "rare", "epic", "legendary"];
 
-function colourOf(level: number, levels: number): Rarity {
-	const step = math.floor(((level - 1) * COLOUR_STEPS.size()) / levels);
+function colourOf(index: number, count: number): Rarity {
+	const step = math.floor((index * COLOUR_STEPS.size()) / count);
 	return COLOUR_STEPS[math.clamp(step, 0, COLOUR_STEPS.size() - 1)];
 }
 
-function describe(track: UpgradeTrack, level: number): string {
-	if (track === "pickaxe") {
-		const pickaxe = PICKAXES[level - 1];
-		return `Руда до рівня ${pickaxe.tier} · удар ${pickaxe.power}`;
+/** The middle pill and the effect line of a card. */
+function statsOf(slot: GearSlot, index: number): { pill: string; effect: string } {
+	if (slot === "pickaxe") {
+		const def = PICKAXES[index];
+		const stats = `Удар ${def.power} · раз на ${def.swingSeconds} с`;
+		return { pill: `РУДА ДО РІВНЯ ${def.tier}`, effect: def.special !== undefined ? def.special : stats };
 	}
-	if (track === "bag") {
-		return `Місткість ${BAGS[level - 1].capacity} шт.`;
+	if (slot === "bag") {
+		const def = BAGS[index];
+		return { pill: `МІСТКІСТЬ ${def.capacity}`, effect: `Носиш до ${def.capacity} шматків руди` };
 	}
-	return `Швидкість ${SHOES[level - 1].walkSpeed} (звичайна 16)`;
+	const def = SHOES[index];
+	const faster = def.walkSpeed / BASE_WALK_SPEED - 1;
+	return {
+		pill: `ШВИДКІСТЬ ${def.walkSpeed}`,
+		effect: faster > 0 ? `Бігаєш на ${formatPercent(faster)} швидше` : "Звичайна швидкість",
+	};
 }
 
-/** Ores the pickaxe of `level` opens compared with the level before it: the clearest reason to buy it. */
-function unlockedBy(level: number): string {
-	const before = PICKAXES[level - 2];
-	const upcoming = PICKAXES[level - 1];
-	if (before === undefined || upcoming === undefined) {
-		return "";
+/** "Мідний злиток 3/5 · Вугілля 10/10": green when there is enough, red when not. */
+function materialsText(def: GearBase, view: PlayerView): { text: string; enough: boolean } {
+	const list = materialList(def.materials);
+	if (list.size() === 0) {
+		return { text: "Без матеріалів", enough: true };
 	}
-	return ORE_IDS.filter((id) => ORES[id].requiredTier > before.tier && ORES[id].requiredTier <= upcoming.tier)
-		.map((id) => ORES[id].name)
-		.join(", ");
+	const parts = list.map((entry) => {
+		const have = math.min(view.warehouse[entry.id] ?? 0, entry.amount);
+		return `${RESOURCES[entry.id].name} ${have}/${entry.amount}`;
+	});
+	return { text: parts.join(" · "), enough: missingMaterials(def, view.warehouse).size() === 0 };
 }
 
-/** A line of text in the card footer, where a buy button would be. */
+/** A line of text in the card footer, where a button would be. */
 function FooterNote(props: { text: string; color: Color3 }) {
 	return (
 		<textlabel
@@ -79,114 +98,132 @@ function FooterNote(props: { text: string; color: Color3 }) {
 	);
 }
 
-function footerOf(state: LevelState, props: GearCardProps): React.Element {
-	if (state === "next") {
-		return (
-			<BuyButton
-				price={UPGRADE_TRACKS[props.track][props.level - 1].price}
-				money={props.money}
-				verb="Купити"
-				textSize={TEXT_SIZES.small}
-				onClick={() => sendToServer(BUY_UPGRADE_REMOTE, props.track, props.current)}
-			/>
-		);
-	}
-	if (state === "current") {
+function ForSaleFooter(props: { def: GearBase; view: PlayerView }) {
+	const materials = materialsText(props.def, props.view);
+	return (
+		<>
+			<textlabel
+				BackgroundTransparency={1}
+				Size={new UDim2(1, 0, 0, MATERIALS_LINE - 4)}
+				Font={FONTS.display}
+				Text={materials.text}
+				TextColor3={materials.enough ? COLORS.success : COLORS.danger}
+				TextScaled={true}
+				ZIndex={8}
+			>
+				<uitextsizeconstraint MaxTextSize={14} MinTextSize={9} />
+				<uistroke Color={COLORS.outline} Thickness={1.5} />
+			</textlabel>
+			<frame
+				BackgroundTransparency={1}
+				Position={new UDim2(0, 0, 0, MATERIALS_LINE)}
+				Size={new UDim2(1, 0, 1, -MATERIALS_LINE)}
+			>
+				<BuyButton
+					price={props.def.price}
+					money={props.view.money}
+					verb="Купити"
+					blocked={!materials.enough}
+					textSize={TEXT_SIZES.small}
+					onClick={() => sendToServer(BUY_GEAR_REMOTE, props.def.id)}
+				/>
+			</frame>
+		</>
+	);
+}
+
+function footerOf(def: GearBase, view: PlayerView): React.Element {
+	const state = gearCardState(def.id, view.gear);
+	if (state === "equipped") {
 		return <FooterNote text="Зараз у тебе" color={COLORS.success} />;
 	}
-	if (state === "replaced") {
-		return <FooterNote text="Є краща" color={COLORS.textMuted} />;
+	if (state === "owned") {
+		return (
+			<frame
+				BackgroundTransparency={1}
+				Position={new UDim2(0, 0, 0, MATERIALS_LINE)}
+				Size={new UDim2(1, 0, 1, -MATERIALS_LINE)}
+			>
+				<Button
+					text="Надіти"
+					variant="success"
+					textSize={TEXT_SIZES.small + 2}
+					onClick={() => sendToServer(EQUIP_GEAR_REMOTE, def.id)}
+				/>
+			</frame>
+		);
 	}
-	const previous = UPGRADE_TRACKS[props.track][props.level - 2];
-	return <FooterNote text={`🔒 Спершу: ${previous.name}`} color={COLORS.textMuted} />;
+	return <ForSaleFooter def={def} view={view} />;
 }
 
-interface GearCardProps {
-	readonly track: UpgradeTrack;
-	readonly icon: string;
-	readonly level: number;
-	readonly current: number;
-	readonly money: number;
-}
-
-function GearCard(props: GearCardProps) {
-	const levels = UPGRADE_TRACKS[props.track];
-	const def = levels[props.level - 1];
-	const state = levelState(props.level, props.current);
-	const colour = colourOf(props.level, levels.size());
+function GearCard(props: { slot: GearSlot; icon: string; index: number; view: PlayerView }) {
+	const items = GEAR_BY_SLOT[props.slot];
+	const def = items[props.index];
+	const state = gearCardState(def.id, props.view.gear);
+	const colour = colourOf(props.index, items.size());
+	const stats = statsOf(props.slot, props.index);
 	return (
 		<RarityCard
 			ramp={RARITY_RAMPS[colour]}
 			light={RARITY_LIGHT[colour]}
 			icon={props.icon}
 			name={def.name}
-			pill={`РІВЕНЬ ${props.level}`}
-			effect={describe(props.track, props.level)}
-			rays={props.level === levels.size()}
-			dimmed={state === "replaced" || state === "locked"}
-			highlighted={state === "current"}
+			pill={stats.pill}
+			effect={stats.effect}
+			rays={props.index === items.size() - 1}
+			highlighted={state === "equipped"}
 			topLeft={
-				state === "current"
+				state === "equipped"
 					? { text: "✔ НАДІТО", color: COLORS.success }
-					: state === "replaced"
+					: state === "owned"
 						? { text: "КУПЛЕНО", color: COLORS.textMuted }
 						: undefined
 			}
-			footer={footerOf(state, props)}
-			order={props.level}
+			topRight={def.special !== undefined ? { text: "⚡ ОСОБЛИВА", color: COLORS.gold } : undefined}
+			footer={footerOf(def, props.view)}
+			footerHeight={FOOTER_HEIGHT}
+			order={props.index}
 		/>
 	);
 }
 
-/** One line over the grid: what the player has and what the next level gives. */
-function hintOf(track: UpgradeTrack, current: number): string {
-	const levels = UPGRADE_TRACKS[track];
-	const now = `Зараз: ${levels[current - 1].name} (рівень ${current}/${levels.size()}).`;
-	if (current >= levels.size()) {
-		return `${now} ✨ Найкраща вже твоя!`;
-	}
-	const unlocks = track === "pickaxe" ? unlockedBy(current + 1) : "";
-	return unlocks !== "" ? `${now} Наступна відкриває: ${unlocks}` : now;
-}
-
 function ShopPanel() {
 	const view = useView();
-	const [tab, setTab] = useState<UpgradeTrack>("pickaxe");
+	const [tab, setTab] = useState<GearSlot>("pickaxe");
 	if (view === undefined) {
 		return <Label text="Завантаження..." tone="muted" />;
 	}
-	const current = view.levels[tab];
+	const items = GEAR_BY_SLOT[tab];
 	const icon = TABS.find((entry) => entry.key === tab)?.icon ?? "";
-	const levels = UPGRADE_TRACKS[tab];
+	const equipped = items.find((def) => def.id === view.gear.equipped[tab]) ?? items[0];
+	const owned = items.filter((def) => view.gear.owned.includes(def.id)).size();
 	return (
 		<>
 			<Tabs
 				items={TABS.map((entry) => ({ key: entry.key, label: entry.label }))}
 				selected={tab}
 				onSelect={(key) => {
-					if (isUpgradeTrack(key)) {
+					if (isGearSlot(key)) {
 						setTab(key);
 					}
 				}}
 				order={1}
 			/>
-			<Label text={hintOf(tab, current)} tone="muted" size={TEXT_SIZES.small + 1} order={2} />
+			<Label
+				text={`Надіто: ${equipped.name}. Куплено ${owned} з ${items.size()}. Матеріали беруться зі складу.`}
+				tone="muted"
+				size={TEXT_SIZES.small + 1}
+				order={2}
+			/>
 			<Card order={3}>
 				<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 0)} AutomaticSize={Enum.AutomaticSize.Y}>
 					<uigridlayout
-						CellSize={new UDim2(1 / 3, -8, 0, ITEM_CARD_HEIGHT + ITEM_CARD_FOOTER)}
+						CellSize={new UDim2(1 / 3, -8, 0, ITEM_CARD_HEIGHT + FOOTER_HEIGHT)}
 						CellPadding={new UDim2(0, 12, 0, 14)}
 						SortOrder={Enum.SortOrder.LayoutOrder}
 					/>
-					{levels.map((_, index) => (
-						<GearCard
-							key={`${tab}_${index + 1}`}
-							track={tab}
-							icon={icon}
-							level={index + 1}
-							current={current}
-							money={view.money}
-						/>
+					{items.map((def, index) => (
+						<GearCard key={def.id} slot={tab} icon={icon} index={index} view={view} />
 					))}
 				</frame>
 			</Card>
