@@ -13,6 +13,13 @@ import { sendToServer } from "client/lib/remotes";
 import { ACCENTS, COLORS, FONTS, GLASS_TRANSPARENCY, RADIUS, STROKE, TEXT_SIZES } from "client/lib/ui-kit";
 
 const SLOT = 60;
+/** On a touch screen (phones): smaller, so ten slots leave room for the thumbs. */
+const TOUCH_SLOT = 46;
+
+/** Read on every render: PreferredInput follows the device in use, so it switches with the player. */
+function slotSize(): number {
+	return UserInputService.PreferredInput === Enum.PreferredInput.Touch ? TOUCH_SLOT : SLOT;
+}
 const GAP = 8;
 /** At the bottom edge, like Roblox's own bar; the goal banner moved to the top centre. */
 const BOTTOM_OFFSET = 10;
@@ -99,7 +106,7 @@ function Slot(props: { def: PickaxeDef; index: number; chosen: boolean; held: bo
 			AutoButtonColor={false}
 			BackgroundColor3={props.held ? COLORS.woodLight : COLORS.woodDark}
 			BackgroundTransparency={GLASS_TRANSPARENCY}
-			Size={UDim2.fromOffset(SLOT, SLOT)}
+			Size={UDim2.fromOffset(slotSize(), slotSize())}
 			LayoutOrder={props.index}
 			Event={{ Activated: props.onClick }}
 		>
@@ -158,7 +165,7 @@ export function PickaxeHotbar() {
 		<frame
 			AnchorPoint={new Vector2(0.5, 1)}
 			Position={new UDim2(0.5, 0, 1, -BOTTOM_OFFSET)}
-			Size={UDim2.fromOffset(0, SLOT + 26)}
+			Size={UDim2.fromOffset(0, slotSize() + 26)}
 			AutomaticSize={Enum.AutomaticSize.X}
 			BackgroundTransparency={1}
 		>
@@ -177,7 +184,7 @@ export function PickaxeHotbar() {
 			<frame
 				BackgroundTransparency={1}
 				Position={UDim2.fromOffset(0, 26)}
-				Size={UDim2.fromOffset(0, SLOT)}
+				Size={UDim2.fromOffset(0, slotSize())}
 				AutomaticSize={Enum.AutomaticSize.X}
 			>
 				<uilistlayout

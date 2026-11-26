@@ -82,6 +82,7 @@ export const EN = {
 	// ---- gear shop
 	"shop.title": "Gear Shop",
 	"menu.shop": "Shop",
+	"menu.more": "More",
 	"shop.tab.pickaxe": "⛏️ Pickaxes",
 	"shop.tab.bag": "🎒 Bags",
 	"shop.tab.shoes": "👟 Shoes",

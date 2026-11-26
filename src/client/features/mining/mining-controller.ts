@@ -10,7 +10,6 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { MINE_PROGRESS_REMOTE, NODE_BROKEN_REMOTE, canMineTier, getPickaxe } from "shared/features/mining";
 import { PlayerView } from "shared/features/profile";
 import { formatMoney } from "shared/lib/format";
-import { registerHudStat } from "client/features/hud";
 import { getView, onViewChanged } from "client/features/profile";
 import { onServerMessage } from "client/lib/remotes";
 import { playOreBreak } from "client/lib/sounds";
@@ -234,11 +233,7 @@ function hideNode(node: Instance, seconds: number): void {
 
 export function startMiningController(): void {
 	// The bag is shown in the HUD top bar; only the pickaxe goes to the stat column.
-	registerHudStat(20, (view) => {
-		const name = t(nameKeys.gear(getPickaxe(view.gear.equipped.pickaxe).id));
-		// The first word fits on the tile ("Iron"); the whole name is in the tooltip.
-		return { icon: "⛏️", text: t("hud.pickaxe", { name }), short: name.split(" ")[0] ?? name };
-	});
+	// No pickaxe tile: the hotbar at the bottom already shows the pickaxe (HUD clean-up, 2026-11-26).
 
 	onViewChanged(refreshAllLabels);
 	// Ore labels are world texts built here, so a language change rewrites them too.

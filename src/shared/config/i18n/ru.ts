@@ -82,6 +82,7 @@ export const RU: Strings = {
 	// ---- gear shop
 	"shop.title": "Магазин снаряжения",
 	"menu.shop": "Магазин",
+	"menu.more": "Ещё",
 	"shop.tab.pickaxe": "⛏️ Кирки",
 	"shop.tab.bag": "🎒 Сумки",
 	"shop.tab.shoes": "👟 Обувь",

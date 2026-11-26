@@ -11,7 +11,9 @@ import { UserInputService } from "@rbxts/services";
 import { bagCapacity, bagTotal } from "shared/features/bag";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
+import { closePanel, openPanel } from "client/lib/panels";
 import {
+	Button,
 	ButtonVariant,
 	COLORS,
 	CapsuleBadge,
@@ -50,6 +52,8 @@ interface ButtonEntry {
 	readonly label: string | (() => string);
 	readonly onClick: () => void;
 	readonly variant: ButtonVariant;
+	/** Shown in the "more" menu instead of the dock, to keep a phone screen clear. */
+	readonly secondary: boolean;
 }
 
 const stats: StatEntry[] = [];
@@ -71,8 +75,9 @@ export function registerHudButton(
 	onClick: () => void,
 	order = 50,
 	variant: ButtonVariant = "secondary",
+	secondary = false,
 ): void {
-	buttons.push({ order, icon, label, onClick, variant });
+	buttons.push({ order, icon, label, onClick, variant, secondary });
 	buttons.sort((a, b) => a.order < b.order);
 }
 
@@ -213,6 +218,37 @@ function useTouchFirst(): boolean {
 	return touch;
 }
 
+function labelOf(button: ButtonEntry): string {
+	return typeIs(button.label, "function") ? button.label() : button.label;
+}
+
+/** The secondary buttons as a list of big buttons in a panel. */
+function MorePanel() {
+	return (
+		<>
+			{buttons
+				.filter((button) => button.secondary)
+				.map((button, index) => (
+					<Button
+						key={`more_${index}`}
+						text={`${button.icon}  ${labelOf(button)}`}
+						variant={button.variant}
+						height={52}
+						onClick={() => {
+							closePanel();
+							button.onClick();
+						}}
+						order={index}
+					/>
+				))}
+		</>
+	);
+}
+
+function openMore(): void {
+	openPanel({ key: "more", title: t("menu.more"), icon: "⋯", render: () => <MorePanel /> });
+}
+
 function Dock() {
 	const touch = useTouchFirst();
 	return (
@@ -224,16 +260,21 @@ function Dock() {
 			BackgroundTransparency={1}
 		>
 			<uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
-			{buttons.map((button, index) => (
-				<MenuButton
-					key={`menu_${index}`}
-					icon={button.icon}
-					label={typeIs(button.label, "function") ? button.label() : button.label}
-					onClick={button.onClick}
-					variant={button.variant}
-					order={index}
-				/>
-			))}
+			{buttons
+				.filter((button) => !button.secondary)
+				.map((button, index) => (
+					<MenuButton
+						key={`menu_${index}`}
+						icon={button.icon}
+						label={labelOf(button)}
+						onClick={button.onClick}
+						variant={button.variant}
+						order={index}
+					/>
+				))}
+			{buttons.some((button) => button.secondary) && (
+				<MenuButton icon="⋯" label={t("menu.more")} onClick={openMore} variant="slate" order={99} />
+			)}
 		</frame>
 	);
 }

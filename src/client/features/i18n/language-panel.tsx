@@ -40,7 +40,7 @@ function openLanguagePanel(): void {
 }
 
 export function startLanguagePanel(): void {
-	registerHudButton("🌐", () => t("language.title"), openLanguagePanel, 90);
+	registerHudButton("🌐", () => t("language.title"), openLanguagePanel, 90, "secondary", true);
 	// The open panel's title was written in the old language: open it again in the new one.
 	onLanguageChanged(() => {
 		if (isPanelOpen(PANEL_KEY)) {

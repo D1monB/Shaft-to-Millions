@@ -119,5 +119,6 @@ export function startLeaderboardController(): void {
 			openPanel({ key: "leaderboard", title: t("board.title"), icon: "🏆", render: () => <LeaderboardPanel /> }),
 		30,
 		"primary",
+		true,
 	);
 }
