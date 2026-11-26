@@ -184,6 +184,8 @@ export const RU: Strings = {
 	"line.claimed": "Участок твой! Кидай руду на ленту или купи первую машину.",
 	"line.claim": "Занять участок",
 	"line.plot": "Участок {n}",
+	"line.plotOwner": "База {name}",
+	"line.plotFree": "Свободный участок {n}",
 	"line.offline": "Пока тебя не было, линия заработала {money}.",
 	"line.noPlots": "Свободных участков нет: линия работает, но кидать руду некуда.",
 	"line.choosePlot": "Выбери участок: встань у его точки и нажми E.",
@@ -295,6 +297,9 @@ export const RU: Strings = {
 	"drill.5": "Бур Титанового Дна",
 
 	// ---- chests and items
+	"chest.sign.pet_chest": "ПИТОМЦЫ",
+	"chest.sign.pickaxe_chest": "АУРА КИРКИ",
+	"chest.sign.speed_chest": "АУРА СКОРОСТИ",
 	"chest.pet_chest": "Сундук питомцев",
 	"chest.pet_chest.desc": "Питомцы добавляют процент к цене всего, что ты продаёшь.",
 	"chest.speed_chest": "Сундук скорости",

@@ -185,6 +185,8 @@ export const PL: Strings = {
 	"line.claimed": "Działka jest twoja! Wrzucaj rudę na taśmę albo kup pierwszą maszynę.",
 	"line.claim": "Zajmij działkę",
 	"line.plot": "Działka {n}",
+	"line.plotOwner": "Baza {name}",
+	"line.plotFree": "Wolna działka {n}",
 	"line.offline": "Gdy cię nie było, linia zarobiła {money}.",
 	"line.noPlots": "Brak wolnych działek: linia działa, ale nie ma gdzie wrzucać rudy.",
 	"line.choosePlot": "Wybierz działkę: stań przy jej punkcie i naciśnij E.",
@@ -296,6 +298,9 @@ export const PL: Strings = {
 	"drill.5": "Wiertło Tytanowego Dna",
 
 	// ---- chests and items
+	"chest.sign.pet_chest": "ZWIERZAKI",
+	"chest.sign.pickaxe_chest": "AURA KILOFA",
+	"chest.sign.speed_chest": "AURA SZYBKOŚCI",
 	"chest.pet_chest": "Skrzynia zwierzaków",
 	"chest.pet_chest.desc": "Zwierzaki dodają procent do ceny wszystkiego, co sprzedajesz.",
 	"chest.speed_chest": "Skrzynia szybkości",

@@ -3,7 +3,7 @@
 // Everything that moves value happens here; the client sees the result in its view and in the built plot.
 import { CollectionService, Players, ReplicatedStorage, ServerStorage } from "@rbxts/services";
 import { LINE_MACHINES } from "shared/config/line";
-import { PLOT_ATTRIBUTES } from "shared/config/map-contract";
+import { PLOT_ATTRIBUTES, PLOT_SIGN } from "shared/config/map-contract";
 import { ORES, ORE_IDS, OreId, isOreId } from "shared/config/ores";
 import {
 	ITEM_TEMPLATES_FOLDER,
@@ -40,7 +40,7 @@ import {
 } from "server/features/profile";
 import { getSellMultiplier } from "server/features/selling";
 import { notify } from "server/lib/notify";
-import { localizePrompt } from "server/lib/localized";
+import { localizeLabel, localizePrompt } from "server/lib/localized";
 import { getRootPosition } from "server/lib/proximity";
 import { declareUnreliableClientEvent, logAbuse, onClientRequest } from "server/lib/remotes";
 import { buildSign } from "./buy-signs";
@@ -434,6 +434,25 @@ function setClaimPromptEnabled(plot: Plot, enabled: boolean): void {
 	}
 }
 
+/**
+ * The map author's name board over the plot (Sign / SurfaceGui / OwnerName) said "Player N" for everyone. It shows
+ * the owner's display name, or "Free plot N" in the viewer's language.
+ */
+function refreshPlotSign(plot: Plot, owner: Player | undefined): void {
+	const sign = plot.model.FindFirstChild(PLOT_SIGN.Part);
+	for (const label of sign?.GetDescendants() ?? []) {
+		if (label.IsA("TextLabel") && label.Name === PLOT_SIGN.Label) {
+			const n = tostring(plot.model.GetAttribute(PLOT_ATTRIBUTES.PlotIndex) ?? "");
+			localizeLabel(
+				label,
+				owner !== undefined
+					? text("line.plotOwner", { name: owner.DisplayName })
+					: text("line.plotFree", { n }),
+			);
+		}
+	}
+}
+
 function claim(player: Player, plot: Plot): void {
 	const data = getProfileData(player);
 	if (data === undefined || ownerOf(plot) !== 0 || !isNear(player, claimAnchor(plot).Position, CLAIM_DISTANCE)) {
@@ -446,6 +465,7 @@ function claim(player: Player, plot: Plot): void {
 	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, player.UserId);
 	plotOf.set(player, plot);
 	setClaimPromptEnabled(plot, false);
+	refreshPlotSign(plot, player);
 	// A broken template must not leave the plot owned and half built: undo the claim and let anyone retry.
 	const [built, err] = pcall(buildFor, plot, data);
 	if (!built) {
@@ -489,6 +509,7 @@ function releasePlot(player: Player): void {
 	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
 	clearBase(plot);
 	setClaimPromptEnabled(plot, true);
+	refreshPlotSign(plot, undefined);
 }
 
 /** Where the player appears: their own plot, or else the first free one (to take it or walk to another). */
@@ -610,6 +631,7 @@ export function startLineService(): void {
 	for (const plot of plots) {
 		plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
 		addClaimPrompt(plot);
+		refreshPlotSign(plot, undefined);
 	}
 	onClientRequest(UPGRADE_LINE_MACHINE_REMOTE, new RateLimiter(6, 3), handleUpgrade);
 	onProfileLoaded(onLoaded);

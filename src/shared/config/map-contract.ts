@@ -83,6 +83,12 @@ export const LIFT = {
 	LayerAttribute: "Layer",
 } as const;
 
+/** The name board over each plot: Map/Plots/<PlotN>/Sign with a TextLabel OwnerName inside (any depth). */
+export const PLOT_SIGN = {
+	Part: "Sign",
+	Label: "OwnerName",
+} as const;
+
 export const PLOT_ATTRIBUTES = {
 	/** On the plot: UserId of the owner, 0 = free. Set by the server. */
 	Owner: "Owner",

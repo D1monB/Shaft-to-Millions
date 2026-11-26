@@ -185,6 +185,8 @@ export const EN = {
 	"line.claimed": "The plot is yours! Drop ore on the belt or buy the first machine.",
 	"line.claim": "Claim plot",
 	"line.plot": "Plot {n}",
+	"line.plotOwner": "{name}'s base",
+	"line.plotFree": "Free plot {n}",
 	"line.offline": "While you were away, the line earned {money}.",
 	"line.noPlots": "No free plots: the line works, but there is nowhere to drop ore.",
 	"line.choosePlot": "Choose a plot: stand at its point and press E.",
@@ -296,6 +298,9 @@ export const EN = {
 	"drill.5": "Titanium Floor Drill",
 
 	// ---- chests and their items
+	"chest.sign.pet_chest": "PETS",
+	"chest.sign.pickaxe_chest": "PICKAXE AURA",
+	"chest.sign.speed_chest": "SPEED AURA",
 	"chest.pet_chest": "Pet Chest",
 	"chest.pet_chest.desc": "Pets add a percentage to the price of everything you sell.",
 	"chest.speed_chest": "Speed Chest",

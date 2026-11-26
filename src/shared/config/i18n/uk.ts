@@ -184,6 +184,8 @@ export const UK: Strings = {
 	"line.claimed": "Ділянка твоя! Кидай руду на стрічку або купи першу машину.",
 	"line.claim": "Зайняти ділянку",
 	"line.plot": "Ділянка {n}",
+	"line.plotOwner": "База {name}",
+	"line.plotFree": "Вільна ділянка {n}",
 	"line.offline": "Поки тебе не було, лінія заробила {money}.",
 	"line.noPlots": "Вільних ділянок немає: лінія працює, але кидати руду ніде.",
 	"line.choosePlot": "Обери ділянку: стань біля її точки й натисни E.",
@@ -295,6 +297,9 @@ export const UK: Strings = {
 	"drill.5": "Бур Титанового Дна",
 
 	// ---- chests and items
+	"chest.sign.pet_chest": "УЛЮБЛЕНЦІ",
+	"chest.sign.pickaxe_chest": "АУРА КИРКИ",
+	"chest.sign.speed_chest": "АУРА ШВИДКОСТІ",
 	"chest.pet_chest": "Скриня улюбленців",
 	"chest.pet_chest.desc": "Улюбленці додають відсоток до ціни всього, що ти продаєш.",
 	"chest.speed_chest": "Скриня швидкості",
