@@ -150,6 +150,40 @@ export function sellItem(inventory: OwnedItem[], equipped: Equipped, uid: string
 	return ITEM_SELL_VALUE[ITEMS[owned.item].rarity];
 }
 
+export interface DuplicateSale {
+	readonly count: number;
+	readonly money: number;
+}
+
+/**
+ * Sells every spare copy: of each item one copy stays (an equipped one first), and nothing equipped is ever sold.
+ * Changes `inventory`; the caller adds the money in the same frame.
+ */
+export function sellDuplicates(inventory: OwnedItem[], equipped: Equipped): DuplicateSale {
+	const kept = new Set<ItemId>();
+	for (const owned of inventory) {
+		if (isEquipped(equipped, owned.uid)) {
+			kept.add(owned.item);
+		}
+	}
+	const spare: string[] = [];
+	for (const owned of inventory) {
+		if (isEquipped(equipped, owned.uid)) {
+			continue;
+		}
+		if (kept.has(owned.item)) {
+			spare.push(owned.uid);
+		} else {
+			kept.add(owned.item);
+		}
+	}
+	let money = 0;
+	for (const uid of spare) {
+		money += sellItem(inventory, equipped, uid);
+	}
+	return { count: spare.size(), money };
+}
+
 /** Display value of an item for sorting and labels. */
 export function itemSellValue(item: ItemId): number {
 	return ITEM_SELL_VALUE[ITEMS[item].rarity];

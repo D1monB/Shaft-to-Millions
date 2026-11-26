@@ -7,6 +7,7 @@ import { LineState, newLineState } from "shared/features/line";
 import { QuestState, newQuestState } from "shared/features/quests";
 import { BoostState, newBoostState } from "shared/features/boosters";
 import { BaseState, newBaseState } from "shared/features/base";
+import { AuraRollState, newAuraRollState } from "shared/features/aura-roll";
 import { GearState, createStarterGear } from "shared/features/upgrades";
 
 /**
@@ -61,6 +62,8 @@ export interface ProfileData {
 	soundOn: boolean;
 	/** Daily quests, the story chain and the login streak (decision 055). */
 	quests: QuestState;
+	/** The aura roll machine: free spins and the pity counter (decision 064). */
+	auraRoll: AuraRollState;
 	/** Buildings on the plot and their timers (decision 063). */
 	base: BaseState;
 	/** Unix end time of each booster (decision 057); 0 = off. */
@@ -91,6 +94,7 @@ export function createDefaultProfileData(): ProfileData {
 		quests: newQuestState(),
 		boosts: newBoostState(),
 		base: newBaseState(),
+		auraRoll: newAuraRollState(),
 	};
 }
 
@@ -130,6 +134,7 @@ const profileDataShape = t.interface({
 	language: t.string,
 	soundOn: t.boolean,
 	boosts: t.interface({ money: t.number, ore: t.number, line: t.number }),
+	auraRoll: t.interface({ spins: t.integer, spinAt: t.number, pity: t.integer }),
 	base: t.interface({
 		levels: t.table,
 		jobs: t.array(t.interface({ id: t.string, finishAt: t.number })),

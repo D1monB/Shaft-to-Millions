@@ -13,6 +13,7 @@ import {
 } from "shared/config/line";
 import { CHAIN_QUESTS, DAILY_COUNT } from "shared/config/quests";
 import { BOOSTER_IDS } from "shared/config/boosters";
+import { MAX_FREE_SPINS, PITY_SPINS } from "shared/config/aura-roll";
 import { BUILDINGS, BUILDING_IDS, isBuildingId } from "shared/config/base";
 import { MAX_BUILDERS } from "shared/features/base";
 import { isLanguage } from "shared/features/i18n";
@@ -66,6 +67,10 @@ export function sanitize(data: PlainTable): string[] {
 	}
 	repairQuests(data, repairs);
 	repairBase(data, repairs);
+	const auraRoll = repairTable(data, "auraRoll", "auraRoll", repairs);
+	repairInteger(auraRoll, "spins", 0, MAX_FREE_SPINS, 0, "auraRoll.spins", repairs);
+	repairNumber(auraRoll, "spinAt", 0, MAX_TIMESTAMP, 0, "auraRoll.spinAt", repairs);
+	repairInteger(auraRoll, "pity", 0, PITY_SPINS, 0, "auraRoll.pity", repairs);
 	const boosts = repairTable(data, "boosts", "boosts", repairs);
 	for (const id of BOOSTER_IDS) {
 		repairNumber(boosts, id, 0, MAX_TIMESTAMP, 0, `boosts.${id}`, repairs);
