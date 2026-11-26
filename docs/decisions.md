@@ -540,3 +540,10 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   (decision 046), announced to everyone; afterwards exactly those turn plain again. Numbers in `mining/tuning.ts`.
 - **Why:** the developer found mining a bit dull. Crits make each swing a small gamble; the rush gives the pit a
   rhythm and a reason to go down now.
+
+## 049. Line machines make a sound (2026-11-26)
+
+- **What:** when a machine on a plot lets an item go, a quiet positional sound plays at it (`machineWork`, the
+  licensed fire whoosh already in config, at most every 2 s per machine, heard within ~90 studs). Client only, from
+  the belt-visual messages; nothing changes on the server.
+- **Why:** the line felt silent (feedback 2026-11-26). A machine-specific licensed sound can replace the id later.

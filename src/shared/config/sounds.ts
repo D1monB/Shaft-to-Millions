@@ -5,7 +5,15 @@
 import type { OreId } from "./ores";
 
 export type SoundId =
-	"hit" | "success" | "error" | "chestOpen" | "chestRare" | "machineStart" | "machineDone" | "machineCollect";
+	| "hit"
+	| "success"
+	| "error"
+	| "chestOpen"
+	| "chestRare"
+	| "machineStart"
+	| "machineDone"
+	| "machineCollect"
+	| "machineWork";
 
 export interface SoundDef {
 	/** "rbxassetid://<number>" or "" (silent). */
@@ -41,6 +49,8 @@ export const SOUNDS: { readonly [K in SoundId]: SoundDef } = {
 	machineStart: { assetId: WHOOSH_FIRE, volume: 0.35, minGap: 0.3 },
 	machineDone: { assetId: REWARD_RISE_1, volume: 0.5, minGap: 1 },
 	machineCollect: { assetId: REWARD_COIN, volume: 0.6, minGap: 0.2 },
+	/** A line machine lets an item go (decision 049): positional, quiet, at most every 2 s per machine. */
+	machineWork: { assetId: WHOOSH_FIRE, volume: 0.3, minGap: 2 },
 };
 
 /** The break sound of every ore: a different sound or pitch each, so the player hears what broke. */
@@ -62,6 +72,7 @@ export const SOUND_IDS: ReadonlyArray<SoundId> = [
 	"machineStart",
 	"machineDone",
 	"machineCollect",
+	"machineWork",
 ];
 
 /** True for "" (silent) and "rbxassetid://<digits>". Anything else is a typo in the config. */
