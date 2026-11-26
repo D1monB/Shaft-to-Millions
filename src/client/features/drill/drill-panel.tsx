@@ -1,7 +1,7 @@
 // Drill panel and depth/speed HUD stats. The panel explains WHY a drill is locked, what it produces,
 // and how it compares with mining by hand, so automation never looks like a replacement for the pickaxe.
 import React from "@rbxts/react";
-import { DRILLS, drillKey } from "shared/config/drills";
+import { DRILLS, DRILL_LEVELS, drillKey } from "shared/config/drills";
 import { LAYER_COUNT, oresOfLayer } from "shared/config/layers";
 import { nameKeys } from "shared/features/i18n";
 import { t } from "client/lib/i18n";
@@ -10,9 +10,13 @@ import { ORES } from "shared/config/ores";
 import {
 	BUY_DRILL_REMOTE,
 	SELECT_DRILL_ORE_REMOTE,
+	UPGRADE_DRILL_REMOTE,
 	advanceDrill,
 	canDrillOre,
+	drillBuffer,
+	drillLevelOf,
 	isDrillUnlocked,
+	nextDrillLevelPrice,
 	secondsPerPiece,
 } from "shared/features/drill";
 import { intakeRoom } from "shared/features/line";
@@ -99,7 +103,9 @@ function DrillPanel(props: { layer: number }) {
 	const state = deepCopy(saved);
 	advanceDrill(state, layer, now);
 	const ore = ORES[state.oreId];
-	const perPiece = secondsPerPiece(layer, state.oreId);
+	const perPiece = secondsPerPiece(layer, state.oreId, state.level);
+	const capacity = drillBuffer(layer, state.level);
+	const upgradePrice = nextDrillLevelPrice(state, layer);
 	const manual = hitsRequired(ore.hardness, pickaxe.power) * pickaxe.swingSeconds;
 	const blocked = intakeRoom(view.line) <= 0;
 
@@ -116,13 +122,34 @@ function DrillPanel(props: { layer: number }) {
 				<Label text={t("drill.manual", { seconds: string.format("%.1f", manual) })} tone="muted" order={3} />
 				<ProgressBar progress={state.progress / perPiece} height={16} order={4} />
 				<Label
-					text={t("drill.buffer", { count: formatCount(state.buffer, def.bufferCapacity) })}
+					text={t("drill.buffer", { count: formatCount(state.buffer, capacity) })}
 					tone={state.buffer > 0 ? "danger" : "muted"}
 					order={5}
 				/>
 				{blocked && <Label text={t("drill.beltFull")} tone="danger" order={6} />}
 			</Card>
-			<Label text={t("drill.choose")} display={true} order={2} />
+			<Card order={3}>
+				<Label
+					text={t("drill.level", { level: state.level, max: DRILL_LEVELS.size() })}
+					display={true}
+					order={1}
+				/>
+				{upgradePrice !== undefined ? (
+					<BuyButton
+						price={upgradePrice}
+						money={view.money}
+						verb={t("drill.upgrade", {
+							speed: drillLevelOf(state.level + 1).speed,
+							buffer: drillBuffer(layer, state.level + 1),
+						})}
+						onClick={() => sendToServer(UPGRADE_DRILL_REMOTE, layer)}
+						order={2}
+					/>
+				) : (
+					<Label text={t("line.maxed")} tone="success" order={2} />
+				)}
+			</Card>
+			<Label text={t("drill.choose")} display={true} order={4} />
 			{oresOfLayer(layer).map((oreId, index) => {
 				const allowed = canDrillOre(layer, oreId, pickaxe.tier);
 				const selected = oreId === state.oreId;

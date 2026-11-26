@@ -17,6 +17,7 @@ import {
 	ORE_RUSH_RICH_SHARE,
 	ORE_RUSH_SECONDS,
 	ORE_SHUFFLE_SECONDS,
+	GEODE_CHANCE,
 	RICH_ORE_CHANCE,
 	TREASURE_EVERY_SECONDS,
 	activeCount,
@@ -109,6 +110,22 @@ function makeRich(block: Instance, oreId: OreId): void {
 	}
 }
 
+/** A geode (decision 060): a purple glow and a server-set attribute; the mining service pays crystals for it. */
+function makeGeode(block: Instance): void {
+	block.SetAttribute(ATTRIBUTES.Geode, true);
+	const part = block.IsA("BasePart") ? block : block.FindFirstChildWhichIsA("BasePart", true);
+	if (part !== undefined) {
+		const light = new Instance("PointLight");
+		light.Color = Color3.fromRGB(190, 110, 255);
+		light.Brightness = 3;
+		light.Range = 12;
+		light.Parent = part;
+		const sparkles = new Instance("Sparkles");
+		sparkles.SparkleColor = Color3.fromRGB(200, 130, 255);
+		sparkles.Parent = part;
+	}
+}
+
 function makePlain(block: Instance): void {
 	block.SetAttribute(ATTRIBUTES.Rich, undefined);
 	block.FindFirstChild(SPARKLES_NAME, true)?.Destroy();
@@ -167,8 +184,11 @@ function makeBlock(point: SpawnPoint, parent: Instance): Instance {
 			: [block.GetPivot(), Vector3.zero];
 	block.PivotTo(block.GetPivot().add(new Vector3(0, floor - (box.Position.Y - size.Y / 2), 0)));
 	block.SetAttribute(ATTRIBUTES.OreId, point.oreId);
-	if (random.NextNumber() < RICH_ORE_CHANCE) {
+	const luck = random.NextNumber();
+	if (luck < RICH_ORE_CHANCE) {
 		makeRich(block, point.oreId);
+	} else if (luck < RICH_ORE_CHANCE + GEODE_CHANCE) {
+		makeGeode(block);
 	}
 	block.Parent = parent;
 	CollectionService.AddTag(block, TAGS.OreNode);

@@ -1,5 +1,6 @@
 import { INVENTORY_HARD_LIMIT, ITEMS, ItemKind, isItemId } from "shared/config/items";
-import { DRILLS, drillKey } from "shared/config/drills";
+import { DRILLS, DRILL_LEVELS, drillKey } from "shared/config/drills";
+import { drillBuffer } from "shared/features/drill";
 import { LAYER_COUNT, MAX_DEPTH_METERS } from "shared/config/layers";
 import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
 import {
@@ -11,8 +12,10 @@ import {
 	LINE_UPGRADE_TRACKS,
 } from "shared/config/line";
 import { CHAIN_QUESTS, DAILY_COUNT } from "shared/config/quests";
+import { BOOSTER_IDS } from "shared/config/boosters";
 import { isLanguage } from "shared/features/i18n";
 import { findDaily } from "shared/features/quests";
+import { MAX_REMEMBERED_PURCHASES } from "shared/features/chests";
 import { GEAR_SLOTS, findGear, starterOf } from "shared/features/upgrades";
 import { MAX_COUNTER, repairCountMap, repairInteger, repairNumber, repairTable } from "shared/lib/repair";
 import { PlainTable } from "shared/lib/tables";
@@ -60,6 +63,10 @@ export function sanitize(data: PlainTable): string[] {
 		repairs.push("soundOn");
 	}
 	repairQuests(data, repairs);
+	const boosts = repairTable(data, "boosts", "boosts", repairs);
+	for (const id of BOOSTER_IDS) {
+		repairNumber(boosts, id, 0, MAX_TIMESTAMP, 0, `boosts.${id}`, repairs);
+	}
 
 	return repairs;
 }
@@ -227,7 +234,8 @@ function repairDrills(data: PlainTable, repairs: string[]): void {
 		}
 		repairNumber(drill, "lastTick", 0, MAX_TIMESTAMP, 0, path + ".lastTick", repairs);
 		repairNumber(drill, "progress", 0, 1e6, 0, path + ".progress", repairs);
-		repairInteger(drill, "buffer", 0, def.bufferCapacity, 0, path + ".buffer", repairs);
+		repairInteger(drill, "level", 1, DRILL_LEVELS.size(), 1, path + ".level", repairs);
+		repairInteger(drill, "buffer", 0, drillBuffer(layer, drill.level as number), 0, path + ".buffer", repairs);
 	}
 }
 
@@ -278,7 +286,7 @@ function repairPurchaseIds(data: PlainTable, repairs: string[]): void {
 	const clean: string[] = [];
 	if (typeIs(raw, "table")) {
 		for (const id of raw as unknown[]) {
-			if (typeIs(id, "string") && id.size() <= 64 && clean.size() < 100) {
+			if (typeIs(id, "string") && id.size() <= 64 && clean.size() < MAX_REMEMBERED_PURCHASES) {
 				clean.push(id);
 			}
 		}

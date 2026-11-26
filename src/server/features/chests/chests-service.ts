@@ -1,7 +1,7 @@
 // Chests: opening with crystals (at a chest stand, decision 043) and with Robux (Developer Products via ProcessReceipt).
 // Every roll happens here, on the server, with the server's Random.
 import { nameKeys, text } from "shared/features/i18n";
-import { CollectionService, MarketplaceService, Players, PolicyService } from "@rbxts/services";
+import { CollectionService, Players, PolicyService } from "@rbxts/services";
 import { CHESTS, CHEST_IDS, ChestId, isChestId } from "shared/config/chests";
 import { ItemId } from "shared/config/items";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
@@ -16,12 +16,12 @@ import {
 } from "shared/features/chests";
 import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
-import { getProfileData, markDirty, onProfileLoaded, saveProfileNow } from "server/features/profile";
+import { getProfileData, markDirty, onProfileLoaded } from "server/features/profile";
 import { trackQuest } from "server/features/quests";
+import { registerProduct } from "server/features/store";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
 import { declareClientEvent, fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
-import { decideReceipt } from "./receipt";
 
 const random = new Random();
 
@@ -108,34 +108,20 @@ function handleOpenWithCrystals(player: Player, args: Array<unknown>): void {
 
 // ---------------------------------------------------------------- Robux
 
-function chestForProduct(productId: number): ChestId | undefined {
-	return CHEST_IDS.find((id) => CHESTS[id].robuxProductId === productId);
-}
-
-const SAVE_TIMEOUT_SECONDS = 15;
-
 /**
- * Roblox calls this for every Developer Product purchase, possibly more than once for the same receipt.
- * Rules: grant exactly once per PurchaseId, save before saying "granted", and never grant a random item to a
- * player whose policy forbids it (we leave the receipt unprocessed instead; see docs/chests.md).
- * The decision itself lives in receipt.ts and is unit tested.
+ * Chest products go through the store's single ProcessReceipt (decision 057). `random: true`: never granted to a
+ * player whose policy forbids paid random items (the receipt stays unprocessed; see docs/chests.md).
  */
-function processReceipt(receipt: ReceiptInfo): Enum.ProductPurchaseDecision {
-	const player = Players.GetPlayerByUserId(receipt.PlayerId);
-	const chestId = chestForProduct(receipt.ProductId);
-	if (player === undefined || chestId === undefined) {
-		return Enum.ProductPurchaseDecision.NotProcessedYet;
+function registerChestProducts(): void {
+	for (const chestId of CHEST_IDS) {
+		const productId = CHESTS[chestId].robuxProductId;
+		if (productId !== undefined) {
+			registerProduct(productId, {
+				random: true,
+				grant: (player, data) => grantRoll(player, data, chestId) !== undefined,
+			});
+		}
 	}
-	const decision = decideReceipt(receipt.PurchaseId, {
-		getData: () => getProfileData(player),
-		robuxAllowed: () => robuxAllowed.get(player) === true,
-		grant: (data) => grantRoll(player, data, chestId) !== undefined,
-		save: () => saveProfileNow(player, SAVE_TIMEOUT_SECONDS),
-		notify: (text) => notify(player, text, "error"),
-	});
-	return decision === "granted"
-		? Enum.ProductPurchaseDecision.PurchaseGranted
-		: Enum.ProductPurchaseDecision.NotProcessedYet;
 }
 
 // ---------------------------------------------------------------- lifecycle
@@ -143,7 +129,7 @@ function processReceipt(receipt: ReceiptInfo): Enum.ProductPurchaseDecision {
 export function startChestsService(): void {
 	declareClientEvent(CHEST_RESULT_REMOTE);
 	onClientRequest(OPEN_CHEST_REMOTE, new RateLimiter(3, 1), handleOpenWithCrystals);
-	MarketplaceService.ProcessReceipt = processReceipt;
+	registerChestProducts();
 
 	const addPrompt = (instance: Instance) => {
 		const chestId = instance.GetAttribute(ATTRIBUTES.ChestId);

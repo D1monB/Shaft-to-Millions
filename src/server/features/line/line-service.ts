@@ -40,6 +40,7 @@ import {
 	onProfileLoaded,
 	onProfileReleasing,
 } from "server/features/profile";
+import { boostOf } from "server/features/boosters";
 import { trackQuest } from "server/features/quests";
 import { getSellMultiplier } from "server/features/selling";
 import { notify } from "server/lib/notify";
@@ -631,7 +632,8 @@ function tickPlayer(player: Player, seconds: number): void {
 		return;
 	}
 	const moves: LineMove[] = [];
-	const result = advanceLine(data.line, seconds, valueOf, roll, moves);
+	// The line booster (decision 057) runs the line faster while it is on.
+	const result = advanceLine(data.line, seconds * boostOf(player, "line"), valueOf, roll, moves);
 	credit(player, data, result.money);
 	trackQuest(player, "lineSold", result.sold);
 	markDirty(player);

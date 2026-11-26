@@ -8,7 +8,7 @@ import React, { useState } from "@rbxts/react";
 import { BAGS } from "shared/config/bags";
 import { GearBase } from "shared/config/gear";
 import { Rarity } from "shared/config/items";
-import { TAGS } from "shared/config/map-contract";
+import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
 import {
@@ -18,10 +18,11 @@ import {
 	GearSlot,
 	gearCardState,
 	isGearSlot,
+	ShopSlot,
+	shopSlotOf,
 } from "shared/features/upgrades";
 import { PlayerView } from "shared/features/profile";
 import { formatPercent } from "shared/lib/format";
-import { registerHudButton } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, RarityCard } from "client/lib/item-card";
 import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
@@ -173,9 +174,11 @@ function GearCard(props: { slot: GearSlot; icon: string; index: number; view: Pl
 	);
 }
 
-function ShopPanel() {
+/** `shop` = what the stand sells (decision 058): one slot shows only that slot, "all" shows the tabs. */
+function ShopPanel(props: { shop: ShopSlot }) {
 	const view = useView();
-	const [tab, setTab] = useState<GearSlot>("pickaxe");
+	const [chosen, setTab] = useState<GearSlot>("pickaxe");
+	const tab: GearSlot = props.shop === "all" ? chosen : props.shop;
 	if (view === undefined) {
 		return <Label text={t("common.loading")} tone="muted" />;
 	}
@@ -185,16 +188,18 @@ function ShopPanel() {
 	const owned = items.filter((def) => view.gear.owned.includes(def.id)).size();
 	return (
 		<>
-			<Tabs
-				items={TABS.map((entry) => ({ key: entry.key, label: t(entry.label) }))}
-				selected={tab}
-				onSelect={(key) => {
-					if (isGearSlot(key)) {
-						setTab(key);
-					}
-				}}
-				order={1}
-			/>
+			{props.shop === "all" && (
+				<Tabs
+					items={TABS.map((entry) => ({ key: entry.key, label: t(entry.label) }))}
+					selected={tab}
+					onSelect={(key) => {
+						if (isGearSlot(key)) {
+							setTab(key);
+						}
+					}}
+					order={1}
+				/>
+			)}
 			<Label
 				text={t("shop.summary", { name: t(nameKeys.gear(equipped.id)), owned, total: items.size() })}
 				tone="muted"
@@ -220,8 +225,10 @@ function ShopPanel() {
 export function startShopController(): void {
 	hideDefaultBackpack();
 	startPickaxeSwing();
-	const open = () => openPanel({ key: "shop", title: t("shop.title"), icon: "🛒", render: () => <ShopPanel /> });
-	onPromptForTag(TAGS.Shop, open);
-	// The map author's map has no shop building: the dock button opens it anywhere (decision 042).
-	registerHudButton("🛒", () => t("menu.shop"), open, 5, "primary");
+	// Gear is sold at physical stands (decision 058); the dock's old shop button became the Robux store (store feature).
+	onPromptForTag(TAGS.Shop, (stand) => {
+		const shop = shopSlotOf(stand.GetAttribute(ATTRIBUTES.ShopSlot));
+		const title = shop === "all" ? t("shop.title") : t(`shop.stand.${shop}` as StringKey);
+		openPanel({ key: `shop_${shop}`, title, icon: "🛒", render: () => <ShopPanel shop={shop} /> });
+	});
 }

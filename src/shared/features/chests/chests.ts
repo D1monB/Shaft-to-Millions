@@ -86,7 +86,7 @@ export function wasGranted(purchaseIds: ReadonlyArray<string>, purchaseId: strin
 }
 
 /** Remembered receipts. Older ones are dropped: Roblox only retries recent unprocessed receipts. */
-export const MAX_REMEMBERED_PURCHASES = 100;
+export const MAX_REMEMBERED_PURCHASES = 300;
 
 export function rememberPurchase(purchaseIds: string[], purchaseId: string): void {
 	purchaseIds.push(purchaseId);

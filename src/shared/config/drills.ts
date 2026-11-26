@@ -19,6 +19,25 @@ export const DRILLS: { readonly [layer: number]: DrillDef | undefined } = {
 	5: { price: 1_200_000, secondsPerHardness: 2.5, bufferCapacity: 120 },
 };
 
+/**
+ * Drill levels (decision 059): `speed` x faster, `buffer` x more room, for `priceFactor` x the drill's price. Level 1 is
+ * the drill as bought. A drill is the player's passive income, so its levels are a long goal of their own.
+ */
+export interface DrillLevel {
+	readonly priceFactor: number;
+	readonly speed: number;
+	readonly buffer: number;
+}
+
+export const DRILL_LEVELS: ReadonlyArray<DrillLevel> = [
+	{ priceFactor: 0, speed: 1, buffer: 1 },
+	{ priceFactor: 1.5, speed: 1.3, buffer: 1.5 },
+	{ priceFactor: 4, speed: 1.7, buffer: 2 },
+	{ priceFactor: 10, speed: 2.2, buffer: 2.5 },
+	{ priceFactor: 25, speed: 2.8, buffer: 3 },
+	{ priceFactor: 60, speed: 3.5, buffer: 4 },
+];
+
 /** Offline production is counted for at most this long, so a drill bought once does not print money forever. */
 export const MAX_OFFLINE_DRILL_SECONDS = 8 * 3600;
 

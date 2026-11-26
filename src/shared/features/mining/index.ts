@@ -4,6 +4,7 @@
 export {
 	MiningSession,
 	canMineTier,
+	geodeReward,
 	getPickaxe,
 	hitsRequired,
 	rollCrystals,
@@ -11,7 +12,7 @@ export {
 	treasureReward,
 	veinYield,
 } from "./mining";
-export type { HitResult, TreasureReward } from "./mining";
+export type { GeodeReward, HitResult, TreasureReward } from "./mining";
 export { MINE_HIT_REMOTE, MINE_PROGRESS_REMOTE, NODE_BROKEN_REMOTE } from "./network";
 export {
 	CLICK_DISTANCE,
@@ -22,6 +23,8 @@ export {
 	ORE_SHUFFLE_SECONDS,
 	PORTAL_ORE_RADIUS,
 	CRIT_CHANCE,
+	GEODE_BOOST_SECONDS,
+	GEODE_CHANCE,
 	CRIT_MULTIPLIER,
 	ORE_RUSH_EVERY_SECONDS,
 	ORE_RUSH_RICH_SHARE,

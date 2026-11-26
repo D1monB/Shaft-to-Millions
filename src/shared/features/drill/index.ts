@@ -4,10 +4,14 @@ export {
 	advanceDrill,
 	canDrillOre,
 	deliverDrill,
+	drillBuffer,
+	drillLevelOf,
 	isDrillUnlocked,
 	newDrillState,
+	nextDrillLevelPrice,
 	secondsPerPiece,
 	selectDrillOre,
+	tryUpgradeDrill,
 } from "./drill";
-export type { DrillState } from "./drill";
-export { BUY_DRILL_REMOTE, DRILL_DISTANCE, SELECT_DRILL_ORE_REMOTE } from "./network";
+export type { DrillState, DrillUpgradeResult } from "./drill";
+export { BUY_DRILL_REMOTE, DRILL_DISTANCE, SELECT_DRILL_ORE_REMOTE, UPGRADE_DRILL_REMOTE } from "./network";

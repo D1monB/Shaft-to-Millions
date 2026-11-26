@@ -4,9 +4,10 @@
 // Roblox policy (paid random items, checked 2026-11-24, policy page updated 2026-10-15):
 // - show every possible item and its numerical odds BEFORE the player pays (Robux or Robux-bought currency);
 // - players with PolicyService ArePaidRandomItemsRestricted must not open paid chests at all.
-// Crystals (decision 043) are earned in game and are NEVER sold for Robux, so opening with them is not a paid random
-// item.
-// Keep it that way: selling crystals (or dollars) for Robux would put every chest under the policy.
+// Crystals (decision 043) are earned in game, and since decision 057 also sold for Robux (config/store.ts). So a chest
+// opened with crystals counts as a paid random item: the odds are always shown, and crystal packs are hidden and
+// refused for players with ArePaidRandomItemsRestricted, whose crystals therefore stay earned-only.
+// Dollars never buy anything random: keep it that way.
 import { ItemId } from "./items";
 
 export type ChestId = "pet_chest" | "speed_chest" | "pickaxe_chest";
@@ -17,7 +18,7 @@ export interface RewardEntry {
 }
 
 export interface ChestDef {
-	/** Price in crystals (decision 043). Crystals are never sold for Robux, so opening with them is not a paid random item. */
+	/** Price in crystals (decision 043). Odds are shown before opening (crystals are sold for Robux, decision 057). */
 	readonly crystalPrice: number;
 	/**
 	 * Developer Product id for opening with Robux. Create the product on the Creator Dashboard and paste its

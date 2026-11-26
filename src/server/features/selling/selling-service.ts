@@ -3,9 +3,12 @@ import { CollectionService } from "@rbxts/services";
 import { TAGS } from "shared/config/map-contract";
 import { ORES, ORE_IDS } from "shared/config/ores";
 import { SALE_MADE_REMOTE, SELL_BAG_REMOTE, SELL_DISTANCE, previewSale } from "shared/features/selling";
+import { SELL_QUEST_MIN_ITEMS } from "shared/config/quests";
 import { RateLimiter } from "shared/lib/rate-limiter";
+import { MAX_COUNTER } from "shared/lib/repair";
 import { formatMoney } from "shared/lib/format";
 import { getProfileData, markDirty } from "server/features/profile";
+import { boostOf } from "server/features/boosters";
 import { trackQuest } from "server/features/quests";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
@@ -18,9 +21,9 @@ export function setSellMultiplierProvider(provider: (player: Player) => number):
 	sellMultiplierOf = provider;
 }
 
-/** The sell multiplier (pets) for this player. Warehouse sales use the same bonus as the sell zone. */
+/** The sell multiplier (pets x money booster) for this player. Line income uses the same bonus as the sell zone. */
 export function getSellMultiplier(player: Player): number {
-	return sellMultiplierOf(player);
+	return sellMultiplierOf(player) * boostOf(player, "money");
 }
 
 function handleSell(player: Player, args: Array<unknown>): void {
@@ -36,7 +39,7 @@ function handleSell(player: Player, args: Array<unknown>): void {
 		logAbuse(player, "SellBag away from a sell zone");
 		return;
 	}
-	const preview = previewSale(data.bag, ORE_IDS, ORES, sellMultiplierOf(player));
+	const preview = previewSale(data.bag, ORE_IDS, ORES, getSellMultiplier(player));
 	if (preview.itemCount === 0) {
 		notify(player, text("sell.bagEmpty"), "info");
 		return;
@@ -45,11 +48,14 @@ function handleSell(player: Player, args: Array<unknown>): void {
 	for (const line of preview.lines) {
 		data.bag[line.id as keyof typeof data.bag] = undefined;
 	}
-	data.money += preview.total;
-	data.stats.totalEarned += preview.total;
+	data.money = math.min(data.money + preview.total, MAX_COUNTER);
+	data.stats.totalEarned = math.min(data.stats.totalEarned + preview.total, MAX_COUNTER);
 	markDirty(player);
 	notify(player, text("sell.sold", { count: preview.itemCount, money: formatMoney(preview.total) }), "success");
-	trackQuest(player, "sellBag", 1);
+	// A one-piece sale does not count for "sell your bag" quests, or six clicks would finish them.
+	if (preview.itemCount >= SELL_QUEST_MIN_ITEMS) {
+		trackQuest(player, "sellBag", 1);
+	}
 	trackQuest(player, "earnMoney", preview.total);
 	fireClient(SALE_MADE_REMOTE, player, preview.total);
 }

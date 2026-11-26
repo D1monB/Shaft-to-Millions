@@ -34,6 +34,21 @@ export const RICH_ORE_CHANCE = 0.08;
 /** Ore from a rich vein = normal yield times this. */
 export const RICH_YIELD_MULTIPLIER = 3;
 
+/** Chance that a placed ore block is a geode (decision 060): it glows purple and pays crystals when emptied. */
+export const GEODE_CHANCE = 0.03;
+
+/** Geode crystals: at least this many ... */
+export const GEODE_MIN_CRYSTALS = 1;
+
+/** ... and up to this many more, at random. */
+export const GEODE_EXTRA_CRYSTALS = 2;
+
+/** Chance that a geode also switches on a random booster ... */
+export const GEODE_BOOST_CHANCE = 0.25;
+
+/** ... for this long. */
+export const GEODE_BOOST_SECONDS = 300;
+
 /** Chance that one swing is a critical hit (decision 048). */
 export const CRIT_CHANCE = 0.12;
 

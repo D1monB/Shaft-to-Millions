@@ -2,6 +2,9 @@
 import { OreDef } from "shared/config/ores";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
 import {
+	GEODE_BOOST_CHANCE,
+	GEODE_EXTRA_CRYSTALS,
+	GEODE_MIN_CRYSTALS,
 	RICH_YIELD_MULTIPLIER,
 	SWING_TOLERANCE,
 	TREASURE_EXTRA_CRYSTALS,
@@ -138,6 +141,29 @@ export function rollCrystals(chance: number, roll: number): number {
 /** Ore from one broken block: a rich vein (decision 046) multiplies the rolled amount. Bad input gives the amount. */
 export function veinYield(amount: number, rich: boolean): number {
 	return rich && amount > 0 && amount < math.huge ? amount * RICH_YIELD_MULTIPLIER : amount;
+}
+
+export interface GeodeReward {
+	readonly crystals: number;
+	/** Index into BOOSTER_IDS of the booster it switches on, or undefined. */
+	readonly boosterIndex: number | undefined;
+}
+
+/**
+ * What an emptied geode (decision 060) gives: a few crystals, and sometimes a short random booster. The rolls are the
+ * server's Random:NextNumber() in [0, 1); bad rolls give the smallest reward and no booster.
+ */
+export function geodeReward(
+	crystalRoll: number,
+	boostRoll: number,
+	pickRoll: number,
+	boosterCount: number,
+): GeodeReward {
+	const unit = (value: number) => (value === value ? math.clamp(value, 0, 0.999999) : 0);
+	const crystals = GEODE_MIN_CRYSTALS + math.floor(unit(crystalRoll) * (GEODE_EXTRA_CRYSTALS + 1));
+	const lucky = boostRoll === boostRoll && boostRoll >= 0 && boostRoll < GEODE_BOOST_CHANCE;
+	const count = boosterCount >= 1 && boosterCount < math.huge ? math.floor(boosterCount) : 0;
+	return { crystals, boosterIndex: lucky && count > 0 ? math.floor(unit(pickRoll) * count) : undefined };
 }
 
 export interface TreasureReward {

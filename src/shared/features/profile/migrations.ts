@@ -483,6 +483,21 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
 			}
 		},
 	},
+	{
+		// Version 8 (decision 059): drills get a level (old drills are level 1), which raises the buffer cap; the bump
+		// stops an older server from clamping a bigger buffer.
+		from: 7,
+		apply: (data) => {
+			if (!typeIs(data.drills, "table")) {
+				return;
+			}
+			for (const [, drill] of pairs(data.drills as PlainTable)) {
+				if (typeIs(drill, "table") && (drill as PlainTable).level === undefined) {
+					(drill as PlainTable).level = 1;
+				}
+			}
+		},
+	},
 ];
 
 export type MigrationFailure = "invalid-version" | "future-version" | "migration-failed";
