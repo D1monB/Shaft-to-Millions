@@ -2,7 +2,7 @@
 // dropping ore through ProximityPrompts, upgrades through a remote, the production tick and the offline run.
 // Everything that moves value happens here; the client sees the result in its view and in the built plot.
 import { CollectionService, Players, ReplicatedStorage, ServerStorage } from "@rbxts/services";
-import { LINE_MACHINES } from "shared/config/line";
+import { BELT_VISUAL_SPEED, LINE_BASE_SPEED, LINE_MACHINES } from "shared/config/line";
 import { PLOT_ATTRIBUTES, PLOT_SIGN } from "shared/config/map-contract";
 import { ORES, ORE_IDS, OreId, isOreId } from "shared/config/ores";
 import {
@@ -18,6 +18,7 @@ import {
 	advanceOffline,
 	applyBuyLineMachine,
 	applyLineUpgrade,
+	beltSpeed,
 	depositOre,
 	isLineIdle,
 	lineIncome,
@@ -316,6 +317,19 @@ const silos = new Map<Plot, Silo>();
 const sellStations = new Map<Plot, Instance>();
 
 /** Builds the plot for its owner: belt and SellStation, every bought machine, the intake and the next slot. */
+/**
+ * The map author's ConveyorAnimator scrolls every belt piece at its ConveyorSpeed attribute: slow at first, faster
+ * with the conveyor level (decision 068).
+ */
+function applyBeltSpeed(built: Instance, level: number): void {
+	const speed = BELT_VISUAL_SPEED * beltSpeed(level);
+	for (const part of built.GetDescendants()) {
+		if (part.IsA("BasePart") && part.GetAttribute(PLOT_ATTRIBUTES.ConveyorFlow) !== undefined) {
+			part.SetAttribute(PLOT_ATTRIBUTES.ConveyorSpeed, speed);
+		}
+	}
+}
+
 function buildFor(plot: Plot, data: ProfileData): void {
 	const built = buildBase(plot);
 	for (let stage = 1; stage <= data.line.machines.size(); stage++) {
@@ -330,6 +344,7 @@ function buildFor(plot: Plot, data: ProfileData): void {
 			part.SetAttribute(PLOT_ATTRIBUTES.ConveyorOn, true);
 		}
 	}
+	applyBeltSpeed(built, data.line.beltLevel);
 	// Ore is handed in at the map author's silo (decision 047), else at the booth on the belt start (decision 039).
 	const silo = findSilo(built);
 	const intakeAt = silo !== undefined ? new CFrame(silo.intake) : boothIntake(plot, built);
@@ -479,6 +494,9 @@ function handleBeltUpgrade(player: Player, args: Array<unknown>): void {
 	data.money = result.money;
 	data.line.beltLevel = result.level;
 	markDirty(player);
+	if (plot.built !== undefined) {
+		applyBeltSpeed(plot.built, result.level);
+	}
 	trackQuest(player, "upgradeMachine", 1);
 	notify(player, text("line.beltUpgraded", { level: result.level }), "success");
 }
@@ -665,7 +683,7 @@ function tickPlayer(player: Player, seconds: number): void {
 	}
 	const moves: LineMove[] = [];
 	// The line booster (decision 057) runs the line faster while it is on.
-	const speed = boostOf(player, "line") * (lineBonusOf(player)?.speed ?? 1);
+	const speed = LINE_BASE_SPEED * boostOf(player, "line") * (lineBonusOf(player)?.speed ?? 1);
 	const result = advanceLine(data.line, seconds * speed, valueOf, roll, moves);
 	credit(player, data, result.money);
 	trackQuest(player, "lineSold", result.sold);

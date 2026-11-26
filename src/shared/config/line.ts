@@ -97,6 +97,15 @@ export const BELT_LEVELS: ReadonlyArray<BeltLevel> = [
 	{ price: 60_000_000, speed: 2 },
 ];
 
+/**
+ * The whole line runs at this share of the machine times at conveyor level 1 (decision 068: the belt felt far too
+ * fast); conveyor levels speed it up to x2 of this.
+ */
+export const LINE_BASE_SPEED = 0.6;
+
+/** How fast the belt itself visibly moves (studs per second) at conveyor level 1; grows with the level. */
+export const BELT_VISUAL_SPEED = 1.5;
+
 /** Items the start of the belt (intake) holds: a full bag fits. */
 export const HOPPER_CAPACITY = 500;
 

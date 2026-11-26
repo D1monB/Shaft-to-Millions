@@ -142,6 +142,8 @@ export const PLOT_ATTRIBUTES = {
 	/** On a conveyor part: false stops the belt animation (read by the map author's ConveyorAnimator). */
 	ConveyorOn: "ConveyorOn",
 	ConveyorFlow: "ConveyorFlow",
+	/** Studs per second the map author's ConveyorAnimator scrolls a belt piece (default 5). Set by the server. */
+	ConveyorSpeed: "ConveyorSpeed",
 } as const;
 
 /**
