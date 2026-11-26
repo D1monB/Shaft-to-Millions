@@ -27,3 +27,9 @@ export const ORE_SHUFFLE_FRACTION = 0.25;
 
 /** A block with a player this close (studs) stays put, so nobody loses the block they are mining. */
 export const ORE_SHUFFLE_CLEAR_RADIUS = 24;
+
+/** Chance that a placed ore block is a rich vein (decision 046): it sparkles and gives more ore. */
+export const RICH_ORE_CHANCE = 0.08;
+
+/** Ore from a rich vein = normal yield times this. */
+export const RICH_YIELD_MULTIPLIER = 3;

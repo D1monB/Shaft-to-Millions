@@ -1,6 +1,7 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { ORES } from "shared/config/ores";
-import { rollCrystals } from "./mining";
+import { rollCrystals, veinYield } from "./mining";
+import { RICH_YIELD_MULTIPLIER } from "./tuning";
 
 class CrystalDropTests {
 	@Test
@@ -28,6 +29,17 @@ class CrystalDropTests {
 		for (const [, ore] of pairs(ORES)) {
 			Assert.true(ore.crystalChance > 0 && ore.crystalChance <= 0.1);
 		}
+	}
+
+	@Test
+	public richVeinsMultiplyTheYield() {
+		Assert.equal(veinYield(2, true), 2 * RICH_YIELD_MULTIPLIER);
+		Assert.equal(veinYield(2, false), 2);
+		Assert.equal(veinYield(0, true), 0);
+		Assert.equal(veinYield(-1, true), -1);
+		Assert.equal(veinYield(math.huge, true), math.huge);
+		const nan = veinYield(0 / 0, true);
+		Assert.true(nan !== nan);
 	}
 }
 

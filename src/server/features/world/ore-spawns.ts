@@ -13,6 +13,7 @@ import {
 	ORE_SHUFFLE_CLEAR_RADIUS,
 	ORE_SHUFFLE_FRACTION,
 	ORE_SHUFFLE_SECONDS,
+	RICH_ORE_CHANCE,
 	activeCount,
 	oreForSpawn,
 	pickRandom,
@@ -86,6 +87,18 @@ function modelBlock(template: Model): Model {
 	return model;
 }
 
+/** A rich vein (decision 046): sparkles in the ore's colour and a server-set attribute the mining service reads. */
+function makeRich(block: PVInstance, oreId: OreId): void {
+	block.SetAttribute(ATTRIBUTES.Rich, true);
+	const part = block.IsA("BasePart") ? block : block.FindFirstChildWhichIsA("BasePart", true);
+	if (part !== undefined) {
+		const [r, g, b] = ORES[oreId].color;
+		const sparkles = new Instance("Sparkles");
+		sparkles.SparkleColor = Color3.fromRGB(r, g, b);
+		sparkles.Parent = part;
+	}
+}
+
 /** Puts a block on the point, its bottom on the point's bottom, turned at random so blocks do not all look alike. */
 function makeBlock(point: SpawnPoint, parent: Instance): Instance {
 	const template = templateFor(point.oreId);
@@ -104,6 +117,9 @@ function makeBlock(point: SpawnPoint, parent: Instance): Instance {
 			: [block.GetPivot(), Vector3.zero];
 	block.PivotTo(block.GetPivot().add(new Vector3(0, floor - (box.Position.Y - size.Y / 2), 0)));
 	block.SetAttribute(ATTRIBUTES.OreId, point.oreId);
+	if (random.NextNumber() < RICH_ORE_CHANCE) {
+		makeRich(block, point.oreId);
+	}
 	block.Parent = parent;
 	CollectionService.AddTag(block, TAGS.OreNode);
 	return block;

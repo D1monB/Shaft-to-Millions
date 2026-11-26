@@ -15,6 +15,7 @@ import {
 	getPickaxe,
 	rollCrystals,
 	rollYield,
+	veinYield,
 } from "shared/features/mining";
 import { isLayerOpen } from "shared/features/layers";
 import { RateLimiter } from "shared/lib/rate-limiter";
@@ -97,7 +98,11 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	} else if (result.kind === "progress") {
 		fireClient(MINE_PROGRESS_REMOTE, player, node, result.damage, result.hardness);
 	} else if (result.kind === "broken") {
-		const amount = rollYield(yieldBonusOf(player), random.NextNumber());
+		// A rich vein (decision 046) is marked by the server when it places the block; clients cannot set it.
+		const amount = veinYield(
+			rollYield(yieldBonusOf(player), random.NextNumber()),
+			node.GetAttribute(ATTRIBUTES.Rich) === true,
+		);
 		const added = addToBag(data.bag, oreId, amount, capacity);
 		data.stats.oresMined += added;
 		// A rare crystal (decision 043), rolled here with the server Random like the yield.

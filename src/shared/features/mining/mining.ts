@@ -1,7 +1,7 @@
 // Pure mining rules. No Roblox API: the server service passes in the time and the definitions.
 import { OreDef } from "shared/config/ores";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
-import { SWING_TOLERANCE } from "./tuning";
+import { RICH_YIELD_MULTIPLIER, SWING_TOLERANCE } from "./tuning";
 
 /** The pickaxe with this id. An unknown id (broken save, item from a newer server) falls back to the starter. */
 export function getPickaxe(id: string): PickaxeDef {
@@ -102,4 +102,9 @@ export function rollCrystals(chance: number, roll: number): number {
 		return 0;
 	}
 	return roll < math.min(chance, 1) ? 1 : 0;
+}
+
+/** Ore from one broken block: a rich vein (decision 046) multiplies the rolled amount. Bad input gives the amount. */
+export function veinYield(amount: number, rich: boolean): number {
+	return rich && amount > 0 && amount < math.huge ? amount * RICH_YIELD_MULTIPLIER : amount;
 }

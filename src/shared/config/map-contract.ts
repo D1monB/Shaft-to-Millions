@@ -22,6 +22,8 @@ export const ATTRIBUTES = {
 	OreId: "OreId",
 	LayerId: "LayerId",
 	ChestId: "ChestId",
+	/** On an ore block: true for a rich vein (decision 046). Set by the server only. */
+	Rich: "Rich",
 } as const;
 
 /**

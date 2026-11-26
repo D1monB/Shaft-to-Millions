@@ -515,3 +515,11 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   99176447965360, free, 125 icons). Claude cannot insert assets (Studio MCP is read-only), so the developer inserts
   the pack into ServerStorage once and the ids are read from it.
 - **Why:** the developer wants nicer icons than emoji; uploading our own images to the account is not allowed for Claude.
+
+## 046. Rich veins (2026-11-26)
+
+- **What:** each placed ore block (at start and after every shuffle) is a rich vein with 8% chance: it sparkles in the
+  ore's colour and gives 3× ore (still capped by bag room). The server marks it with the `Rich` attribute and reads it
+  when the block breaks. Numbers in `mining/tuning.ts`.
+- **Why:** the developer asked for ore generation "like the best tycoons": a visible jackpot worth walking to, which
+  moves with the shuffle, keeps the pit interesting without changing per-player depletion.
