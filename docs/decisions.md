@@ -443,3 +443,13 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   Roblox's backpack bar. Belt items are found by their `Ore` and `Stage` attributes.
 - **Why:** Roblox switches ClickDetectors off while a Tool is held, so a pickaxe in hand could not mine; and all 10
   pickaxes in StarterPack would have been free for everyone. Prices and power are first guesses (balance pass due).
+
+## 038. Pets from the map author's models, scattered ore from the map author's ore models (2026-11-26)
+
+- **What:** the pets controller clones `ReplicatedStorage.PetModels/<itemId>` itself (wing flap, facing, sway; neon
+  ball only if a model is missing). Ore: only 40% of each layer's spawn points hold a block, picked at random; every
+  60 s a quarter of the blocks that no player stands near (24 studs) move to free points. A block is the map author's
+  raw-ore model (`ServerStorage.ItemTemplates/<ore>`, `Stage = 0`) scaled to 4 studs. Numbers in `mining/tuning.ts`.
+- **Why:** the map author's `PetVisuals` script matched balls by the Ukrainian display name and stopped working when
+  pets were named by id; a block on every point looked like a ring of plain cubes. Depletion stays per player, so
+  players do not fight over a block; moved blocks are new instances, so nobody keeps damage or a cooldown on them.

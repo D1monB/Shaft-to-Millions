@@ -101,7 +101,7 @@ Workspace
 
 ## Ore spawn points (decision 034)
 
-- `Workspace/Map/Mine/OreSpawns/Tier<N>/<any BasePart>`: one ore block per point, layer N's ore. The point's bottom
+- `Workspace/Map/Mine/OreSpawns/Tier<N>/<any BasePart>`: a possible place for one ore block (40% hold one at a time, decision 038), layer N's ore. The point's bottom
   is the block's bottom. Points may be invisible; their name does not matter.
 - `Workspace/Map/Mine/TunnelEntrance/Portal` (BasePart): Tier5 points within 60 studs of it grow iridium.
 - More points or a new tier folder need no code change (a new tier needs a layer and an ore in the config).

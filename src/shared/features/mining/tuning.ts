@@ -15,3 +15,15 @@ export const CLICK_DISTANCE = 16;
 
 /** Ore spawn points of layer 5 closer than this to the portal (studs, on the ground plane) grow iridium. */
 export const PORTAL_ORE_RADIUS = 60;
+
+/** Share of each layer's spawn points that hold ore at once; the rest stay empty, so ore is scattered, not a ring. */
+export const ORE_FILL_FRACTION = 0.4;
+
+/** Every this many seconds some ore blocks move to free points of their layer. */
+export const ORE_SHUFFLE_SECONDS = 60;
+
+/** Share of a layer's blocks that move at each shuffle. */
+export const ORE_SHUFFLE_FRACTION = 0.25;
+
+/** A block with a player this close (studs) stays put, so nobody loses the block they are mining. */
+export const ORE_SHUFFLE_CLEAR_RADIUS = 24;
