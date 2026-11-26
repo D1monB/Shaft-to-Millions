@@ -43,6 +43,13 @@ const random = new Random();
 
 let yieldBonusOf: (player: Player) => number = () => 0;
 
+let baseOreBonusOf: (player: Player) => number = () => 0;
+
+/** The base's miner hut (decision 063), without mining depending on the base. */
+export function setBaseOreBonusProvider(provider: (player: Player) => number): void {
+	baseOreBonusOf = provider;
+}
+
 /** Lets the equipment feature add a pickaxe-aura yield bonus without mining depending on it. */
 export function setYieldBonusProvider(provider: (player: Player) => number): void {
 	yieldBonusOf = provider;
@@ -198,7 +205,7 @@ function bagChips(
 	// The ore booster (decision 057) doubles what each hit chips off.
 	const amount =
 		veinYield(
-			scaleYield(pieces, yieldBonusOf(player), random.NextNumber()),
+			scaleYield(pieces, yieldBonusOf(player) + baseOreBonusOf(player), random.NextNumber()),
 			node.GetAttribute(ATTRIBUTES.Rich) === true,
 		) * boostOf(player, "ore");
 	const added = addToBag(data.bag, oreId, amount, capacity);

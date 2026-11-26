@@ -17,6 +17,7 @@ import { startProfileService } from "server/features/profile";
 import { startQuestsService } from "server/features/quests";
 import { startBoostersService } from "server/features/boosters";
 import { startStoreService } from "server/features/store";
+import { startBaseService } from "server/features/base";
 import { startSellingService } from "server/features/selling";
 import { startSettingsService } from "server/features/settings";
 import { startTravelService } from "server/features/travel";
@@ -40,6 +41,8 @@ buildPlotPlaceholders();
 
 startMiningService();
 startUpgradesService();
+// Before the line: its profile listener finishes builds first, and it hooks the plot events.
+startBaseService();
 startSellingService();
 startLayersService();
 startMovementService();

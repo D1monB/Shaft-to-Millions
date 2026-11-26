@@ -1,6 +1,7 @@
 // Sell panel: every line of the bag, the bonus and the exact total BEFORE the player sells,
 // plus room for other features to add context (e.g. "worth more if processed in the factory").
 import { bagCapacity, bagTotal } from "shared/features/bag";
+import { baseEffects } from "shared/features/base";
 import { boostMultiplier } from "shared/features/boosters";
 import { itemValue, lineIncome } from "shared/features/line";
 import { OreId, isOreId } from "shared/config/ores";
@@ -63,8 +64,9 @@ function SellPanel() {
 	}
 	const pets = multiplierOf(view);
 	const boost = boostMultiplier(view.boosts, "money", os.time());
-	// The server multiplies pets by the money booster, so the preview does too.
-	const preview = previewSale(view.bag, ORE_IDS, ORES, pets * boost);
+	const market = baseEffects(view.base).sellBonus;
+	// The server multiplies pets, the base's market and the money booster, so the preview does too.
+	const preview = previewSale(view.bag, ORE_IDS, ORES, pets * (1 + market) * boost);
 	if (preview.itemCount === 0) {
 		return <EmptyBag />;
 	}
@@ -74,6 +76,9 @@ function SellPanel() {
 	const chips: Chip[] = [];
 	if (pets > 1) {
 		chips.push({ text: t("sell.petBonus", { percent: formatPercent(pets - 1) }), color: COLORS.success });
+	}
+	if (market > 0) {
+		chips.push({ text: `🏪 +${formatPercent(market)}`, color: COLORS.gold });
 	}
 	if (boost > 1) {
 		chips.push({ text: t("sell.boostChip", { value: boost }), color: COLORS.crystal });

@@ -21,9 +21,16 @@ export function setSellMultiplierProvider(provider: (player: Player) => number):
 	sellMultiplierOf = provider;
 }
 
-/** The sell multiplier (pets x money booster) for this player. Line income uses the same bonus as the sell zone. */
+let baseSellOf: (player: Player) => number = () => 0;
+
+/** The base's market bonus (decision 063), without selling depending on the base. */
+export function setBaseSellProvider(provider: (player: Player) => number): void {
+	baseSellOf = provider;
+}
+
+/** The sell multiplier (pets x market x money booster). Line income uses the same bonus as the sell zone. */
 export function getSellMultiplier(player: Player): number {
-	return sellMultiplierOf(player) * boostOf(player, "money");
+	return sellMultiplierOf(player) * (1 + baseSellOf(player)) * boostOf(player, "money");
 }
 
 function handleSell(player: Player, args: Array<unknown>): void {

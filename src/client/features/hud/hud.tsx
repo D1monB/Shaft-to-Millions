@@ -204,6 +204,10 @@ function TopLeft(props: { view: PlayerView }) {
  */
 const PHONE_DOCK_CENTRE = 0.38;
 
+/** Dock buttons per column and the space between them. */
+const DOCK_ROWS = 4;
+const DOCK_GAP = 10;
+
 /**
  * True while touch is the player's main input. PreferredInput follows the device actually in use; TouchEnabled only
  * says a touch screen exists (a touch laptop has one too), so it would move the dock for keyboard players.
@@ -255,11 +259,27 @@ function Dock() {
 		<frame
 			AnchorPoint={new Vector2(1, 0.5)}
 			Position={new UDim2(1, -18, touch ? PHONE_DOCK_CENTRE : 0.5, 0)}
-			Size={new UDim2(0, MENU_BUTTON_SIZE, 0, 0)}
-			AutomaticSize={Enum.AutomaticSize.Y}
+			Size={
+				new UDim2(
+					0,
+					MENU_BUTTON_SIZE * 2 + DOCK_GAP,
+					0,
+					DOCK_ROWS * (MENU_BUTTON_SIZE + DEPTH.button + DOCK_GAP),
+				)
+			}
 			BackgroundTransparency={1}
 		>
-			<uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
+			{/* Two columns: with the base, quests and store the single column no longer fits a phone in landscape. */}
+			<uigridlayout
+				CellSize={new UDim2(0, MENU_BUTTON_SIZE, 0, MENU_BUTTON_SIZE + DEPTH.button)}
+				CellPadding={new UDim2(0, DOCK_GAP, 0, DOCK_GAP)}
+				FillDirection={Enum.FillDirection.Vertical}
+				FillDirectionMaxCells={DOCK_ROWS}
+				HorizontalAlignment={Enum.HorizontalAlignment.Right}
+				VerticalAlignment={Enum.VerticalAlignment.Center}
+				StartCorner={Enum.StartCorner.TopRight}
+				SortOrder={Enum.SortOrder.LayoutOrder}
+			/>
 			{buttons
 				.filter((button) => !button.secondary)
 				.map((button, index) => (

@@ -483,6 +483,37 @@ function handleBeltUpgrade(player: Player, args: Array<unknown>): void {
 	notify(player, text("line.beltUpgraded", { level: result.level }), "success");
 }
 
+// ---- hooks for the base feature (decision 063): the line must not import it ----
+
+export interface LineBonus {
+	readonly speed: number;
+	readonly offlineSeconds: number;
+}
+
+let lineBonusOf: (player: Player) => LineBonus | undefined = () => undefined;
+export interface PlotAreaInfo {
+	readonly base: BasePart;
+	readonly spawn: Vector3;
+	/** Machine slots (also the ones not bought yet): keep them clear. */
+	readonly reserved: ReadonlyArray<Vector3>;
+}
+type PlotListener = (player: Player, model: Model, area: PlotAreaInfo) => void;
+const plotBuiltListeners: PlotListener[] = [];
+const plotReleasedListeners: Array<(player: Player) => void> = [];
+
+export function setLineBonusProvider(provider: (player: Player) => LineBonus | undefined): void {
+	lineBonusOf = provider;
+}
+
+/** Called after a player's plot (with its factory) is built. */
+export function onPlotBuilt(listener: PlotListener): void {
+	plotBuiltListeners.push(listener);
+}
+
+export function onPlotReleased(listener: (player: Player) => void): void {
+	plotReleasedListeners.push(listener);
+}
+
 // ---- plots: claim, release, spawn ----
 
 /**
@@ -544,6 +575,16 @@ function claim(player: Player, plot: Plot): void {
 		notify(player, text("line.buildFailed"), "error");
 		return;
 	}
+	const reserved: Vector3[] = [];
+	for (let stage = 1; stage <= LINE_MACHINES.size(); stage++) {
+		const slot = slotCFrame(plot, stage);
+		if (slot !== undefined) {
+			reserved.push(slot.Position);
+		}
+	}
+	for (const listener of plotBuiltListeners) {
+		task.spawn(listener, player, plot.model, { base: plot.base, spawn: spawnPosition(plot), reserved });
+	}
 	notify(player, text("line.claimed"), "success");
 }
 
@@ -576,6 +617,9 @@ function releasePlot(player: Player): void {
 		return;
 	}
 	plotOf.delete(player);
+	for (const listener of plotReleasedListeners) {
+		task.spawn(listener, player);
+	}
 	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
 	clearBase(plot);
 	setClaimPromptEnabled(plot, true);
@@ -633,7 +677,8 @@ function tickPlayer(player: Player, seconds: number): void {
 	}
 	const moves: LineMove[] = [];
 	// The line booster (decision 057) runs the line faster while it is on.
-	const result = advanceLine(data.line, seconds * boostOf(player, "line"), valueOf, roll, moves);
+	const speed = boostOf(player, "line") * (lineBonusOf(player)?.speed ?? 1);
+	const result = advanceLine(data.line, seconds * speed, valueOf, roll, moves);
 	credit(player, data, result.money);
 	trackQuest(player, "lineSold", result.sold);
 	markDirty(player);
@@ -693,7 +738,15 @@ function onLoaded(player: Player): void {
 	}
 	// Offline run: the time since the last save, at reduced speed and capped (config/line.ts).
 	if (data.lastSeen > 0) {
-		const result = advanceOffline(data.line, nowUnix() - data.lastSeen, valueOf, roll);
+		const bonus = lineBonusOf(player);
+		const result = advanceOffline(
+			data.line,
+			nowUnix() - data.lastSeen,
+			valueOf,
+			roll,
+			bonus?.offlineSeconds,
+			bonus?.speed,
+		);
 		const income = credit(player, data, result.money);
 		if (income > 0) {
 			notify(player, text("line.offline", { money: formatMoney(income) }), "success");

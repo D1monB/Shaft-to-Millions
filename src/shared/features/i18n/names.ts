@@ -9,6 +9,7 @@ export const nameKeys = {
 	machine: (id: string) => `machine.${id}` as StringKey,
 	machineOutput: (id: string) => `machine.${id}.output` as StringKey,
 	gear: (id: string) => `gear.${id}` as StringKey,
+	building: (id: string) => `building.${id}` as StringKey,
 	gearSpecial: (id: string) => `gear.${id}.special` as StringKey,
 	drill: (layer: number) => `drill.${layer}` as StringKey,
 	chest: (id: string) => `chest.${id}` as StringKey,

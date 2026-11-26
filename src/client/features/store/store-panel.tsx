@@ -6,6 +6,7 @@ import { MarketplaceService, Players } from "@rbxts/services";
 import { BOOSTERS, BOOSTER_IDS, BoosterId, CRYSTAL_PORTION_SECONDS } from "shared/config/boosters";
 import { StringKey } from "shared/config/i18n";
 import { StoreProduct } from "shared/config/store";
+import { baseEffects } from "shared/features/base";
 import { BUY_BOOST_REMOTE, boostSecondsLeft } from "shared/features/boosters";
 import { ROBUX_CHESTS_ALLOWED_ATTRIBUTE } from "shared/features/chests";
 import { PlayerView } from "shared/features/profile";
@@ -47,7 +48,10 @@ function BoosterCard(props: { id: BoosterId; view: PlayerView; products: StorePr
 				order={3}
 			/>
 			<Button
-				text={t("store.forCrystals", { minutes: CRYSTAL_PORTION_SECONDS / 60, price: def.crystalPrice })}
+				text={t("store.forCrystals", {
+					minutes: math.floor((CRYSTAL_PORTION_SECONDS + baseEffects(props.view.base).boostSeconds) / 60),
+					price: def.crystalPrice,
+				})}
 				variant="primary"
 				disabled={props.view.crystals < def.crystalPrice}
 				height={40}

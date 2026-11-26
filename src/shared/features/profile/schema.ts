@@ -6,6 +6,7 @@ import type { Equipped } from "shared/features/equipment";
 import { LineState, newLineState } from "shared/features/line";
 import { QuestState, newQuestState } from "shared/features/quests";
 import { BoostState, newBoostState } from "shared/features/boosters";
+import { BaseState, newBaseState } from "shared/features/base";
 import { GearState, createStarterGear } from "shared/features/upgrades";
 
 /**
@@ -60,6 +61,8 @@ export interface ProfileData {
 	soundOn: boolean;
 	/** Daily quests, the story chain and the login streak (decision 055). */
 	quests: QuestState;
+	/** Buildings on the plot and their timers (decision 063). */
+	base: BaseState;
 	/** Unix end time of each booster (decision 057); 0 = off. */
 	boosts: BoostState;
 	/** Equipped item uids (from `inventory`). */
@@ -87,6 +90,7 @@ export function createDefaultProfileData(): ProfileData {
 		soundOn: true,
 		quests: newQuestState(),
 		boosts: newBoostState(),
+		base: newBaseState(),
 	};
 }
 
@@ -126,6 +130,11 @@ const profileDataShape = t.interface({
 	language: t.string,
 	soundOn: t.boolean,
 	boosts: t.interface({ money: t.number, ore: t.number, line: t.number }),
+	base: t.interface({
+		levels: t.table,
+		jobs: t.array(t.interface({ id: t.string, finishAt: t.number })),
+		builders: t.integer,
+	}),
 	quests: t.interface({
 		day: t.integer,
 		daily: t.array(t.interface({ id: t.string, count: t.number, claimed: t.boolean })),
