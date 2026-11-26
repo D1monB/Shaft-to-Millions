@@ -21,6 +21,7 @@ import {
 } from "shared/features/upgrades";
 import { PlayerView } from "shared/features/profile";
 import { formatPercent } from "shared/lib/format";
+import { registerHudButton } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, RarityCard } from "client/lib/item-card";
 import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
@@ -219,7 +220,8 @@ function ShopPanel() {
 export function startShopController(): void {
 	hideDefaultBackpack();
 	startPickaxeSwing();
-	onPromptForTag(TAGS.Shop, () =>
-		openPanel({ key: "shop", title: t("shop.title"), icon: "🛒", render: () => <ShopPanel /> }),
-	);
+	const open = () => openPanel({ key: "shop", title: t("shop.title"), icon: "🛒", render: () => <ShopPanel /> });
+	onPromptForTag(TAGS.Shop, open);
+	// The map author's map has no shop building: the dock button opens it anywhere (decision 042).
+	registerHudButton("🛒", () => t("shop.title"), open, 5, "primary");
 }

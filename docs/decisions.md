@@ -480,3 +480,10 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   pause between unlocks is 10 s (was 45). Ore blocks are 8 studs (the map author's size; their `OreNodeScale` script
   can go), mining reach 24 studs, click distance 20.
 - **Why:** play-test 2026-11-26; Output showed `mining on a layer that is not opened`.
+
+## 042. Gear shop from the HUD (2026-11-26)
+
+- **What:** a "Shop" button in the right dock opens the gear shop (pickaxes, bags, shoes) anywhere; `BuyGear` no
+  longer requires standing near a `Shop`-tagged part (a tagged shop still opens it with E).
+- **Why:** the map author's map has no shop building, so there was no way to buy pickaxes or shoes. Buying away from
+  a shop gains nothing: price, materials and tier order are still checked on the server.
