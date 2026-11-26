@@ -567,3 +567,48 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   buzz); a test checks that no two machines sound the same.
 - **Why:** the developer wants machines to sound alive and different. Better per-machine recordings can replace an id
   in the config without code changes; the Creator Store search found few licensed industrial loops.
+
+## 052. Every hit chips ore off a block, slower swings (2026-11-26)
+
+- **Decision:** a block holds `pieces` pieces; `hardness` is damage per piece. Every hit chips `floor(damage / hardness)` pieces (carry-over kept), a crit chips more, the last chip empties the block (respawn per player). The first pickaxe of each tier has power = hardness of its ore, so it gives ore on every hit. Swings are about 45% slower. Drills keep their old seconds per piece.
+- **Why:** the developer wanted ore on every hit, and mining felt far too fast.
+
+## 053. Home button and sound switch (2026-11-26)
+
+- **Decision:** travel gets a HOME destination (the player's own plot, always allowed, same 30 s pause) and a dock button. A sound switch in the More menu puts every sound into one local SoundGroup; the choice is saved (`profile.soundOn`).
+- **Why:** the developer's list; both are cheap comfort features.
+
+## 054. Conveyor level and sale coins (2026-11-26)
+
+- **Decision:** `line.beltLevel` (6 levels, x1 to x2) speeds up the whole line, bought from a card in every machine panel. A bag sale throws coins into the money counter (client only, `SaleMade` remote).
+- **Why:** the developer asked for conveyor speed and a visible "money" moment.
+
+## 055. Quests: daily, story chain, login streak (2026-11-26)
+
+- **Decision:** 3 daily quests from a pool (new every UTC day; targets x1.6 and money x4 per layer), a bonus for all three, a 29-step story chain (tutorial first, then long goals across all layers), a 7-day login streak. The server counts events (`trackQuest`); the client only names the reward to claim.
+- **Why:** reasons to come back every day and a clear "what next" for weeks.
+
+## 056. Long progression economy (2026-11-26)
+
+- **Decision:** ore 2 / 8 / 30 / 100 / 300 / 1000. The first pickaxe of each tier gates the next layer: 20k, 400k, 4M, 15M. Line `STAGE_VALUE` tops at x10 (was x1500), quality bonuses add up instead of multiplying, double output max 10% per machine. Gear, machines, drills and conveyor follow steep curves checked by the balance-analyst model: about 8-9 h of play on layer 1, 17 h on layer 2, 28 h on layer 3, 45 h on layer 4.
+- **Why:** the game was beaten in about an hour. The developer wants roughly a week for the first area at 1-1.5 h a day and 2-3 weeks for later ones. Numbers are model estimates; the play-test decides.
+
+## 057. Boosters and the Robux store (2026-11-26)
+
+- **Decision:** boosters x2 money (sales + line), x2 ore per hit, line x1.5, bought with crystals (15 min portions) or Robux, capped at 24 h. The store sells boosters, crystal packs and money packs (money scales with depth). One ProcessReceipt in the store feature serves every product; chests register theirs. **The developer chose to sell crystals and money for Robux.** So chests opened with crystals count as paid random items: odds are always shown, and crystal packs are hidden and refused for players with `ArePaidRandomItemsRestricted`. Money never buys anything random. Robux items stay hidden until product ids are set.
+- **Why:** monetisation like other long Roblox tycoons, kept within Roblox rules; the game stays playable without Robux.
+
+## 058. Physical gear shops (2026-11-26)
+
+- **Decision:** pickaxes, bags and shoes are bought at their own stands (tag `Shop`, attribute `ShopSlot`); the server checks the buyer stands near a stand that sells that slot. Until the map author places real ones, three stands are built near the surface point (or the middle of the plots) and removed when a real Shop appears. The dock shop button became the Robux store.
+- **Why:** the developer's request: three physical shops, the old HUD shop becomes the donation store.
+
+## 059. Drill levels (2026-11-26)
+
+- **Decision:** 6 drill levels: speed x1 to x3.5, buffer x1 to x4, for 1.5x to 60x the drill price, bought at the drill site. Schema v8 (old drills get level 1; the bump covers the raised buffer and receipt caps).
+- **Why:** drills are the passive income for players who play less; levels make them a long goal.
+
+## 060. Geodes (2026-11-26)
+
+- **Decision:** 3% of placed ore blocks are geodes (purple glow, server attribute `Geode`). Emptying one pays 1-3 crystals and with 25% chance a random booster for 5 minutes.
+- **Why:** something to hunt for on a layer besides plain blocks; links mining with boosters.
