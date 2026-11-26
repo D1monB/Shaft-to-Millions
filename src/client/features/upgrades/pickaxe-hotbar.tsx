@@ -13,8 +13,8 @@ import { ACCENTS, COLORS, FONTS, GLASS_TRANSPARENCY, RADIUS, STROKE, TEXT_SIZES 
 
 const SLOT = 60;
 const GAP = 8;
-/** Above the goal banner (56 + its 3D edge + margin). */
-const BOTTOM_OFFSET = 84;
+/** At the bottom edge, like Roblox's own bar; the goal banner moved to the top centre. */
+const BOTTOM_OFFSET = 10;
 const KEYS: ReadonlyArray<Enum.KeyCode> = [
 	Enum.KeyCode.One,
 	Enum.KeyCode.Two,

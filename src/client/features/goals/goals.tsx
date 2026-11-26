@@ -79,9 +79,9 @@ export function startGoalsController(): void {
 	registerGoalSource(gearGoals);
 }
 
-const BANNER_WIDTH = 420;
-const BANNER_HEIGHT = 56;
-const BADGE_ROOM = 50;
+const BANNER_WIDTH = 360;
+const BANNER_HEIGHT = 42;
+const BADGE_ROOM = 42;
 
 /** Escapes text for RichText, so an item name can never break the markup. */
 function escapeRich(text: string): string {
@@ -95,7 +95,10 @@ function statusColor(info: GoalInfo): Color3 {
 	return info.kind === "affordable" ? COLORS.success : COLORS.gold;
 }
 
-/** The goal capsule at the bottom centre. It bounces once whenever the goal changes, to catch the eye. */
+/**
+ * The goal capsule at the top centre (it covered the pickaxe hotbar at the bottom, feedback 2026-11-26). It bounces
+ * once whenever the goal changes, to catch the eye.
+ */
 export function GoalBanner() {
 	const view = useView();
 	const info = view === undefined ? undefined : currentGoal(view);
@@ -117,8 +120,8 @@ export function GoalBanner() {
 	const title = isPurchase ? t("goal.banner", { name: `<font color="#FCD34D">${name}</font>` }) : name;
 	return (
 		<frame
-			AnchorPoint={new Vector2(0.5, 1)}
-			Position={new UDim2(0.5, 0, 1, -14)}
+			AnchorPoint={new Vector2(0.5, 0)}
+			Position={new UDim2(0.5, 0, 0, 12)}
 			Size={new UDim2(0, BANNER_WIDTH, 0, BANNER_HEIGHT + DEPTH.button)}
 			BackgroundTransparency={1}
 		>
@@ -135,19 +138,19 @@ export function GoalBanner() {
 				<uicorner CornerRadius={RADIUS.round} />
 				<uistroke Color={COLORS.gold} Thickness={STROKE.thick} />
 				<uigradient Rotation={90} Color={rampSequence(RAMPS.capsule)} />
-				<CapsuleBadge icon="🎯" ramp={RAMPS.close} size={44} round={true} />
+				<CapsuleBadge icon="🎯" ramp={RAMPS.close} size={36} round={true} />
 				<frame
 					BackgroundTransparency={1}
-					Position={new UDim2(0, BADGE_ROOM, 0, 10)}
-					Size={new UDim2(1, -(BADGE_ROOM + 24), 1, -20)}
+					Position={new UDim2(0, BADGE_ROOM, 0, 5)}
+					Size={new UDim2(1, -(BADGE_ROOM + 16), 1, -10)}
 				>
 					<textlabel
 						BackgroundTransparency={1}
-						Size={new UDim2(0.62, 0, 0, 26)}
+						Size={new UDim2(0.62, 0, 0, 20)}
 						Font={FONTS.display}
 						RichText={true}
 						Text={title}
-						TextSize={TEXT_SIZES.body}
+						TextSize={TEXT_SIZES.small + 1}
 						TextColor3={COLORS.white}
 						TextXAlignment={Enum.TextXAlignment.Left}
 						TextTruncate={Enum.TextTruncate.AtEnd}
@@ -158,21 +161,21 @@ export function GoalBanner() {
 						AnchorPoint={new Vector2(1, 0)}
 						BackgroundTransparency={1}
 						Position={new UDim2(1, 0, 0, 0)}
-						Size={new UDim2(0.38, 0, 0, 26)}
+						Size={new UDim2(0.38, 0, 0, 20)}
 						Font={FONTS.display}
 						Text={tx(info.status)}
-						TextSize={TEXT_SIZES.body - 2}
+						TextSize={TEXT_SIZES.small}
 						TextColor3={statusColor(info)}
 						TextXAlignment={Enum.TextXAlignment.Right}
 						TextTruncate={Enum.TextTruncate.AtEnd}
 					>
 						<uistroke Color={COLORS.outline} Thickness={2} />
 					</textlabel>
-					<frame BackgroundTransparency={1} Position={new UDim2(0, 0, 1, -16)} Size={new UDim2(1, 0, 0, 16)}>
+					<frame BackgroundTransparency={1} Position={new UDim2(0, 0, 1, -10)} Size={new UDim2(1, 0, 0, 10)}>
 						<ProgressBar
 							progress={info.progress}
 							color={info.kind === "bag-full" ? COLORS.canyon : COLORS.success}
-							height={16}
+							height={10}
 						/>
 					</frame>
 				</frame>
