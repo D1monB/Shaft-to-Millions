@@ -1,4 +1,4 @@
-﻿import { Assert, Test } from "@rbxts/lunit";
+import { Assert, Test } from "@rbxts/lunit";
 import { ORES, ORE_IDS, OreDef } from "shared/config/ores";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
 import { HitResult, MiningSession, canMineTier, getPickaxe, hitsRequired, scaleYield } from "./mining";

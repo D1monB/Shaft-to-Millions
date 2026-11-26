@@ -52,6 +52,10 @@ export function sanitize(data: PlainTable): string[] {
 		data.language = "";
 		repairs.push("language");
 	}
+	if (!typeIs(data.soundOn, "boolean")) {
+		data.soundOn = true;
+		repairs.push("soundOn");
+	}
 
 	return repairs;
 }

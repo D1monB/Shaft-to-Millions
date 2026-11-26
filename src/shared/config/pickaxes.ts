@@ -1,4 +1,4 @@
-﻿// Pickaxes: the map author's 10 pickaxe tools, from weak to strong (decision 037). The first is the starter.
+// Pickaxes: the map author's 10 pickaxe tools, from weak to strong (decision 037). The first is the starter.
 // `tier` decides WHICH ore can be mined (ores.ts requiredTier); `power` and `swingSeconds` decide HOW FAST.
 // Ids are saved in profiles and never change; some display names changed with the new ores (decisions 027).
 import type { GearBase } from "./gear";

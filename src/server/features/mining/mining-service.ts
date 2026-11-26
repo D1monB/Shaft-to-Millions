@@ -1,4 +1,4 @@
-﻿import { nameKeys, ref, text } from "shared/features/i18n";
+import { nameKeys, ref, text } from "shared/features/i18n";
 import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, OreId, isOreId } from "shared/config/ores";

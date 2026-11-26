@@ -1,4 +1,4 @@
-﻿// Every ore in the game (decisions 031): one ore per layer of the pit, plus iridium, found only in the portal zone at
+// Every ore in the game (decisions 031): one ore per layer of the pit, plus iridium, found only in the portal zone at
 // the bottom of layer 5. Ids match the map author's ItemTemplates/<ore> folders. A new ore is a new entry here.
 // Balance notes: price grows faster than hardness, so deeper ore is worth the trip;
 // `requiredTier` locks ore behind a better pickaxe (see pickaxes.ts) so progress is visible.

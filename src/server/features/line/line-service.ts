@@ -536,6 +536,12 @@ function releasePlot(player: Player): void {
 	refreshPlotSign(plot, undefined);
 }
 
+/** The spawn point of the player's own plot, or undefined while they have none. */
+export function homePositionOf(player: Player): Vector3 | undefined {
+	const own = plotOf.get(player);
+	return own !== undefined ? spawnPosition(own) : undefined;
+}
+
 /** Where the player appears: their own plot, or else the first free one (to take it or walk to another). */
 function spawnFor(player: Player): Vector3 | undefined {
 	const own = plotOf.get(player);

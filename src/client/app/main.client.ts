@@ -13,6 +13,7 @@ import { startMiningController } from "client/features/mining";
 import { startPetsController } from "client/features/pets";
 import { startProfileController } from "client/features/profile";
 import { startSellController } from "client/features/selling";
+import { startSoundController } from "client/features/settings";
 import { startTravelController } from "client/features/travel";
 import { startShopController } from "client/features/upgrades";
 import { mountUi } from "./ui-root";
@@ -31,6 +32,7 @@ startEquipmentController();
 startPetsController();
 startDevtoolsController();
 startLineController();
+startSoundController();
 
 mountUi();
 startProfileController();
