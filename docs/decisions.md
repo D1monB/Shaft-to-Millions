@@ -523,3 +523,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   when the block breaks. Numbers in `mining/tuning.ts`.
 - **Why:** the developer asked for ore generation "like the best tycoons": a visible jackpot worth walking to, which
   moves with the shuffle, keeps the pit interesting without changing per-player depletion.
+
+## 047. The map author's silo is the line's intake (2026-11-26)
+
+- **What:** when a plot's Factory has `Silo` (template `ServerStorage.MachineTemplates.Silo`), ore is handed in under
+  its `SiloIntake` (E, chest height) instead of at the plain booth (decision 039, still the fallback). The ore waits
+  in the silo (the line's existing intake queue, up to 500) and comes onto the belt at `SiloOutlet` (new `i` index in
+  the stored belt path, tested). `Silo_Glow` grows brighter with the fill, `FX_Dust` puffs while ore leaves, a
+  counter "N / 500" floats over the silo. Economy unchanged.
+- **Why:** the map author built the silo for exactly this; before, ore passed through it without stopping.

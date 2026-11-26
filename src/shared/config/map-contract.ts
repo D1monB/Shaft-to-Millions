@@ -99,6 +99,18 @@ export const SELL_STATION = {
 	ButtonLabel: ["ButtonText", "SurfaceGui", "Label"],
 } as const;
 
+/**
+ * The map author's silo on the belt (decision 047): Factory/Silo. Ore is handed in at its SiloIntake attachment and
+ * comes onto the belt at SiloOutlet; Silo_Glow shows how full it is, FX_Dust puffs while ore leaves it.
+ */
+export const SILO = {
+	Model: "Silo",
+	Intake: "SiloIntake",
+	Outlet: "SiloOutlet",
+	Gauge: "Silo_Glow",
+	Dust: "FX_Dust",
+} as const;
+
 /** The name board over each plot: Map/Plots/<PlotN>/Sign with a TextLabel OwnerName inside (any depth). */
 export const PLOT_SIGN = {
 	Part: "Sign",

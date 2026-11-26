@@ -6,6 +6,7 @@ const PATH: StoredBeltPath = {
 	points: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((x) => ({ x, y: 0, z: 0 })),
 	machines: [2, 5, -1],
 	sell: 9,
+	intake: 0,
 };
 
 class BeltRouteTests {
@@ -63,6 +64,16 @@ class BeltRouteTests {
 		Assert.equal(parseBeltPath({ p: [0, 0, 0], m: [3], s: 0 }), undefined);
 		Assert.equal(parseBeltPath({ p: [0, 0, 0], m: [0.5], s: 0 }), undefined);
 		Assert.equal(parseBeltPath({ p: [0, 0, 0], m: "x", s: 0 }), undefined);
+	}
+
+	@Test
+	public rawOreStartsAtTheSiloOutlet() {
+		Assert.deepEqual(routeFor({ ...PATH, intake: 1 }, -1, 2), { start: 1, target: 2, stage: 0 });
+		Assert.equal(parseBeltPath({ p: [0, 0, 0, 1, 0, 0], m: [], s: 1, i: 1 })?.intake, 1);
+		// Missing or bad: the start of the belt.
+		for (const bad of [undefined, -1, 9, 0.5, 0 / 0, "1"]) {
+			Assert.equal(parseBeltPath({ p: [0, 0, 0, 1, 0, 0], m: [], s: 1, i: bad })?.intake, 0);
+		}
 	}
 }
 

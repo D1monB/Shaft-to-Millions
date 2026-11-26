@@ -46,6 +46,7 @@ import { declareUnreliableClientEvent, logAbuse, onClientRequest } from "server/
 import { buildSign } from "./buy-signs";
 import { placeIntakeBooth } from "./intake-booth";
 import { refreshSellStation, setupSellStation } from "./sell-station";
+import { Silo, findSilo, refreshSilo } from "./silo";
 import {
 	Plot,
 	beltStartCFrame,
@@ -293,6 +294,19 @@ function refreshSigns(plot: Plot, owned: number): void {
 	}
 }
 
+/** The plain booth on the belt start (no silo on this plot); returns where its drop prompt goes. */
+function boothIntake(plot: Plot, built: Folder): CFrame | undefined {
+	const start = beltStartCFrame(plot);
+	if (start === undefined) {
+		return undefined;
+	}
+	const [box, size] = placeIntakeBooth(built, start).GetBoundingBox();
+	return new CFrame(box.Position.sub(new Vector3(0, size.Y / 2 - 3, 0)));
+}
+
+/** The silo of each owned plot, for its gauge. */
+const silos = new Map<Plot, Silo>();
+
 /** The built SellStation of each owned plot, for its live price board. */
 const sellStations = new Map<Plot, Instance>();
 
@@ -311,12 +325,14 @@ function buildFor(plot: Plot, data: ProfileData): void {
 			part.SetAttribute(PLOT_ATTRIBUTES.ConveyorOn, true);
 		}
 	}
-	// Ore is handed in at the booth on the belt start and rides out of it to machine 1 (decision 039).
-	const intakeAt = beltStartCFrame(plot);
+	// Ore is handed in at the map author's silo (decision 047), else at the booth on the belt start (decision 039).
+	const silo = findSilo(built);
+	const intakeAt = silo !== undefined ? new CFrame(silo.intake) : boothIntake(plot, built);
+	if (silo !== undefined) {
+		silos.set(plot, silo);
+	}
 	if (intakeAt !== undefined) {
-		const booth = placeIntakeBooth(built, intakeAt);
-		const [box, size] = booth.GetBoundingBox();
-		const intake = makeAnchor(built, "Intake", new CFrame(box.Position.sub(new Vector3(0, size.Y / 2 - 3, 0))));
+		const intake = makeAnchor(built, "Intake", intakeAt);
 		makePrompt(intake, text("line.dropOre"), text("line.beltStart"), DROP_KEYS, (player) => dropOre(player, plot));
 	}
 	const station = setupSellStation(built);
@@ -555,6 +571,10 @@ function tickPlayer(player: Player, seconds: number): void {
 	const station = plot !== undefined ? sellStations.get(plot) : undefined;
 	if (station !== undefined && station.Parent !== undefined) {
 		refreshSellStation(station, data, getSellMultiplier(player));
+	}
+	const silo = plot !== undefined ? silos.get(plot) : undefined;
+	if (silo !== undefined && silo.model.Parent !== undefined) {
+		refreshSilo(silo, data.line);
 	}
 	if (isLineIdle(data.line)) {
 		return;
