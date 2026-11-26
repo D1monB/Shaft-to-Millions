@@ -233,6 +233,8 @@ export const PL: Strings = {
 	"drill.level": "Poziom wiertła {level} / {max}",
 	"drill.upgrade": "Ulepsz: x{speed} szybkość, {buffer} miejsca",
 	"drill.upgraded": "Wiertło ulepszone do poziomu {level}!",
+	"mining.geode": "Geoda! +{crystals} 💎",
+	"mining.geodeBoost": "Geoda! +{crystals} 💎 i {booster} na 5 min!",
 	"lift.name": "Winda",
 	"lift.ride": "Jedź",
 	"lift.call": "Wezwij windę",

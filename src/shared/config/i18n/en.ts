@@ -233,6 +233,8 @@ export const EN = {
 	"drill.level": "Drill level {level} / {max}",
 	"drill.upgrade": "Upgrade: x{speed} speed, {buffer} room",
 	"drill.upgraded": "Drill upgraded to level {level}!",
+	"mining.geode": "Geode! +{crystals} 💎",
+	"mining.geodeBoost": "Geode! +{crystals} 💎 and {booster} for 5 min!",
 	"lift.name": "Lift",
 	"lift.ride": "Ride",
 	"lift.call": "Call the lift",

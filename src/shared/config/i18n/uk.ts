@@ -232,6 +232,8 @@ export const UK: Strings = {
 	"drill.level": "Рівень бура {level} / {max}",
 	"drill.upgrade": "Покращити: x{speed} швидкість, {buffer} місця",
 	"drill.upgraded": "Бур покращено до рівня {level}!",
+	"mining.geode": "Жеода! +{crystals} 💎",
+	"mining.geodeBoost": "Жеода! +{crystals} 💎 і {booster} на 5 хв!",
 	"lift.name": "Ліфт",
 	"lift.ride": "Їхати",
 	"lift.call": "Викликати ліфт",

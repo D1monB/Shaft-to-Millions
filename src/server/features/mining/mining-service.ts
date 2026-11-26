@@ -14,6 +14,8 @@ import {
 	MINE_PROGRESS_REMOTE,
 	MiningSession,
 	NODE_BROKEN_REMOTE,
+	GEODE_BOOST_SECONDS,
+	geodeReward,
 	getPickaxe,
 	rollCrystals,
 	scaleYield,
@@ -26,7 +28,9 @@ import { RateLimiter } from "shared/lib/rate-limiter";
 import { MAX_COUNTER } from "shared/lib/repair";
 import { ProfileData } from "shared/features/profile";
 import { getProfileData, markDirty } from "server/features/profile";
-import { boostOf } from "server/features/boosters";
+import { boostOf, grantBoost } from "server/features/boosters";
+import { BOOSTER_IDS } from "shared/config/boosters";
+import { StringKey } from "shared/config/i18n";
 import { trackQuest } from "server/features/quests";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
@@ -148,6 +152,9 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	} else {
 		// A rare crystal (decision 043) for emptying a block, rolled here with the server Random like the yield.
 		const crystals = rollCrystals(ore.crystalChance, random.NextNumber());
+		if (node.GetAttribute(ATTRIBUTES.Geode) === true) {
+			payGeode(player, data);
+		}
 		if (crystals > 0) {
 			data.crystals = math.min(data.crystals + crystals, MAX_COUNTER);
 			markDirty(player);
@@ -155,6 +162,23 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		}
 		trackQuest(player, "emptyBlocks", 1);
 		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added, crit);
+	}
+}
+
+/** An emptied geode (decision 060): crystals, and sometimes a short random booster. */
+function payGeode(player: Player, data: ProfileData): void {
+	const reward = geodeReward(random.NextNumber(), random.NextNumber(), random.NextNumber(), BOOSTER_IDS.size());
+	data.crystals = math.min(data.crystals + reward.crystals, MAX_COUNTER);
+	markDirty(player);
+	const booster = reward.boosterIndex !== undefined ? BOOSTER_IDS[reward.boosterIndex] : undefined;
+	if (booster !== undefined && grantBoost(player, data, booster, GEODE_BOOST_SECONDS) > 0) {
+		notify(
+			player,
+			text("mining.geodeBoost", { crystals: reward.crystals, booster: ref(`booster.${booster}` as StringKey) }),
+			"success",
+		);
+	} else {
+		notify(player, text("mining.geode", { crystals: reward.crystals }), "success");
 	}
 }
 
