@@ -667,3 +667,8 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   - Developer panel ("Dev" button): the owner is fixed by UserId 12034221780; developers (granted only by the owner, saved as `devRole`) can give money and crystals, bring and kick players, never the owner. The server checks every action; given money is not counted as earned.
   - Promo codes live only in a DataStore (the repository is public): the owner creates and deletes them in the Dev panel; each player can use a code once; a use is counted with UpdateAsync; redeeming is rate limited.
 - **Why:** the developer's requests.
+
+## 069. Belt panel and more developer powers (2026-11-26)
+
+- **Decision:** a prompt (T) on any piece of the own conveyor opens the belt panel with three upgrades: speed (as before), silo (500 → 2500 ore waiting) and polishing (+0 → +15% money from the line). Schema v9 (the bigger silo raises the intake cap). The Dev panel can also take money and crystals (never below 0), heal, open all layers, give all boosters for 30 min, fill aura spins, teleport to a player and, **owner only with a second tap**, reset a player's progress (Robux receipts, used promo codes, developer role and settings are kept; the player is kicked and rejoins fresh).
+- **Why:** the developer's requests.

@@ -3,7 +3,7 @@ import React from "@rbxts/react";
 import { LINE_MACHINES } from "shared/config/line";
 import { PLOT_ATTRIBUTES } from "shared/config/map-contract";
 import { nameKeys, text } from "shared/features/i18n";
-import { UPGRADE_POINT_TAG, nextLineMachine } from "shared/features/line";
+import { BELT_POINT_TAG, UPGRADE_POINT_TAG, nextLineMachine } from "shared/features/line";
 import { registerGoalSource } from "client/features/goals";
 import { t, tx } from "client/lib/i18n";
 import { openPanel } from "client/lib/panels";
@@ -13,7 +13,7 @@ import { startBeltVisuals } from "./belt-visuals";
 import { startMachineHum } from "./machine-hum";
 import { startMachineGauges } from "./machine-gauges";
 import { isOnOwnPlot } from "./own-plot";
-import { UpgradePanel } from "./upgrade-panel";
+import { BeltPanel, UpgradePanel } from "./upgrade-panel";
 
 function openUpgrades(anchor: Instance): void {
 	const stage = anchor.GetAttribute(PLOT_ATTRIBUTES.Stage);
@@ -40,6 +40,13 @@ export function startLineController(): void {
 	startMachineHum();
 	startMachineGauges();
 	onPromptForTag(UPGRADE_POINT_TAG, openUpgrades);
+	onPromptForTag(BELT_POINT_TAG, (part) => {
+		if (!isOnOwnPlot(part)) {
+			toast(tx(text("line.notYours")), "error");
+			return;
+		}
+		openPanel({ key: "belt", title: t("line.track.belt"), icon: "🛤", render: () => <BeltPanel /> });
+	});
 	registerGoalSource((view) => {
 		const nextMachine = nextLineMachine(view.line);
 		return nextMachine !== undefined

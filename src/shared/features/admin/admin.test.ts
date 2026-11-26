@@ -61,6 +61,23 @@ class AdminTests {
 		Assert.true(isAllowed("owner", OWNER_USER_ID, grant));
 		Assert.false(isAllowed("owner", OWNER_USER_ID, kickOwner));
 	}
+
+	@Test
+	public onlyTheOwnerResetsProgress() {
+		const reset = parseAdminRequest(["reset", GUEST]);
+		const take = parseAdminRequest(["takeMoney", GUEST, 500]);
+		if (reset === undefined || take === undefined) {
+			Assert.fail("requests did not parse");
+			return;
+		}
+		Assert.false(isAllowed("dev", DEV, reset));
+		Assert.true(isAllowed("owner", OWNER_USER_ID, reset));
+		Assert.true(isAllowed("dev", DEV, take));
+		Assert.false(isAllowed(undefined, GUEST, take));
+		for (const amount of [0, -500, 0 / 0, math.huge]) {
+			Assert.equal(parseAdminRequest(["takeMoney", GUEST, amount]), undefined);
+		}
+	}
 }
 
 export = AdminTests;

@@ -2,7 +2,7 @@
 // dropping ore through ProximityPrompts, upgrades through a remote, the production tick and the offline run.
 // Everything that moves value happens here; the client sees the result in its view and in the built plot.
 import { CollectionService, Players, ReplicatedStorage, ServerStorage } from "@rbxts/services";
-import { BELT_VISUAL_SPEED, LINE_BASE_SPEED, LINE_MACHINES } from "shared/config/line";
+import { BELT_VISUAL_SPEED, LINE_BASE_SPEED, LINE_MACHINES, isBeltTrack } from "shared/config/line";
 import { PLOT_ATTRIBUTES, PLOT_SIGN } from "shared/config/map-contract";
 import { ORES, ORE_IDS, OreId, isOreId } from "shared/config/ores";
 import {
@@ -19,6 +19,8 @@ import {
 	applyBuyLineMachine,
 	applyLineUpgrade,
 	beltSpeed,
+	BELT_TRACK_FIELD,
+	BELT_POINT_TAG,
 	depositOre,
 	isLineIdle,
 	lineIncome,
@@ -152,6 +154,10 @@ function makeAnchor(parent: Instance, name: string, cframe: CFrame): BasePart {
  */
 const DROP_KEYS = { keyboard: Enum.KeyCode.E, gamepad: Enum.KeyCode.ButtonX };
 const BUY_KEYS = { keyboard: Enum.KeyCode.F, gamepad: Enum.KeyCode.ButtonY };
+
+/** Opens the belt panel: its own key, the belt runs past machines and the drop prompt. */
+const BELT_KEYS = { keyboard: Enum.KeyCode.T, gamepad: Enum.KeyCode.ButtonL1 };
+const BELT_PROMPT_DISTANCE = 9;
 
 /** Opens the upgrade panel. A third key: machine 1 stands at the start of the belt, next to the drop prompt. */
 const UPGRADE_KEYS = { keyboard: Enum.KeyCode.R, gamepad: Enum.KeyCode.ButtonR1 };
@@ -345,6 +351,7 @@ function buildFor(plot: Plot, data: ProfileData): void {
 		}
 	}
 	applyBeltSpeed(built, data.line.beltLevel);
+	addBeltPrompts(built);
 	// Ore is handed in at the map author's silo (decision 047), else at the booth on the belt start (decision 039).
 	const silo = findSilo(built);
 	const intakeAt = silo !== undefined ? new CFrame(silo.intake) : boothIntake(plot, built);
@@ -458,18 +465,36 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 	notify(player, text("line.upgraded", { level: result.upgrade.level }), "success");
 }
 
-/** True when the player stands near any machine they own (the conveyor card sits in every machine's panel). */
-function isNearOwnMachine(player: Player, plot: Plot, owned: number): boolean {
+/** True when the player stands next to their own belt or one of their machines. */
+function isNearOwnBelt(player: Player, plot: Plot, owned: number): boolean {
 	for (let stage = 1; stage <= owned; stage++) {
 		if (isNear(player, slotCFrame(plot, stage)?.Position, LINE_DISTANCE)) {
 			return true;
 		}
 	}
-	return false;
+	return (plot.built?.GetDescendants() ?? []).some(
+		(part) =>
+			part.IsA("BasePart") &&
+			part.GetAttribute(PLOT_ATTRIBUTES.ConveyorFlow) !== undefined &&
+			isNear(player, part.Position, LINE_DISTANCE),
+	);
+}
+
+/** A prompt on every conveyor piece: the nearest one opens the belt panel (decision 069). */
+function addBeltPrompts(built: Instance): void {
+	for (const part of built.GetDescendants()) {
+		if (part.IsA("BasePart") && part.GetAttribute(PLOT_ATTRIBUTES.ConveyorFlow) !== undefined) {
+			const prompt = makePrompt(part, text("line.upgrade"), text("line.track.belt"), BELT_KEYS);
+			prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton;
+			prompt.MaxActivationDistance = BELT_PROMPT_DISTANCE;
+			CollectionService.AddTag(part, BELT_POINT_TAG);
+		}
+	}
 }
 
 function handleBeltUpgrade(player: Player, args: Array<unknown>): void {
-	if (args.size() !== 0) {
+	const [track] = args;
+	if (args.size() !== 1 || !isBeltTrack(track)) {
 		logAbuse(player, "bad UpgradeBelt arguments");
 		return;
 	}
@@ -478,12 +503,12 @@ function handleBeltUpgrade(player: Player, args: Array<unknown>): void {
 	if (plot === undefined || data === undefined) {
 		return;
 	}
-	if (!isNearOwnMachine(player, plot, data.line.machines.size())) {
+	if (!isNearOwnBelt(player, plot, data.line.machines.size())) {
 		// Not logged as abuse: an honest player can walk off while the panel is open.
 		notify(player, text("line.tooFar"), "error");
 		return;
 	}
-	const result = tryBeltUpgrade(data.line, data.money);
+	const result = tryBeltUpgrade(data.line, data.money, track);
 	if (!result.ok) {
 		if (result.reason === "not-enough-money") {
 			notify(player, text("common.notEnoughMoney"), "error");
@@ -492,10 +517,10 @@ function handleBeltUpgrade(player: Player, args: Array<unknown>): void {
 	}
 	// Money and level change together, with no yield in between.
 	data.money = result.money;
-	data.line.beltLevel = result.level;
+	data.line[BELT_TRACK_FIELD[track]] = result.level;
 	markDirty(player);
 	if (plot.built !== undefined) {
-		applyBeltSpeed(plot.built, result.level);
+		applyBeltSpeed(plot.built, data.line.beltLevel);
 	}
 	trackQuest(player, "upgradeMachine", 1);
 	notify(player, text("line.beltUpgraded", { level: result.level }), "success");

@@ -11,18 +11,37 @@ export const MAX_GIVE_MONEY = 1_000_000_000_000;
 export const MAX_GIVE_CRYSTALS = 1_000_000;
 const MAX_USER_ID = 1_000_000_000_000_000;
 
-export type AdminAction = "money" | "crystals" | "kick" | "bring" | "grant" | "revoke";
+export const ADMIN_ACTIONS = [
+	"money",
+	"crystals",
+	"takeMoney",
+	"takeCrystals",
+	"kick",
+	"bring",
+	"goto",
+	"heal",
+	"unlock",
+	"boost",
+	"spins",
+	"reset",
+	"grant",
+	"revoke",
+] as const;
+
+export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
 export function isAdminAction(value: unknown): value is AdminAction {
-	return (
-		value === "money" ||
-		value === "crystals" ||
-		value === "kick" ||
-		value === "bring" ||
-		value === "grant" ||
-		value === "revoke"
-	);
+	return typeIs(value, "string") && (ADMIN_ACTIONS as ReadonlyArray<string>).includes(value);
 }
+
+/** Actions that need an amount. */
+const AMOUNT_ACTIONS: ReadonlyArray<AdminAction> = ["money", "crystals", "takeMoney", "takeCrystals"];
+
+/** Actions that make no sense on yourself. */
+const NOT_ON_SELF: ReadonlyArray<AdminAction> = ["kick", "bring", "goto"];
+
+/** Only the owner: roles, and wiping someone's progress. */
+const OWNER_ONLY: ReadonlyArray<AdminAction> = ["grant", "revoke", "reset"];
 
 export function roleOf(userId: number, grantedDev: boolean): AdminRole | undefined {
 	if (userId === OWNER_USER_ID) {
@@ -44,8 +63,8 @@ export function parseAdminRequest(args: ReadonlyArray<unknown>): AdminRequest | 
 	if (!isAdminAction(action) || !isIntegerInRange(targetId, 1, MAX_USER_ID)) {
 		return undefined;
 	}
-	if (action === "money" || action === "crystals") {
-		const limit = action === "money" ? MAX_GIVE_MONEY : MAX_GIVE_CRYSTALS;
+	if (AMOUNT_ACTIONS.includes(action)) {
+		const limit = action === "money" || action === "takeMoney" ? MAX_GIVE_MONEY : MAX_GIVE_CRYSTALS;
 		return args.size() === 3 && isIntegerInRange(amount, 1, limit) ? { action, targetId, amount } : undefined;
 	}
 	return args.size() === 2 ? { action, targetId, amount: 0 } : undefined;
@@ -57,12 +76,12 @@ export function isAllowed(role: AdminRole | undefined, actorId: number, request:
 		return false;
 	}
 	const ownerTarget = request.targetId === OWNER_USER_ID;
-	if (request.action === "grant" || request.action === "revoke") {
-		return role === "owner" && !ownerTarget;
+	if (OWNER_ONLY.includes(request.action)) {
+		// The owner may reset their own progress; nobody changes the owner's role.
+		return role === "owner" && (request.action === "reset" || !ownerTarget);
 	}
 	if (ownerTarget && actorId !== OWNER_USER_ID) {
 		return false;
 	}
-	// Kicking or "bringing" yourself makes no sense.
-	return !((request.action === "kick" || request.action === "bring") && request.targetId === actorId);
+	return !(NOT_ON_SELF.includes(request.action) && request.targetId === actorId);
 }

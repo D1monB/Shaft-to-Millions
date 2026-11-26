@@ -40,6 +40,17 @@ function TargetActions(props: { target: Player; owner: boolean }) {
 	};
 	const customAmount = tonumber(custom);
 	const isMe = props.target === Players.LocalPlayer;
+	// Kick and reset need a second tap, so a slip never removes or wipes anyone.
+	const [armed, setArmed] = useState("");
+	const confirmed = (action: AdminAction) => () => {
+		if (armed === `${action}:${props.target.UserId}`) {
+			setArmed("");
+			send(action);
+		} else {
+			setArmed(`${action}:${props.target.UserId}`);
+		}
+	};
+	const isArmed = (action: AdminAction) => armed === `${action}:${props.target.UserId}`;
 	return (
 		<Card order={3} gap={6}>
 			<Label text={props.target.Name} display={true} size={TEXT_SIZES.large} order={1} />
@@ -74,14 +85,36 @@ function TargetActions(props: { target: Player; owner: boolean }) {
 				onClick={() => send("money", math.floor(customAmount ?? 0))}
 				order={5}
 			/>
+			<Button
+				text={t("admin.takeCustom")}
+				variant="danger"
+				disabled={customAmount === undefined || customAmount < 1}
+				onClick={() => send("takeMoney", math.floor(customAmount ?? 0))}
+				order={5}
+			/>
+			<Button
+				text={t("admin.takeCrystals", { count: 500 })}
+				variant="slate"
+				onClick={() => send("takeCrystals", 500)}
+				order={5}
+			/>
+			<ButtonRow count={2} order={5}>
+				<Button text={t("admin.heal")} width={rowItemWidth(2)} onClick={() => send("heal")} order={1} />
+				<Button text={t("admin.unlock")} width={rowItemWidth(2)} onClick={() => send("unlock")} order={2} />
+			</ButtonRow>
+			<ButtonRow count={2} order={5}>
+				<Button text={t("admin.boost")} width={rowItemWidth(2)} onClick={() => send("boost")} order={1} />
+				<Button text={t("admin.spins")} width={rowItemWidth(2)} onClick={() => send("spins")} order={2} />
+			</ButtonRow>
+			{!isMe && <Button text={t("admin.goto")} variant="secondary" onClick={() => send("goto")} order={5} />}
 			{!isMe && (
 				<ButtonRow count={2} order={6}>
 					<Button text={t("admin.bring")} width={rowItemWidth(2)} onClick={() => send("bring")} order={1} />
 					<Button
-						text={t("admin.kick")}
+						text={isArmed("kick") ? t("admin.confirm") : t("admin.kick")}
 						variant="danger"
 						width={rowItemWidth(2)}
-						onClick={() => send("kick")}
+						onClick={confirmed("kick")}
 						order={2}
 					/>
 				</ButtonRow>
@@ -103,6 +136,14 @@ function TargetActions(props: { target: Player; owner: boolean }) {
 						order={2}
 					/>
 				</ButtonRow>
+			)}
+			{props.owner && (
+				<Button
+					text={isArmed("reset") ? t("admin.confirm") : t("admin.reset")}
+					variant="danger"
+					onClick={confirmed("reset")}
+					order={8}
+				/>
 			)}
 		</Card>
 	);
