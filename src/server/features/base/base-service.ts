@@ -1,8 +1,6 @@
-// Base building on the server (decision 063): starting builds, timers (also while offline, by unix time), skipping
-// with crystals, builders, the buildings on each owner's plot, and the bonuses other features ask for.
-import { Players, Workspace } from "@rbxts/services";
-import { BUILDING_IDS, isBuildingId } from "shared/config/base";
-import { PLOT_ATTRIBUTES } from "shared/config/map-contract";
+// Base upgrades on the server (decision 063, menu only since 067): starting builds, timers (also while offline, by
+// unix time), skipping with crystals, builders, and the bonuses other features ask for.
+import { isBuildingId } from "shared/config/base";
 import {
 	BaseEffects,
 	HIRE_BUILDER_REMOTE,
@@ -13,8 +11,6 @@ import {
 	baseEffects,
 	completeJobs,
 	levelOf,
-	jobOf,
-	secondsLeft,
 	tryHireBuilder,
 	trySkip,
 	tryStartBuild,
@@ -23,33 +19,19 @@ import { nameKeys, ref, text } from "shared/features/i18n";
 import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { setBoostPortionBonusProvider } from "server/features/boosters";
-import { onPlotBuilt, onPlotReleased, setLineBonusProvider } from "server/features/line";
+import { setLineBonusProvider } from "server/features/line";
 import { setBaseOreBonusProvider } from "server/features/mining";
 import { getLoadedPlayers, getProfileData, markDirty, onProfileLoaded } from "server/features/profile";
 import { trackQuest } from "server/features/quests";
 import { setBaseSellProvider } from "server/features/selling";
 import { notify } from "server/lib/notify";
 import { logAbuse, onClientRequest } from "server/lib/remotes";
-import { PlotArea, Site, createSite, drawSite, findSpots } from "./site-visuals";
 
 const TICK_SECONDS = 1;
-const sitesOf = new Map<Player, { folder: Folder; sites: Site[] }>();
 
 function effectsOf(player: Player): BaseEffects | undefined {
 	const data = getProfileData(player);
 	return data === undefined ? undefined : baseEffects(data.base);
-}
-
-function redraw(player: Player, data: ProfileData): void {
-	const owned = sitesOf.get(player);
-	if (owned === undefined) {
-		return;
-	}
-	const now = os.time();
-	for (const site of owned.sites) {
-		const left = jobOf(data.base, site.id) !== undefined ? secondsLeft(data.base, site.id, now) : undefined;
-		drawSite(site, levelOf(data.base, site.id), left);
-	}
 }
 
 /** Finishes due builds, tells the owner and redraws. Safe to call any time. */
@@ -92,7 +74,6 @@ function handleStart(player: Player, args: Array<unknown>): void {
 	markDirty(player);
 	trackQuest(player, "upgradeMachine", 1);
 	notify(player, text("base.started", { name: ref(nameKeys.building(id)) }), "success");
-	redraw(player, data);
 }
 
 function handleSkip(player: Player, args: Array<unknown>): void {
@@ -117,7 +98,6 @@ function handleSkip(player: Player, args: Array<unknown>): void {
 	applySkip(data.base, id, now);
 	markDirty(player);
 	settle(player, data);
-	redraw(player, data);
 }
 
 function handleHire(player: Player, args: Array<unknown>): void {
@@ -142,25 +122,6 @@ function handleHire(player: Player, args: Array<unknown>): void {
 	notify(player, text("base.builderHired"), "success");
 }
 
-function removeSites(player: Player): void {
-	sitesOf.get(player)?.folder.Destroy();
-	sitesOf.delete(player);
-}
-
-function buildSites(player: Player, model: Model, area: PlotArea): void {
-	removeSites(player);
-	const folder = new Instance("Folder");
-	folder.Name = `Base_${tostring(model.GetAttribute(PLOT_ATTRIBUTES.PlotIndex) ?? player.UserId)}`;
-	folder.Parent = Workspace;
-	const spots = findSpots(area);
-	const sites = BUILDING_IDS.map((id, index) => createSite(folder, id, spots[index]));
-	sitesOf.set(player, { folder, sites });
-	const data = getProfileData(player);
-	if (data !== undefined) {
-		redraw(player, data);
-	}
-}
-
 export function startBaseService(): void {
 	onClientRequest(START_BUILD_REMOTE, new RateLimiter(4, 2), handleStart);
 	onClientRequest(SKIP_BUILD_REMOTE, new RateLimiter(4, 2), handleSkip);
@@ -181,9 +142,6 @@ export function startBaseService(): void {
 			settle(player, data);
 		}
 	});
-	onPlotBuilt((player, model, area) => buildSites(player, model, area));
-	onPlotReleased(removeSites);
-	Players.PlayerRemoving.Connect(removeSites);
 
 	task.spawn(() => {
 		for (;;) {
@@ -193,7 +151,6 @@ export function startBaseService(): void {
 					const data = getProfileData(player);
 					if (data !== undefined && data.base.jobs.size() > 0) {
 						settle(player, data);
-						redraw(player, data);
 					}
 				});
 				if (!ok) {

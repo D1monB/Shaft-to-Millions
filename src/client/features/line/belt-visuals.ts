@@ -18,15 +18,16 @@ import {
 	routeFor,
 } from "shared/features/line";
 import { onServerUnreliable } from "client/lib/remotes";
+import { popCoins } from "./coin-pop";
 
 /** Ride speed in studs per second. Visual only: the server's timing does not depend on it. */
-const ITEM_SPEED = 8;
+const ITEM_SPEED = 4;
 /** A ride never lasts longer than this, so a long belt does not pile up items. */
-const MAX_RIDE_SECONDS = 12;
+const MAX_RIDE_SECONDS = 20;
 /** Shortest ride (s), so a short hop is still seen. */
-const MIN_RIDE_SECONDS = 0.8;
+const MIN_RIDE_SECONDS = 2;
 /** Ride to the SellStation (s): nothing waits for it there. */
-const SELL_RIDE_SECONDS = 4;
+const SELL_RIDE_SECONDS = 8;
 /** Items on screen at once (all plots together); extra items are simply not shown. */
 const MAX_ACTIVE_ITEMS = 120;
 /** Plots farther than this from the camera show no items. */
@@ -51,6 +52,8 @@ interface Ride {
 	travelled: number;
 	/** Index of the path point the item is heading to; it only moves forward. */
 	segment: number;
+	/** True when it ends in the SellStation: coins pop out when it arrives. */
+	readonly sells: boolean;
 }
 
 interface CachedPath {
@@ -204,7 +207,14 @@ function releaseModel(key: string, model: Model): void {
 
 // ---- rides ----
 
-function startRide(ore: OreId, stage: number, points: ReadonlyArray<Vector3>, wait: number, maxSeconds: number): void {
+function startRide(
+	ore: OreId,
+	stage: number,
+	points: ReadonlyArray<Vector3>,
+	wait: number,
+	maxSeconds: number,
+	sells: boolean,
+): void {
 	if (points.size() < 2 || rides.size() >= MAX_ACTIVE_ITEMS) {
 		return;
 	}
@@ -229,6 +239,7 @@ function startRide(ore: OreId, stage: number, points: ReadonlyArray<Vector3>, wa
 		wait,
 		travelled: 0,
 		segment: 1,
+		sells,
 	});
 }
 
@@ -268,6 +279,9 @@ function onHeartbeat(dt: number): void {
 		const [ok, moving] = pcall(() => stepRide(ride, dt));
 		if (!ok || !moving) {
 			rides.remove(i);
+			if (ok && ride.sells) {
+				popCoins(ride.points[ride.points.size() - 1]);
+			}
 			releaseModel(ride.key, ride.model);
 		}
 	}
@@ -317,7 +331,7 @@ function onFlow(plotIndex: unknown, flat: unknown): void {
 		const maxSeconds = route.stage < owned && nextMachine !== undefined ? nextMachine.seconds : SELL_RIDE_SECONDS;
 		const earlier = leftFrom.get(from) ?? 0;
 		leftFrom.set(from, earlier + 1);
-		startRide(ore, route.stage, points, earlier * ITEM_GAP_SECONDS, maxSeconds);
+		startRide(ore, route.stage, points, earlier * ITEM_GAP_SECONDS, maxSeconds, route.stage >= owned);
 		// The machine that let the item go makes its sound (decision 049); raw ore leaving the silo is quiet.
 		if (from >= 0) {
 			const sound = MACHINE_SOUNDS[LINE_MACHINES[from]?.id ?? ""];

@@ -64,13 +64,6 @@ function TravelPanel() {
 }
 
 export function startTravelController(): void {
-	registerHudButton(
-		"🛒",
-		() => t("menu.shops"),
-		() => sendToServer(TRAVEL_REMOTE, SHOP_DISTRICT),
-		18,
-		"primary",
-	);
 	// One tap home (the developer's request, decision 053): the server checks the pause and finds the plot.
 	registerHudButton(
 		"🏭",

@@ -70,6 +70,9 @@ export const TREASURE_EVERY_SECONDS = 300;
 /** Treasure money = the price of its layer's ore times this. */
 export const TREASURE_MONEY_MULTIPLIER = 40;
 
+/** ... plus this share of everything the player ever earned, so it stays a real treasure late in the game. */
+export const TREASURE_LIFETIME_SHARE = 0.015;
+
 /** Treasure crystals: at least this many ... */
 export const TREASURE_MIN_CRYSTALS = 2;
 

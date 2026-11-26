@@ -642,3 +642,19 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 
 - **Decision:** one swing cooldown for ore and clusters; one sell cap (x7) for the sell zone and the line; the raid counts pieces before boosters and auras; the line's offline run uses the base as the player left it; capped boost time is refunded in money (not crystals) for players with paid random items restricted; the aura panel also shows the guaranteed spin's odds. Balance: the warehouse now gives bag capacity (offline line time was capped by the silo, so its old bonus did nothing); item resale 10/25/60/150/400 (free spins no longer print money); treasure every 5 min paying 40x ore price, cluster every 10 min, both only on layers someone has opened and gone after 4 min; office and market cheaper; builders 60/200 crystals.
 - **Why:** security-reviewer and balance-analyst findings.
+
+## 067. Developer feedback after the big update (2026-11-26)
+
+- **Decision:**
+  - No buildings on the plot: the base is upgraded only in its menu (More → Build).
+  - The goal banner moved to the top right (Roblox's player list is hidden); messages stay 4-12 s by length.
+  - Dock: Home, Travel, Quests, Items, Store and More (Build, Auras, Raid, Top, Language, Sound).
+  - Belt items ride about half as fast; coins pop out of the SellStation when belt items are sold.
+  - Health bar tile; fall damage above 18 studs (2 per stud, max 70, server-sampled).
+  - Cave-in: -30 health (never below 5), 2 s stun without walking or jumping, then slow.
+  - Treasure money = ore price x40 + 1.5% of lifetime earnings.
+  - "Wear it" right after a chest or aura spin.
+  - The pickaxe can never be put away.
+  - "TP to base" lands at the base's edge facing the canyon.
+  - Cheaper economy (about 5 days for the first area): early gear and first machines much cheaper, expensive ones a little; base prices and top build times lower.
+- **Why:** the developer's play feedback.

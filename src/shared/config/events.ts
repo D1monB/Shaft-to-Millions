@@ -10,7 +10,12 @@ export const CAVE_IN_MINING_RADIUS = 14;
 export const CAVE_IN_WARNING_SECONDS = 3;
 /** Radius (studs) of the danger circle. */
 export const CAVE_IN_RADIUS = 9;
-/** A soft penalty (nothing is lost): walk speed x (1 - this) ... */
+/** Rocks take this much health (never below CAVE_IN_MIN_HEALTH: a cave-in does not kill) ... */
+export const CAVE_IN_DAMAGE = 30;
+export const CAVE_IN_MIN_HEALTH = 5;
+/** ... stun (no walking, no jumping) for this many seconds ... */
+export const CAVE_IN_STUN_SECONDS = 2;
+/** ... and then walk speed x (1 - this) ... */
 export const CAVE_IN_SLOW = 0.4;
 /** ... for this many seconds. */
 export const CAVE_IN_SLOW_SECONDS = 5;

@@ -20,6 +20,7 @@ import { startStoreService } from "server/features/store";
 import { startBaseService } from "server/features/base";
 import { startAuraRollService } from "server/features/aura-roll";
 import { startEventsService } from "server/features/events";
+import { startHealthService } from "server/features/health";
 import { startSellingService } from "server/features/selling";
 import { startSettingsService } from "server/features/settings";
 import { startTravelService } from "server/features/travel";
@@ -64,5 +65,6 @@ startBoostersService();
 startStoreService();
 startAuraRollService();
 startEventsService();
+startHealthService();
 
 startProfileService();

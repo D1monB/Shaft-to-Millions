@@ -52,6 +52,14 @@ export function syncPickaxeTool(player: Player): void {
 	const tool = template.Clone();
 	tool.SetAttribute(PICKAXE_ID_ATTRIBUTE, def.id);
 	tool.CanBeDropped = false;
+	// The pickaxe is never put away (decision 067): Roblox's own unequip (backspace, a click) puts it back.
+	tool.Unequipped.Connect(() => {
+		task.defer(() => {
+			if (tool.Parent === backpack && humanoid.Health > 0) {
+				humanoid.EquipTool(tool);
+			}
+		});
+	});
 	tool.Parent = backpack;
 	// A new character, a purchase or a pick from the hotbar: the pickaxe goes straight into the hand.
 	humanoid.EquipTool(tool);

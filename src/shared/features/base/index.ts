@@ -20,10 +20,4 @@ export {
 	tryStartBuild,
 } from "./base";
 export type { BaseEffects, BaseState, BuildJob, BuildRefusal, HireResult, SkipResult, StartBuildResult } from "./base";
-export {
-	BASE_SITE_ID_ATTRIBUTE,
-	BASE_SITE_TAG,
-	HIRE_BUILDER_REMOTE,
-	SKIP_BUILD_REMOTE,
-	START_BUILD_REMOTE,
-} from "./network";
+export { HIRE_BUILDER_REMOTE, SKIP_BUILD_REMOTE, START_BUILD_REMOTE } from "./network";

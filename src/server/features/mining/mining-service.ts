@@ -171,7 +171,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	} else if (treasure) {
 		// A treasure crate (decision 050): the first player to break it takes it, then it is gone for everyone.
 		// Paid and removed in the same frame, so nobody else can break it after the reward.
-		const reward = treasureReward(ore.price, random.NextNumber());
+		const reward = treasureReward(ore.price, random.NextNumber(), data.stats.totalEarned);
 		data.money = math.min(data.money + reward.money, MAX_COUNTER);
 		data.stats.totalEarned = math.min(data.stats.totalEarned + reward.money, MAX_COUNTER);
 		data.crystals = math.min(data.crystals + reward.crystals, MAX_COUNTER);

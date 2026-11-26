@@ -1,5 +1,6 @@
 // "What next" hint: one clear goal in a capsule at the bottom of the screen, with a bar that fills as money comes in.
 // Features register where goals come from; the shared pickGoalInfo chooses exactly one.
+import { StarterGui } from "@rbxts/services";
 import { nameKeys } from "shared/features/i18n";
 import { t, tx } from "client/lib/i18n";
 import { useMotion } from "@rbxts/pretty-react-hooks";
@@ -82,9 +83,11 @@ function currentGoal(view: PlayerView): GoalInfo {
 
 export function startGoalsController(): void {
 	registerGoalSource(gearGoals);
+	// The goal sits top right (decision 067), where Roblox's player list would cover it; we have our own boards.
+	pcall(() => StarterGui.SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false));
 }
 
-const BANNER_WIDTH = 360;
+const BANNER_WIDTH = 300;
 const BANNER_HEIGHT = 42;
 const BADGE_ROOM = 42;
 
@@ -125,8 +128,8 @@ export function GoalBanner() {
 	const title = isPurchase ? t("goal.banner", { name: `<font color="#FCD34D">${name}</font>` }) : name;
 	return (
 		<frame
-			AnchorPoint={new Vector2(0.5, 0)}
-			Position={new UDim2(0.5, 0, 0, 12)}
+			AnchorPoint={new Vector2(1, 0)}
+			Position={new UDim2(1, -18, 0, 12)}
 			Size={new UDim2(0, BANNER_WIDTH, 0, BANNER_HEIGHT + DEPTH.button)}
 			BackgroundTransparency={1}
 		>

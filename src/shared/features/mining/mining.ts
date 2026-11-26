@@ -8,6 +8,7 @@ import {
 	RICH_YIELD_MULTIPLIER,
 	SWING_TOLERANCE,
 	TREASURE_EXTRA_CRYSTALS,
+	TREASURE_LIFETIME_SHARE,
 	TREASURE_MIN_CRYSTALS,
 	TREASURE_MONEY_MULTIPLIER,
 } from "./tuning";
@@ -184,14 +185,16 @@ export interface TreasureReward {
 }
 
 /**
- * What a treasure crate (decision 050) gives: money from its layer's ore price and a few crystals. `roll` is the
+ * What a treasure crate (decision 050) gives: money from its layer's ore price plus a share of the player's
+ * lifetime earnings (decision 067), and a few crystals. `roll` is the
  * server's Random:NextNumber() in [0, 1); bad input gives the smallest reward, never more.
  */
-export function treasureReward(orePrice: number, roll: number): TreasureReward {
+export function treasureReward(orePrice: number, roll: number, totalEarned = 0): TreasureReward {
+	const lifetime = totalEarned === totalEarned && totalEarned > 0 && totalEarned < math.huge ? totalEarned : 0;
 	const price = orePrice === orePrice && orePrice > 0 && orePrice < math.huge ? orePrice : 0;
 	const unit = roll === roll ? math.clamp(roll, 0, 0.999999) : 0;
 	return {
-		money: math.floor(price * TREASURE_MONEY_MULTIPLIER),
+		money: math.floor(price * TREASURE_MONEY_MULTIPLIER + lifetime * TREASURE_LIFETIME_SHARE),
 		crystals: TREASURE_MIN_CRYSTALS + math.floor(unit * (TREASURE_EXTRA_CRYSTALS + 1)),
 	};
 }

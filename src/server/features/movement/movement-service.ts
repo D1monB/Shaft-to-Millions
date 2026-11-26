@@ -111,7 +111,7 @@ function applySpeed(player: Player): void {
 	if (humanoid === undefined || speed === undefined) {
 		return;
 	}
-	const target = speed * (1 - math.clamp(speedPenaltyOf(player), 0, 0.9));
+	const target = speed * (1 - math.clamp(speedPenaltyOf(player), 0, 1));
 	if (humanoid.WalkSpeed !== target) {
 		humanoid.WalkSpeed = target;
 	}

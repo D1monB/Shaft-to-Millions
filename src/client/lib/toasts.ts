@@ -26,7 +26,14 @@ const MAX_TOASTS = 4;
 const toastStore = new Store<ReadonlyArray<ToastEntry>>([]);
 let lastId = 0;
 
-export function toast(text: string | Text, kind: NotifyKind = "info", seconds = 3): void {
+/** Long enough to read: events and results at least 6 s, longer texts longer (decision 067). */
+function readingTime(words: string, kind: NotifyKind): number {
+	const least = kind === "info" ? 4 : 6;
+	return math.clamp(least + words.size() * 0.04, least, 12);
+}
+
+export function toast(text: string | Text, kind: NotifyKind = "info", seconds?: number): void {
+	const duration = seconds ?? readingTime(typeIs(text, "string") ? text : tx(text), kind);
 	lastId += 1;
 	const id = lastId;
 	const current = toastStore.get();
@@ -37,7 +44,7 @@ export function toast(text: string | Text, kind: NotifyKind = "info", seconds = 
 	if (kind === "success" || kind === "error") {
 		playSound(kind);
 	}
-	task.delay(seconds, () => toastStore.set(toastStore.get().filter((entry) => entry.id !== id)));
+	task.delay(duration, () => toastStore.set(toastStore.get().filter((entry) => entry.id !== id)));
 }
 
 export function useToasts(): ReadonlyArray<ToastEntry> {
