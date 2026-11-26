@@ -22,7 +22,7 @@ export interface SalePreview {
 }
 
 /** Highest sell multiplier we ever apply, whatever the bonuses say. Protects the economy from data bugs. */
-export const MAX_SELL_MULTIPLIER = 5;
+export const MAX_SELL_MULTIPLIER = 7;
 
 export function safeMultiplier(multiplier: number): number {
 	if (multiplier !== multiplier || multiplier < 1) {

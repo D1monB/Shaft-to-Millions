@@ -23,6 +23,8 @@ export interface ProductHandler {
 }
 
 const handlers = new Map<number, ProductHandler>();
+/** Money per minute of capped boost time (before the per-layer growth) refunded to restricted players. */
+const REFUND_MONEY_PER_SECOND = 100;
 /** Crystal value of one portion of the cheapest booster: what capped boost time is refunded at. */
 const CHEAPEST_BOOST_CRYSTALS = math.min(...BOOSTER_IDS.map((id) => BOOSTERS[id].crystalPrice));
 const SAVE_TIMEOUT_SECONDS = 15;
@@ -70,9 +72,16 @@ function grantProduct(product: StoreProduct, player: Player, data: ProfileData):
 		if (added < grant.seconds * grant.boosters.size()) {
 			// Boosters at their 24 h cap: the time that did not fit is paid back in crystals, never lost.
 			const missing = grant.seconds * grant.boosters.size() - added;
-			const refund = math.max(1, math.ceil((missing / CRYSTAL_PORTION_SECONDS) * CHEAPEST_BOOST_CRYSTALS));
-			data.crystals = math.min(data.crystals + refund, MAX_COUNTER);
-			notify(player, text("store.boostRefund", { count: refund }), "info");
+			if (randomAllowed(player)) {
+				const refund = math.max(1, math.ceil((missing / CRYSTAL_PORTION_SECONDS) * CHEAPEST_BOOST_CRYSTALS));
+				data.crystals = math.min(data.crystals + refund, MAX_COUNTER);
+				notify(player, text("store.boostRefund", { count: refund }), "info");
+			} else {
+				// Robux must never turn into crystals for players with paid random items restricted: money instead.
+				const money = moneyPackAmount((REFUND_MONEY_PER_SECOND * missing) / 60, data.deepestLayer);
+				data.money = math.min(data.money + money, MAX_COUNTER);
+				notify(player, text("store.moneyGranted", { money: formatMoney(money) }), "info");
+			}
 		}
 		notify(player, text("store.boostGranted"), "success");
 	} else if (grant.kind === "crystals") {

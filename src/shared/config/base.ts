@@ -46,21 +46,21 @@ export interface BuildingDef {
 
 export const BUILDINGS: { readonly [K in BuildingId]: BuildingDef } = {
 	// The gate: unlocks level N of every other building. No own bonus.
-	office: { levels: scaled(2, 1.5), perLevel: 0, color: [245, 190, 60] },
+	office: { levels: scaled(1, 1.5), perLevel: 0, color: [245, 190, 60] },
 	// +5% money from sales and the line per level.
-	market: { levels: scaled(1.2, 1), perLevel: 0.05, color: [235, 100, 80] },
-	// +2 hours of offline line production per level.
-	warehouse: { levels: scaled(0.8, 1), perLevel: 2 * HOUR, color: [110, 170, 90] },
+	market: { levels: scaled(0.8, 1), perLevel: 0.05, color: [235, 100, 80] },
+	// +8% bag capacity per level.
+	warehouse: { levels: scaled(0.8, 1), perLevel: 0.08, color: [110, 170, 90] },
 	// +5% line speed per level.
 	workshop: { levels: scaled(1, 1), perLevel: 0.05, color: [90, 150, 240] },
 	// +3 minutes to each booster bought with crystals per level.
 	lab: { levels: scaled(0.9, 1.2), perLevel: 3 * MINUTE, color: [180, 100, 235] },
-	// +4% ore from every hit per level.
-	hut: { levels: scaled(0.7, 0.8), perLevel: 0.04, color: [190, 130, 80] },
+	// +3% ore from every hit per level.
+	hut: { levels: scaled(0.7, 0.8), perLevel: 0.03, color: [190, 130, 80] },
 };
 
 /** Builders: one free; each extra one costs these crystals (the 2nd, then the 3rd). */
-export const BUILDER_CRYSTAL_PRICES: ReadonlyArray<number> = [120, 450];
+export const BUILDER_CRYSTAL_PRICES: ReadonlyArray<number> = [60, 200];
 
 /** Skipping a timer costs one crystal per this many seconds left (at least one crystal). */
 export const SKIP_SECONDS_PER_CRYSTAL = 5 * MINUTE;

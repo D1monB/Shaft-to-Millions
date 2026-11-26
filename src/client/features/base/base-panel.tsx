@@ -42,9 +42,6 @@ function bonusText(id: BuildingId, level: number): string {
 	if (id === "office") {
 		return t(key, { value: level });
 	}
-	if (id === "warehouse") {
-		return t(key, { value: amount / 3600 });
-	}
 	if (id === "lab") {
 		return t(key, { value: amount / 60 });
 	}

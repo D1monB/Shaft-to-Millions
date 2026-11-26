@@ -612,3 +612,33 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 
 - **Decision:** 3% of placed ore blocks are geodes (purple glow, server attribute `Geode`). Emptying one pays 1-3 crystals and with 25% chance a random booster for 5 minutes.
 - **Why:** something to hunt for on a layer besides plain blocks; links mining with boosters.
+
+## 061. Three shop buildings in a market district (2026-11-26)
+
+- **Decision:** the server builds three separate shop buildings (pickaxes, bags, shoes: walls, roof, striped awning, lamps, sign, goods on display) 40 studs in front of the SpawnLocation, 46 studs apart. Only a shop with a `ShopSlot` covers its slot. A dock button and a travel destination (`SHOP_DISTRICT`) lead there. The dev "Gear Shop" and (on maps with plots) sell-zone placeholders are gone.
+- **Why:** the old placeholder had no `ShopSlot`, counted as a shop that sells everything and stopped the three stands from being built, so all gear was bought in one place.
+
+## 062. Visual sell panel (2026-11-26)
+
+- **Decision:** a card per ore with its 3D model, a gold total banner with bonus chips, bag fill, and "through your line ≈ $X". The preview includes the money booster and the market bonus, as the server does.
+- **Why:** the developer found the text-only panel dull; the line comparison teaches the factory.
+
+## 063. Base building with timers (2026-11-26)
+
+- **Decision:** Office (gates other levels), Market (+5% money per level), Warehouse (+8% bag per level), Workshop (+5% line speed), Booster Lab (+3 min per crystal portion), Miner Hut (+3% ore). 6 levels, 1 min to 24 h (office build time x1.5), builds continue offline by unix time, 1 builder plus 2 for crystals (60, 200), finish-now at 1 crystal per 5 min. Drawn on free spots of the owner's plot that keep clear of every machine slot; `ServerStorage.BuildingTemplates/<id>` models replace the part houses. The dock became two columns for phones.
+- **Why:** the developer's request, Clash of Clans style: a goal measured in days.
+
+## 064. Aura roll machine (2026-11-26)
+
+- **Decision:** spin for speed and pickaxe auras: free spin every 20 min (6 stored, also offline; 2 at the start), or 15 crystals; epic or better guaranteed within 25 spins; odds shown (crystals are sold for Robux); reel animation; rarer equipped auras glow and throw more particles; "sell all duplicates" keeps one copy and everything equipped.
+- **Why:** the developer's request to knock out and keep auras; free spins give a reason to come back.
+
+## 065. Layer events (2026-11-26)
+
+- **Decision:** cave-ins (red circle, rocks after 3 s, 40% slower for 5 s, nothing lost), shared crystal clusters (40 swings by anyone, crystals to all with 3+ hits), a 2-minute raid scored by ore value with a weekly top (one OrderedDataStore per week, memory in Studio), at most 15 crystals, 10 min cooldown.
+- **Why:** something happening in the mine besides hitting blocks, and a weekly competition.
+
+## 066. Fixes after the security and balance reviews (2026-11-26)
+
+- **Decision:** one swing cooldown for ore and clusters; one sell cap (x7) for the sell zone and the line; the raid counts pieces before boosters and auras; the line's offline run uses the base as the player left it; capped boost time is refunded in money (not crystals) for players with paid random items restricted; the aura panel also shows the guaranteed spin's odds. Balance: the warehouse now gives bag capacity (offline line time was capped by the silo, so its old bonus did nothing); item resale 10/25/60/150/400 (free spins no longer print money); treasure every 5 min paying 40x ore price, cluster every 10 min, both only on layers someone has opened and gone after 4 min; office and market cheaper; builders 60/200 crystals.
+- **Why:** security-reviewer and balance-analyst findings.

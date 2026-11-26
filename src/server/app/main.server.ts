@@ -43,8 +43,6 @@ buildPlotPlaceholders();
 
 startMiningService();
 startUpgradesService();
-// Before the line: its profile listener finishes builds first, and it hooks the plot events.
-startBaseService();
 startSellingService();
 startLayersService();
 startMovementService();
@@ -52,6 +50,9 @@ startTravelService();
 startLiftService();
 startDrillService();
 startLineService();
+// After the line: its offline run uses the base as it was left, so a build finished just before joining does not
+// count for the whole time away. The base's own listener then finishes it.
+startBaseService();
 startChestsService();
 startEquipmentService();
 startDevtoolsService();

@@ -16,7 +16,9 @@ export const CAVE_IN_SLOW = 0.4;
 export const CAVE_IN_SLOW_SECONDS = 5;
 
 /** A crystal cluster appears every this many seconds when none is waiting. */
-export const CLUSTER_EVERY_SECONDS = 200;
+export const CLUSTER_EVERY_SECONDS = 600;
+/** A treasure crate or cluster nobody took disappears after this long, so a new one can come. */
+export const EVENT_BLOCK_LIFETIME_SECONDS = 240;
 /** Swings of all players together needed to break it. */
 export const CLUSTER_HITS = 40;
 /** Crystals for everyone who hit it at least CLUSTER_MIN_HITS times ... */

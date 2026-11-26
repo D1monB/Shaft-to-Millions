@@ -70,7 +70,7 @@ function SellPanel() {
 	if (preview.itemCount === 0) {
 		return <EmptyBag />;
 	}
-	const capacity = bagCapacity(view.gear.equipped.bag);
+	const capacity = bagCapacity(view.gear.equipped.bag, baseEffects(view.base).bagBonus);
 	const used = bagTotal(view.bag);
 	const rows = preview.lines.map((line) => ({ id: line.id as OreId, count: line.count, subtotal: line.subtotal }));
 	const chips: Chip[] = [];

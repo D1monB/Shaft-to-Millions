@@ -23,11 +23,11 @@ export const BONUS_CAPS = {
 
 /** Dollars for selling a spare item. Far below a chest's price, so re-selling never pays for chests. */
 export const ITEM_SELL_VALUE: { readonly [K in Rarity]: number } = {
-	common: 50,
-	uncommon: 120,
-	rare: 300,
-	epic: 800,
-	legendary: 2_000,
+	common: 10,
+	uncommon: 25,
+	rare: 60,
+	epic: 150,
+	legendary: 400,
 };
 
 export function newEquipped(): Equipped {

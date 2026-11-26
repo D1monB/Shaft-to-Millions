@@ -9,6 +9,7 @@ import { t } from "client/lib/i18n";
 import React, { useEffect, useState } from "@rbxts/react";
 import { UserInputService } from "@rbxts/services";
 import { bagCapacity, bagTotal } from "shared/features/bag";
+import { baseEffects } from "shared/features/base";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
 import { closePanel, openPanel } from "client/lib/panels";
@@ -191,7 +192,10 @@ function TopLeft(props: { view: PlayerView }) {
 			<uilistlayout Padding={new UDim(0, CAPSULE_GAP)} SortOrder={Enum.SortOrder.LayoutOrder} />
 			<MoneyCapsule money={props.view.money} />
 			<CrystalCapsule crystals={props.view.crystals} />
-			<BagCapsule used={bagTotal(props.view.bag)} capacity={bagCapacity(props.view.gear.equipped.bag)} />
+			<BagCapsule
+				used={bagTotal(props.view.bag)}
+				capacity={bagCapacity(props.view.gear.equipped.bag, baseEffects(props.view.base).bagBonus)}
+			/>
 		</frame>
 	);
 }

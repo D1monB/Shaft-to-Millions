@@ -5,7 +5,8 @@
 // block if the model is missing. Blocks are tagged OreNode, so the mining service picks them up; they exist only while
 // the server runs, the place file is never changed.
 import { CollectionService, Players, ServerStorage, Workspace } from "@rbxts/services";
-import { CLUSTER_EVERY_SECONDS } from "shared/config/events";
+import { CLUSTER_EVERY_SECONDS, EVENT_BLOCK_LIFETIME_SECONDS } from "shared/config/events";
+import { getLoadedPlayers, getProfileData } from "server/features/profile";
 import { ATTRIBUTES, ORE_SPAWNS, PLOTS, PLOT_ATTRIBUTES, TAGS, TREASURE } from "shared/config/map-contract";
 import { ORES, OreId } from "shared/config/ores";
 import { nameKeys, ref, text } from "shared/features/i18n";
@@ -313,19 +314,39 @@ function decorateTreasure(block: Instance): void {
 	gui.Parent = part;
 }
 
+/** Layers someone on this server has opened: a treasure nobody can reach would sit there for ever. */
+function openLayers(layers: ReadonlyArray<Layer>): Layer[] {
+	let deepest = 1;
+	for (const player of getLoadedPlayers()) {
+		deepest = math.max(deepest, getProfileData(player)?.deepestLayer ?? 1);
+	}
+	return layers.filter((layer) => layer.tier <= deepest);
+}
+
+/** An event block nobody took is removed after a while, so the next one can come. */
+function expire(block: Instance): void {
+	task.delay(EVENT_BLOCK_LIFETIME_SECONDS, () => {
+		if (block.Parent !== undefined) {
+			block.Destroy();
+		}
+	});
+}
+
 /** Puts a treasure crate on a random free point of a random layer and tells everyone where. */
 function spawnTreasure(layers: ReadonlyArray<Layer>, parent: Instance): void {
 	if (treasure !== undefined && treasure.block.Parent !== undefined) {
 		return;
 	}
 	treasure = undefined;
-	const candidates = layers.filter((layer) => layer.points.some((point) => !layer.blocks.has(point)));
+	const candidates = openLayers(layers).filter((layer) =>
+		layer.points.some((point) => !layer.blocks.has(point) && !isEventPoint(point)),
+	);
 	const [layer] = pickRandom(candidates, 1, nextNumber);
 	if (layer === undefined) {
 		return;
 	}
 	const [point] = pickRandom(
-		layer.points.filter((candidate) => !layer.blocks.has(candidate)),
+		layer.points.filter((candidate) => !layer.blocks.has(candidate) && !isEventPoint(candidate)),
 		1,
 		nextNumber,
 	);
@@ -348,6 +369,7 @@ function spawnTreasure(layers: ReadonlyArray<Layer>, parent: Instance): void {
 	block.Parent = parent;
 	CollectionService.AddTag(block, TAGS.OreNode);
 	treasure = { point, block };
+	expire(block);
 	for (const player of Players.GetPlayers()) {
 		notify(player, text("mining.treasureSpawned", { layer: ref(nameKeys.layer(layer.tier)) }), "success");
 	}
@@ -392,7 +414,7 @@ function spawnCluster(layers: ReadonlyArray<Layer>, parent: Instance): void {
 	}
 	const free = (layer: Layer) => layer.points.filter((point) => !layer.blocks.has(point) && !isEventPoint(point));
 	const [layer] = pickRandom(
-		layers.filter((candidate) => free(candidate).size() > 0),
+		openLayers(layers).filter((candidate) => free(candidate).size() > 0),
 		1,
 		nextNumber,
 	);
@@ -413,6 +435,7 @@ function spawnCluster(layers: ReadonlyArray<Layer>, parent: Instance): void {
 	model.Parent = parent;
 	CollectionService.AddTag(model, TAGS.OreNode);
 	cluster = { point, block: model };
+	expire(model);
 	for (const player of Players.GetPlayers()) {
 		notify(player, text("events.clusterSpawned", { layer: ref(nameKeys.layer(layer.tier)) }), "success");
 	}

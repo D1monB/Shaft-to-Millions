@@ -4,6 +4,7 @@ import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, OreId, isOreId } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
 import { addToBag, bagCapacity, bagFreeSpace } from "shared/features/bag";
+import { baseEffects } from "shared/features/base";
 import {
 	CLICK_DISTANCE,
 	canMineTier,
@@ -58,7 +59,7 @@ export function setClusterHandler(handler: ClusterHandler): void {
 
 const oreListeners: Array<(player: Player, oreId: OreId, pieces: number) => void> = [];
 
-/** Called for ore that really went into a bag (the raid counts it). */
+/** Called with the pieces a hit chipped off into the bag, without boosters or bonuses (the raid counts them). */
 export function onOreMined(listener: (player: Player, oreId: OreId, pieces: number) => void): void {
 	oreListeners.push(listener);
 }
@@ -117,7 +118,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		return;
 	}
 
-	const capacity = bagCapacity(data.gear.equipped.bag);
+	const capacity = bagCapacity(data.gear.equipped.bag, baseEffects(data.base).bagBonus);
 	if (bagFreeSpace(data.bag, capacity) <= 0) {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
 			notify(player, text("mining.bagFull"), "error");
@@ -156,6 +157,12 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	const treasure = node.GetAttribute(ATTRIBUTES.Treasure) === true;
 	// Every hit chips ore off the block (decision 052). A treasure crate gives nothing until it is broken.
 	const added = treasure ? 0 : bagChips(player, data, node, oreId, result.pieces, capacity);
+	// The raid counts chipped pieces before boosters and auras (decision 065): the weekly top is not for sale.
+	if (added > 0) {
+		for (const listener of oreListeners) {
+			listener(player, oreId, math.min(result.pieces, added));
+		}
+	}
 	if (crit) {
 		trackQuest(player, "crits", 1);
 	}
@@ -213,6 +220,10 @@ function swingAtCluster(player: Player, node: Instance, oreId: OreId, data: Prof
 		}
 		return;
 	}
+	// The same swing cooldown as ore: alternating targets never swings faster.
+	if (!getSession(player).trySwing(pickaxe, os.clock())) {
+		return;
+	}
 	const progress = clusterHandler?.(player, node, pickaxe.swingSeconds);
 	if (progress !== undefined && node.Parent !== undefined) {
 		fireClient(
@@ -266,11 +277,6 @@ function bagChips(
 		) * boostOf(player, "ore");
 	const added = addToBag(data.bag, oreId, amount, capacity);
 	data.stats.oresMined = math.min(data.stats.oresMined + added, MAX_COUNTER);
-	if (added > 0) {
-		for (const listener of oreListeners) {
-			listener(player, oreId, added);
-		}
-	}
 	trackQuest(player, "mineOre", added, oreId);
 	markDirty(player);
 	return added;

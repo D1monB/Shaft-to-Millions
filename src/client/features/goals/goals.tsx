@@ -7,6 +7,7 @@ import React, { useEffect } from "@rbxts/react";
 import { ORES, ORE_IDS } from "shared/config/ores";
 import { PickaxeDef } from "shared/config/pickaxes";
 import { bagCapacity, bagTotal } from "shared/features/bag";
+import { baseEffects } from "shared/features/base";
 import { GoalCandidate, GoalInfo, pickGoalInfo } from "shared/features/goals";
 import { getPickaxe } from "shared/features/mining";
 import { GearSlot, nextGearToBuy } from "shared/features/upgrades";
@@ -70,7 +71,11 @@ function currentGoal(view: PlayerView): GoalInfo {
 		}
 	}
 	return pickGoalInfo(
-		{ money: view.money, bagUsed: bagTotal(view.bag), bagCapacity: bagCapacity(view.gear.equipped.bag) },
+		{
+			money: view.money,
+			bagUsed: bagTotal(view.bag),
+			bagCapacity: bagCapacity(view.gear.equipped.bag, baseEffects(view.base).bagBonus),
+		},
 		candidates,
 	);
 }
