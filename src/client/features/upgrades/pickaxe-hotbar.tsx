@@ -1,6 +1,6 @@
 // The hotbar at the bottom of the screen (decision 037): one slot per OWNED pickaxe with its 3D model, replacing
 // Roblox's default backpack bar. A tap or keys 1..9, 0 pick a pickaxe (the server equips it and puts it in the hand);
-// picking the one already chosen puts it away or takes it out again.
+// the pickaxe always stays in the hand (decision 067).
 import React, { useEffect, useRef, useState } from "@rbxts/react";
 import { Players, StarterGui, UserInputService } from "@rbxts/services";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
@@ -69,8 +69,8 @@ function toggleHold(): void {
 	if (humanoid === undefined) {
 		return;
 	}
+	// The pickaxe is never put away (decision 067).
 	if (heldPickaxe() !== undefined) {
-		humanoid.UnequipTools();
 		return;
 	}
 	const tool = player

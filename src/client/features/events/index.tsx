@@ -137,5 +137,6 @@ export function startEventsController(): void {
 		() => openPanel({ key: "raid", title: t("events.raidTitle"), icon: "⏱", render: () => <RaidPanel /> }),
 		10,
 		"primary",
+		true,
 	);
 }

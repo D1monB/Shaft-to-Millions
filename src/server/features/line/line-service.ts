@@ -490,27 +490,8 @@ export interface LineBonus {
 }
 
 let lineBonusOf: (player: Player) => LineBonus | undefined = () => undefined;
-export interface PlotAreaInfo {
-	readonly base: BasePart;
-	readonly spawn: Vector3;
-	/** Machine slots (also the ones not bought yet): keep them clear. */
-	readonly reserved: ReadonlyArray<Vector3>;
-}
-type PlotListener = (player: Player, model: Model, area: PlotAreaInfo) => void;
-const plotBuiltListeners: PlotListener[] = [];
-const plotReleasedListeners: Array<(player: Player) => void> = [];
-
 export function setLineBonusProvider(provider: (player: Player) => LineBonus | undefined): void {
 	lineBonusOf = provider;
-}
-
-/** Called after a player's plot (with its factory) is built. */
-export function onPlotBuilt(listener: PlotListener): void {
-	plotBuiltListeners.push(listener);
-}
-
-export function onPlotReleased(listener: (player: Player) => void): void {
-	plotReleasedListeners.push(listener);
 }
 
 // ---- plots: claim, release, spawn ----
@@ -574,16 +555,6 @@ function claim(player: Player, plot: Plot): void {
 		notify(player, text("line.buildFailed"), "error");
 		return;
 	}
-	const reserved: Vector3[] = [];
-	for (let stage = 1; stage <= LINE_MACHINES.size(); stage++) {
-		const slot = slotCFrame(plot, stage);
-		if (slot !== undefined) {
-			reserved.push(slot.Position);
-		}
-	}
-	for (const listener of plotBuiltListeners) {
-		task.spawn(listener, player, plot.model, { base: plot.base, spawn: spawnPosition(plot), reserved });
-	}
 	notify(player, text("line.claimed"), "success");
 }
 
@@ -616,19 +587,37 @@ function releasePlot(player: Player): void {
 		return;
 	}
 	plotOf.delete(player);
-	for (const listener of plotReleasedListeners) {
-		task.spawn(listener, player);
-	}
 	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
 	clearBase(plot);
 	setClaimPromptEnabled(plot, true);
 	refreshPlotSign(plot, undefined);
 }
 
-/** The spawn point of the player's own plot, or undefined while they have none. */
+/** How far inside the plot's edge the base teleport lands, studs. */
+const HOME_EDGE_INSET = 25;
+
+/**
+ * Where "TP to base" lands (decision 067): at the start of the player's base, on the side facing the canyon, so the
+ * mine is right in front. The pit is in the middle of the map; falls back to the plot's spawn.
+ */
 export function homePositionOf(player: Player): Vector3 | undefined {
 	const own = plotOf.get(player);
-	return own !== undefined ? spawnPosition(own) : undefined;
+	if (own === undefined) {
+		return undefined;
+	}
+	const spawn = spawnPosition(own);
+	const centre = own.base.Position;
+	const flat = new Vector3(-centre.X, 0, -centre.Z);
+	if (flat.Magnitude < 1) {
+		return spawn;
+	}
+	const edge = math.min(own.base.Size.X, own.base.Size.Z) / 2 - HOME_EDGE_INSET;
+	const spot = centre.add(flat.Unit.mul(edge));
+	const params = new RaycastParams();
+	params.FilterType = Enum.RaycastFilterType.Exclude;
+	params.FilterDescendantsInstances = player.Character !== undefined ? [player.Character] : [];
+	const ground = game.Workspace.Raycast(new Vector3(spot.X, spawn.Y + 30, spot.Z), new Vector3(0, -80, 0), params);
+	return ground !== undefined ? ground.Position.add(new Vector3(0, 3, 0)) : spawn;
 }
 
 /** Where the player appears: their own plot, or else the first free one (to take it or walk to another). */

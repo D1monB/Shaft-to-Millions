@@ -17,6 +17,7 @@ export function startAuraRollController(): void {
 		() => openPanel({ key: "aura", title: t("aura.title"), icon: "✨", render: () => <AuraPanel /> }),
 		9,
 		"success",
+		true,
 	);
 	registerHudStat(6, (view) =>
 		view.auraRoll.spins > 0

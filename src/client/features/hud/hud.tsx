@@ -13,6 +13,7 @@ import { baseEffects } from "shared/features/base";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
 import { closePanel, openPanel } from "client/lib/panels";
+import { Store, useStore } from "client/lib/store";
 import {
 	Button,
 	ButtonVariant,
@@ -58,6 +59,12 @@ interface ButtonEntry {
 }
 
 const stats: StatEntry[] = [];
+/** Bumped when a tile's value comes from somewhere else than the profile (e.g. health). */
+const hudVersion = new Store(0);
+
+export function refreshHud(): void {
+	hudVersion.set(hudVersion.get() + 1);
+}
 const buttons: ButtonEntry[] = [];
 
 /**
@@ -209,7 +216,7 @@ function TopLeft(props: { view: PlayerView }) {
 const PHONE_DOCK_CENTRE = 0.38;
 
 /** Dock buttons per column and the space between them. */
-const DOCK_ROWS = 4;
+const DOCK_ROWS = 3;
 const DOCK_GAP = 10;
 
 /**
@@ -347,6 +354,7 @@ function StatGrid(props: { view: PlayerView }) {
 
 export function Hud() {
 	const view = useView();
+	useStore(hudVersion);
 	if (view === undefined) {
 		return undefined;
 	}

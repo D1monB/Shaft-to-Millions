@@ -21,12 +21,12 @@ const HOUR = 60 * MINUTE;
 
 /** Price and time of levels 1..6 (a normal building). Time grows into days, so the base is a goal for weeks. */
 const LEVELS: ReadonlyArray<BuildingLevel> = [
-	{ price: 800, seconds: MINUTE },
-	{ price: 12_000, seconds: 10 * MINUTE },
-	{ price: 150_000, seconds: HOUR },
-	{ price: 1_200_000, seconds: 4 * HOUR },
-	{ price: 8_000_000, seconds: 12 * HOUR },
-	{ price: 40_000_000, seconds: 24 * HOUR },
+	{ price: 500, seconds: MINUTE },
+	{ price: 8_000, seconds: 10 * MINUTE },
+	{ price: 100_000, seconds: HOUR },
+	{ price: 900_000, seconds: 3 * HOUR },
+	{ price: 6_500_000, seconds: 8 * HOUR },
+	{ price: 32_000_000, seconds: 16 * HOUR },
 ];
 
 function scaled(priceFactor: number, timeFactor: number): ReadonlyArray<BuildingLevel> {

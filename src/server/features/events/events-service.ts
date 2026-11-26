@@ -1,7 +1,7 @@
 // Layer events on the server (decision 065): cave-ins, the shared crystal cluster and the timed raid with its
 // weekly top. Scores and rewards come only from what the server itself saw mined.
 import { Players } from "@rbxts/services";
-import { CAVE_IN_SLOW, CLUSTER_HITS, RAID_TOP_SYNC_SECONDS } from "shared/config/events";
+import { CLUSTER_HITS, RAID_TOP_SYNC_SECONDS } from "shared/config/events";
 import { ORES, OreId } from "shared/config/ores";
 import {
 	ClusterState,
@@ -29,7 +29,7 @@ import { setSpeedPenaltyProvider } from "server/features/movement";
 import { getProfileData, markDirty, onProfileLoaded } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { declareClientEvent, fireClient, logAbuse, onClientRequest, remoteEvent } from "server/lib/remotes";
-import { forgetSlow, isSlowed, startCaveIns } from "./cave-ins";
+import { forgetSlow, speedPenalty, startCaveIns } from "./cave-ins";
 import { raiseRaidScore, readRaidTop } from "./raid-top";
 
 const runs = new Map<Player, RaidRun>();
@@ -147,7 +147,7 @@ export function startEventsService(): void {
 			publishRun(player, run);
 		}
 	});
-	setSpeedPenaltyProvider((player) => (isSlowed(player) ? CAVE_IN_SLOW : 0));
+	setSpeedPenaltyProvider(speedPenalty);
 	onProfileLoaded((player) => fireClient(RAID_TOP_REMOTE, player, topRows));
 	Players.PlayerRemoving.Connect((player) => {
 		// A raid left halfway is not scored: the cooldown already started, so rejoining gains nothing.

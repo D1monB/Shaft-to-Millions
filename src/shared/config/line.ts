@@ -13,18 +13,18 @@ export interface LineMachineDef {
 }
 
 export const LINE_MACHINES: ReadonlyArray<LineMachineDef> = [
-	{ id: "M01", price: 400, seconds: 1.5 },
-	{ id: "M02", price: 2_000, seconds: 1.5 },
-	{ id: "M03", price: 6_000, seconds: 2 },
-	{ id: "M04", price: 18_000, seconds: 2 },
-	{ id: "M05", price: 60_000, seconds: 2.5 },
-	{ id: "M06", price: 200_000, seconds: 2.5 },
-	{ id: "M07", price: 700_000, seconds: 3 },
-	{ id: "M08", price: 2_500_000, seconds: 3 },
-	{ id: "M09", price: 9_000_000, seconds: 3.5 },
-	{ id: "M10", price: 30_000_000, seconds: 3.5 },
-	{ id: "M11", price: 100_000_000, seconds: 4 },
-	{ id: "M12", price: 350_000_000, seconds: 4 },
+	{ id: "M01", price: 150, seconds: 1.5 },
+	{ id: "M02", price: 800, seconds: 1.5 },
+	{ id: "M03", price: 3_000, seconds: 2 },
+	{ id: "M04", price: 11_000, seconds: 2 },
+	{ id: "M05", price: 45_000, seconds: 2.5 },
+	{ id: "M06", price: 160_000, seconds: 2.5 },
+	{ id: "M07", price: 580_000, seconds: 3 },
+	{ id: "M08", price: 2_100_000, seconds: 3 },
+	{ id: "M09", price: 7_800_000, seconds: 3.5 },
+	{ id: "M10", price: 26_000_000, seconds: 3.5 },
+	{ id: "M11", price: 88_000_000, seconds: 4 },
+	{ id: "M12", price: 300_000_000, seconds: 4 },
 ];
 
 /**
@@ -90,7 +90,7 @@ export interface BeltLevel {
 
 export const BELT_LEVELS: ReadonlyArray<BeltLevel> = [
 	{ price: 0, speed: 1 },
-	{ price: 15_000, speed: 1.15 },
+	{ price: 9_000, speed: 1.15 },
 	{ price: 100_000, speed: 1.3 },
 	{ price: 1_000_000, speed: 1.5 },
 	{ price: 8_000_000, speed: 1.75 },

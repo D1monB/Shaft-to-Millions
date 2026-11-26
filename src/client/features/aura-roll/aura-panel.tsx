@@ -19,6 +19,7 @@ import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, ItemCard } from "client/lib/item-car
 import { sendToServer } from "client/lib/remotes";
 import { playSound } from "client/lib/sounds";
 import { Button, Card, CardStrip, Label, StripSlot, TEXT_SIZES } from "client/lib/ui-kit";
+import { equipNewest } from "client/features/equipment";
 import { lastResult, onResult } from "./reel-state";
 
 const ODDS = rollOdds();
@@ -71,6 +72,24 @@ function Reel() {
 	);
 }
 
+/** "Wear it" under the reel, once it stopped on a result (decision 067). */
+function WearButton() {
+	const [item, setItem] = useState<ItemId | undefined>(lastResult()?.item);
+	useEffect(() => onResult((result) => setItem(result)), []);
+	if (item === undefined) {
+		return undefined;
+	}
+	return (
+		<Button
+			text={`${t("equip.now")}: ${t(nameKeys.item(item))}`}
+			variant="success"
+			height={40}
+			onClick={() => equipNewest(item)}
+			order={2}
+		/>
+	);
+}
+
 export function AuraPanel() {
 	const view = useView();
 	const now = useServerClock(1);
@@ -82,6 +101,7 @@ export function AuraPanel() {
 	return (
 		<>
 			<Reel />
+			<WearButton />
 			<Button
 				text={t("aura.freeSpin", { count: state.spins, max: MAX_FREE_SPINS })}
 				variant="primary"

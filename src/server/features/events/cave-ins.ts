@@ -3,6 +3,10 @@
 import { CollectionService, Debris, Players, TweenService, Workspace } from "@rbxts/services";
 import {
 	CAVE_IN_CHANCE,
+	CAVE_IN_DAMAGE,
+	CAVE_IN_MIN_HEALTH,
+	CAVE_IN_SLOW,
+	CAVE_IN_STUN_SECONDS,
 	CAVE_IN_EVERY_SECONDS,
 	CAVE_IN_MINING_RADIUS,
 	CAVE_IN_RADIUS,
@@ -16,14 +20,43 @@ import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
 
 const random = new Random();
+const stunnedUntil = new Map<Player, number>();
 const slowedUntil = new Map<Player, number>();
 
-export function isSlowed(player: Player): boolean {
-	return (slowedUntil.get(player) ?? 0) > os.clock();
+/** How much of the walk speed a cave-in takes away right now: 1 while stunned, then the slow, else 0. */
+export function speedPenalty(player: Player): number {
+	const now = os.clock();
+	if ((stunnedUntil.get(player) ?? 0) > now) {
+		return 1;
+	}
+	return (slowedUntil.get(player) ?? 0) > now ? CAVE_IN_SLOW : 0;
 }
 
 export function forgetSlow(player: Player): void {
+	stunnedUntil.delete(player);
 	slowedUntil.delete(player);
+}
+
+/** Rocks hurt (never to death), stun and then slow (decision 067). */
+function hit(player: Player): void {
+	const humanoid = player.Character?.FindFirstChildOfClass("Humanoid");
+	if (humanoid === undefined || humanoid.Health <= 0) {
+		return;
+	}
+	const damage = math.max(0, math.min(CAVE_IN_DAMAGE, humanoid.Health - CAVE_IN_MIN_HEALTH));
+	humanoid.TakeDamage(damage);
+	const now = os.clock();
+	stunnedUntil.set(player, now + CAVE_IN_STUN_SECONDS);
+	slowedUntil.set(player, now + CAVE_IN_STUN_SECONDS + CAVE_IN_SLOW_SECONDS);
+	const jumpPower = humanoid.JumpPower;
+	const jumpHeight = humanoid.JumpHeight;
+	humanoid.JumpPower = 0;
+	humanoid.JumpHeight = 0;
+	task.delay(CAVE_IN_STUN_SECONDS, () => {
+		humanoid.JumpPower = jumpPower;
+		humanoid.JumpHeight = jumpHeight;
+	});
+	notify(player, text("events.caveInHit", { damage: math.floor(damage), seconds: CAVE_IN_STUN_SECONDS }), "error");
 }
 
 /** Players standing next to an ore block: the ones a cave-in can hit. */
@@ -108,8 +141,7 @@ function caveIn(target: Player): void {
 		}
 		const flat = new Vector3(at.X - centre.X, 0, at.Z - centre.Z).Magnitude;
 		if (caveInHits(flat)) {
-			slowedUntil.set(player, os.clock() + CAVE_IN_SLOW_SECONDS);
-			notify(player, text("events.caveInHit", { seconds: CAVE_IN_SLOW_SECONDS }), "error");
+			hit(player);
 		}
 	}
 }

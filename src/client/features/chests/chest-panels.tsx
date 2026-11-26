@@ -25,6 +25,7 @@ import { closePanel, openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { onServerMessage, sendToServer } from "client/lib/remotes";
 import { playSound } from "client/lib/sounds";
+import { equipNewest } from "client/features/equipment";
 import { toast } from "client/lib/toasts";
 import {
 	BuyButton,
@@ -266,17 +267,28 @@ function ChestResult(props: { item: ItemId }) {
 	);
 }
 
-/** Pinned under the reveal: take it, or open the same chest again. */
-function ChestResultFooter(props: { chestId: ChestId }) {
+/** Pinned under the reveal: wear it at once (decision 067), keep it, or open the same chest again. */
+function ChestResultFooter(props: { chestId: ChestId; item: ItemId }) {
 	return (
-		<ButtonRow count={2} order={1}>
-			<Button text={t("chest.take")} onClick={closePanel} width={rowItemWidth(2)} order={1} />
+		<ButtonRow count={3} order={1}>
+			<Button
+				text={t("equip.now")}
+				variant="success"
+				shine={true}
+				onClick={() => {
+					equipNewest(props.item);
+					closePanel();
+				}}
+				width={rowItemWidth(3)}
+				order={1}
+			/>
+			<Button text={t("chest.take")} onClick={closePanel} width={rowItemWidth(3)} order={2} />
 			<Button
 				text={t("chest.again")}
 				variant="secondary"
 				onClick={() => openChest(props.chestId)}
-				width={rowItemWidth(2)}
-				order={2}
+				width={rowItemWidth(3)}
+				order={3}
 			/>
 		</ButtonRow>
 	);
@@ -305,7 +317,7 @@ export function startChestsController(): void {
 				icon: "🎉",
 				accent: CHEST_ACCENTS[chestId],
 				render: () => <ChestResult item={item} />,
-				footer: () => <ChestResultFooter chestId={chestId} />,
+				footer: () => <ChestResultFooter chestId={chestId} item={item} />,
 			});
 		}
 	});

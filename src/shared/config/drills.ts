@@ -12,10 +12,10 @@ export interface DrillDef {
 
 export const DRILLS: { readonly [layer: number]: DrillDef | undefined } = {
 	// Hardness became "damage per piece" (decision 052); these keep the old seconds per piece (18, 30, 36, 26, 27).
-	1: { price: 8_000, secondsPerHardness: 18, bufferCapacity: 40 },
-	2: { price: 30_000, secondsPerHardness: 15, bufferCapacity: 60 },
-	3: { price: 100_000, secondsPerHardness: 9, bufferCapacity: 80 },
-	4: { price: 400_000, secondsPerHardness: 3.7, bufferCapacity: 100 },
+	1: { price: 5_000, secondsPerHardness: 18, bufferCapacity: 40 },
+	2: { price: 22_000, secondsPerHardness: 15, bufferCapacity: 60 },
+	3: { price: 80_000, secondsPerHardness: 9, bufferCapacity: 80 },
+	4: { price: 340_000, secondsPerHardness: 3.7, bufferCapacity: 100 },
 	5: { price: 1_200_000, secondsPerHardness: 2.5, bufferCapacity: 120 },
 };
 

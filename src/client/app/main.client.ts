@@ -17,6 +17,7 @@ import { startStoreController } from "client/features/store";
 import { startBaseController } from "client/features/base";
 import { startAuraRollController } from "client/features/aura-roll";
 import { startEventsController } from "client/features/events";
+import { startHealthController } from "client/features/health";
 import { startSellController } from "client/features/selling";
 import { startSoundController } from "client/features/settings";
 import { startTravelController } from "client/features/travel";
@@ -43,6 +44,7 @@ startStoreController();
 startBaseController();
 startAuraRollController();
 startEventsController();
+startHealthController();
 
 mountUi();
 startProfileController();
