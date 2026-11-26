@@ -57,7 +57,7 @@ export const EN = {
 	"goal.deeper.text": "Mine deeper: the ore is pricier there.",
 
 	// ---- mining
-	"mining.label": "{ore} · {price}\nHits: {hits}",
+	"mining.label": "{ore} · {price}",
 	"mining.locked": "🔒 {ore} · {price}\nNeeds: {pickaxe}",
 	"mining.betterPickaxe": "a better pickaxe",
 	"mining.bagFull": "Bag is full! Sell the ore.",

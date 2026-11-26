@@ -31,6 +31,8 @@ const HEADER_HEIGHT = 46;
 const PADDING = 14;
 /** The board never gets shorter than this share of the space (a loading panel with one line). */
 const MIN_FRACTION = 0.3;
+/** Room under the content (the list's bottom padding and a little air), in screen pixels. */
+const EXTRA_PIXELS = 12;
 
 /**
  * A translucent graphite panel in the middle of the screen with a thin neon outline, a compact title on the left and
@@ -53,12 +55,14 @@ export function Panel(props: PanelProps) {
 	const boxRef = useRef<Frame>();
 	const boardRef = useRef<Frame>();
 	const listRef = useRef<ScrollingFrame>();
+	const layoutRef = useRef<UIListLayout>();
 	const [fraction, setFraction] = useState(1);
 	useEffect(() => {
 		const box = boxRef.current;
 		const board = boardRef.current;
 		const list = listRef.current;
-		if (box === undefined || board === undefined || list === undefined) {
+		const layout = layoutRef.current;
+		if (box === undefined || board === undefined || list === undefined || layout === undefined) {
 			return;
 		}
 		const measure = () => {
@@ -66,11 +70,12 @@ export function Panel(props: PanelProps) {
 			if (boxHeight <= 0) {
 				return;
 			}
-			const wanted = board.AbsoluteSize.Y - list.AbsoluteSize.Y + list.AbsoluteCanvasSize.Y;
+			// AbsoluteCanvasSize is never smaller than the list itself, so the content is measured on its layout.
+			const wanted = board.AbsoluteSize.Y - list.AbsoluteSize.Y + layout.AbsoluteContentSize.Y + EXTRA_PIXELS;
 			setFraction(math.clamp(wanted / boxHeight, MIN_FRACTION, 1));
 		};
 		const connections = [
-			list.GetPropertyChangedSignal("AbsoluteCanvasSize").Connect(measure),
+			layout.GetPropertyChangedSignal("AbsoluteContentSize").Connect(measure),
 			box.GetPropertyChangedSignal("AbsoluteSize").Connect(measure),
 		];
 		measure();
@@ -153,7 +158,11 @@ export function Panel(props: PanelProps) {
 							{/* Takes all the height the header and the footer leave. */}
 							<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />
 							<uipadding PaddingRight={new UDim(0, 8)} PaddingBottom={new UDim(0, 4)} />
-							<uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
+							<uilistlayout
+								Padding={new UDim(0, 10)}
+								SortOrder={Enum.SortOrder.LayoutOrder}
+								ref={layoutRef}
+							/>
 							{props.children}
 						</scrollingframe>
 						{props.footer !== undefined && (

@@ -7,19 +7,13 @@ import { CollectionService, TweenService } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, isOreId } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
-import {
-	MINE_PROGRESS_REMOTE,
-	NODE_BROKEN_REMOTE,
-	canMineTier,
-	getPickaxe,
-	hitsRequired,
-} from "shared/features/mining";
+import { MINE_PROGRESS_REMOTE, NODE_BROKEN_REMOTE, canMineTier, getPickaxe } from "shared/features/mining";
 import { PlayerView } from "shared/features/profile";
 import { formatMoney } from "shared/lib/format";
 import { registerHudStat } from "client/features/hud";
 import { getView, onViewChanged } from "client/features/profile";
 import { onServerMessage } from "client/lib/remotes";
-import { playOreBreak, playSound } from "client/lib/sounds";
+import { playOreBreak } from "client/lib/sounds";
 import { COLORS, FONTS } from "client/lib/ui-kit";
 
 function anchorPart(node: Instance): BasePart | undefined {
@@ -102,8 +96,7 @@ function refreshNodeLabel(node: Instance, view: PlayerView): void {
 	const ore = ORES[oreId];
 	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
 	if (canMineTier(ore, pickaxe)) {
-		const hits = hitsRequired(ore.hardness, pickaxe.power);
-		label.Text = t("mining.label", { ore: t(nameKeys.ore(oreId)), price: formatMoney(ore.price), hits });
+		label.Text = t("mining.label", { ore: t(nameKeys.ore(oreId)), price: formatMoney(ore.price) });
 		label.TextColor3 = COLORS.text;
 	} else {
 		const neededDef = PICKAXES.find((p) => p.tier >= ore.requiredTier);
@@ -269,11 +262,11 @@ export function startMiningController(): void {
 	onServerMessage(MINE_PROGRESS_REMOTE, (node, damage, hardness, crit) => {
 		if (typeIs(node, "Instance") && typeIs(damage, "number") && typeIs(hardness, "number")) {
 			showProgress(node, damage, hardness);
+			// The hit sound plays on the swing itself (pickaxe-swing), not here: waiting for the server made it late.
 			const part = anchorPart(node);
 			if (crit === true && part !== undefined) {
 				showPopup(part, t("mining.crit"));
 			}
-			playSound("hit");
 		}
 	});
 	onServerMessage(NODE_BROKEN_REMOTE, (node, respawnSeconds, oreId, amount, crit) => {

@@ -7,6 +7,7 @@ import { MAX_MINING_DISTANCE, MINE_HIT_REMOTE, getPickaxe } from "shared/feature
 import { PICKAXE_ID_ATTRIBUTE } from "shared/features/upgrades";
 import { getView } from "client/features/profile";
 import { sendToServer } from "client/lib/remotes";
+import { playSound } from "client/lib/sounds";
 
 const player = Players.LocalPlayer;
 let lastSwing = 0;
@@ -50,6 +51,8 @@ function swing(tool: Tool): void {
 	// so an honest swing is never refused as too far.
 	const target = node.IsA("PVInstance") ? node.GetPivot().Position : undefined;
 	if (target !== undefined && target.sub(root.Position).Magnitude <= MAX_MINING_DISTANCE) {
+		// Played at once (feedback 2026-11-26: the sound lagged behind the swing when it waited for the server).
+		playSound("hit");
 		sendToServer(MINE_HIT_REMOTE, node);
 	}
 }

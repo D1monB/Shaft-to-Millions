@@ -57,7 +57,7 @@ export const PL: Strings = {
 	"goal.deeper.text": "Kop głębiej: tam ruda jest droższa.",
 
 	// ---- mining
-	"mining.label": "{ore} · {price}\nUderzeń: {hits}",
+	"mining.label": "{ore} · {price}",
 	"mining.locked": "🔒 {ore} · {price}\nPotrzebny: {pickaxe}",
 	"mining.betterPickaxe": "lepszy kilof",
 	"mining.bagFull": "Torba pełna! Sprzedaj rudę.",
