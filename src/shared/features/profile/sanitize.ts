@@ -3,6 +3,7 @@ import { DRILLS, drillKey } from "shared/config/drills";
 import { LAYER_COUNT, MAX_DEPTH_METERS } from "shared/config/layers";
 import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
 import {
+	BELT_LEVELS,
 	BELT_SECONDS_PER_ITEM,
 	HOPPER_CAPACITY,
 	LINE_MACHINES,
@@ -114,6 +115,7 @@ function repairLine(data: PlainTable, repairs: string[]): void {
 	const line = repairTable(data, "line", "line", repairs);
 	line.intake = repairOreList(line.intake, HOPPER_CAPACITY, "line.intake", repairs);
 	repairNumber(line, "beltProgress", 0, BELT_SECONDS_PER_ITEM, 0, "line.beltProgress", repairs);
+	repairInteger(line, "beltLevel", 1, BELT_LEVELS.size(), 1, "line.beltLevel", repairs);
 	const raw = line.machines;
 	const machines: PlainTable[] = [];
 	if (typeIs(raw, "table")) {

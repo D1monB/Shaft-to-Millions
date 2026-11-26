@@ -4,6 +4,9 @@
 /** Client -> server: (index: integer, track: "speed" | "duplicate" | "quality" | "capacity"). Near that own machine. */
 export const UPGRADE_LINE_MACHINE_REMOTE = "UpgradeLineMachine";
 
+/** Client -> server: no arguments. Buys the next conveyor level (decision 054). Near any own machine. */
+export const UPGRADE_BELT_REMOTE = "UpgradeBelt";
+
 /** How close (studs) the player must be to a machine model of their own plot. Machine models are big. */
 export const LINE_DISTANCE = 30;
 

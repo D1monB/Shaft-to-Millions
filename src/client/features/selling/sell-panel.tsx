@@ -13,6 +13,7 @@ import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
 import { Button, COLORS, Card, FONTS, Label, TEXT_SIZES } from "client/lib/ui-kit";
+import { startCoinBurst } from "./coin-burst";
 
 let multiplierOf: (view: PlayerView) => number = () => 1;
 const extras: Array<(view: PlayerView) => React.Element | undefined> = [];
@@ -108,6 +109,7 @@ function SellPanel() {
 }
 
 export function startSellController(): void {
+	startCoinBurst();
 	onPromptForTag(TAGS.SellZone, () =>
 		openPanel({ key: "sell", title: t("sell.title"), icon: "💰", render: () => <SellPanel /> }),
 	);

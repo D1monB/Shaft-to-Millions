@@ -102,6 +102,7 @@ const profileDataShape = t.interface({
 	line: t.interface({
 		intake: t.array(t.string),
 		beltProgress: t.number,
+		beltLevel: t.integer,
 		machines: t.array(
 			t.interface({
 				speed: t.integer,

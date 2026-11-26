@@ -5,6 +5,7 @@ export {
 	advanceOffline,
 	applyBuyLineMachine,
 	applyLineUpgrade,
+	beltSpeed,
 	depositOre,
 	intakeRoom,
 	isLineIdle,
@@ -14,13 +15,16 @@ export {
 	machineAction,
 	newLineState,
 	nextLineMachine,
+	nextBeltLevel,
 	nextLineUpgrade,
 	queueLimit,
+	tryBeltUpgrade,
 	tryBuyLineMachine,
 	tryLineUpgrade,
 	upgradeValue,
 } from "./line";
 export type {
+	BeltUpgradeResult,
 	BuyLineMachineResult,
 	LineMachineState,
 	LineMove,
@@ -38,6 +42,7 @@ export {
 	LABEL_HEIGHT_ATTRIBUTE,
 	LINE_DISTANCE,
 	LINE_FLOW_REMOTE,
+	UPGRADE_BELT_REMOTE,
 	UPGRADE_LINE_MACHINE_REMOTE,
 	UPGRADE_POINT_TAG,
 } from "./network";
