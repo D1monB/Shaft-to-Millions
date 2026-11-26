@@ -11,7 +11,6 @@ import {
 	SKIP_SECONDS_PER_CRYSTAL,
 	isBuildingId,
 } from "shared/config/base";
-import { OFFLINE_MAX_SECONDS } from "shared/config/line";
 import { isFiniteNumber } from "shared/lib/validate";
 
 export interface BuildJob {
@@ -176,8 +175,8 @@ export function tryHireBuilder(state: BaseState, crystals: number): HireResult {
 export interface BaseEffects {
 	/** Added to money from sales and the line (0.1 = +10%). */
 	readonly sellBonus: number;
-	/** Offline line production cap in seconds. */
-	readonly offlineSeconds: number;
+	/** Added to the bag's capacity (0.08 = +8%). */
+	readonly bagBonus: number;
 	/** How many times faster the line runs. */
 	readonly lineSpeed: number;
 	/** Extra seconds per crystal booster portion. */
@@ -193,7 +192,7 @@ function bonusOf(state: BaseState, id: BuildingId): number {
 export function baseEffects(state: BaseState): BaseEffects {
 	return {
 		sellBonus: bonusOf(state, "market"),
-		offlineSeconds: OFFLINE_MAX_SECONDS + bonusOf(state, "warehouse"),
+		bagBonus: bonusOf(state, "warehouse"),
 		lineSpeed: 1 + bonusOf(state, "workshop"),
 		boostSeconds: bonusOf(state, "lab"),
 		oreBonus: bonusOf(state, "hut"),

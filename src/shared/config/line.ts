@@ -106,10 +106,7 @@ export const BELT_SECONDS_PER_ITEM = 0.5;
 /** The line runs at this share of its speed while the player is offline. */
 export const OFFLINE_SPEED = 0.5;
 
-/** No bonus can raise the offline time counted past this (2 days). */
-export const OFFLINE_HARD_CAP = 48 * 60 * 60;
-
-/** Offline time counted at most (8 hours, more with the base's warehouse), so a long break is no jackpot. */
+/** Offline time counted at most (8 hours), so a long break is no jackpot. */
 export const OFFLINE_MAX_SECONDS = 8 * 60 * 60;
 
 /** Longest single simulation step; longer spans (offline) are cut into steps of this size. */

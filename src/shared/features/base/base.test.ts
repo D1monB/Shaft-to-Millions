@@ -1,6 +1,5 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { BUILDINGS, BUILDING_IDS, SKIP_SECONDS_PER_CRYSTAL } from "shared/config/base";
-import { OFFLINE_MAX_SECONDS } from "shared/config/line";
 import { advanceOffline, newLineState } from "shared/features/line";
 import {
 	MAX_BUILDERS,
@@ -142,30 +141,32 @@ class BaseTests {
 		const none = baseEffects(state);
 		Assert.equal(none.sellBonus, 0);
 		Assert.equal(none.lineSpeed, 1);
-		Assert.equal(none.offlineSeconds, OFFLINE_MAX_SECONDS);
+		Assert.equal(none.bagBonus, 0);
 		state.levels.market = 6;
 		state.levels.warehouse = 3;
 		Assert.true(baseEffects(state).sellBonus > 0.29);
-		Assert.true(baseEffects(state).offlineSeconds > OFFLINE_MAX_SECONDS);
+		Assert.true(baseEffects(state).bagBonus > 0.2);
 		state.levels.market = 999;
 		Assert.true(baseEffects(state).sellBonus < 0.31);
 	}
 
 	@Test
-	public offlineBonusIsClamped() {
-		const line = newLineState();
-		for (let i = 0; i < 10; i++) {
-			line.intake.push("copper");
+	public offlineSpeedBonusIsSafe() {
+		for (const speed of [0 / 0, -5, math.huge]) {
+			const copy = newLineState();
+			copy.intake.push("copper");
+			Assert.equal(
+				advanceOffline(
+					copy,
+					100_000,
+					() => 10,
+					() => 0.9,
+					speed,
+				).sold,
+				1,
+				`speed ${speed}`,
+			);
 		}
-		const result = advanceOffline(
-			line,
-			100_000,
-			() => 10,
-			() => 0.9,
-			0 / 0,
-			math.huge,
-		);
-		Assert.equal(result.sold, 10);
 	}
 }
 

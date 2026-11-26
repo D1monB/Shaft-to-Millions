@@ -85,7 +85,8 @@ function getNodeLabel(node: Instance): TextLabel | undefined {
 
 function refreshNodeLabel(node: Instance, view: PlayerView): void {
 	const oreId = node.GetAttribute(ATTRIBUTES.OreId);
-	if (!isOreId(oreId)) {
+	// A crystal cluster has its own server label; an ore price on it would be wrong.
+	if (!isOreId(oreId) || node.GetAttribute(ATTRIBUTES.Cluster) === true) {
 		return;
 	}
 	const label = getNodeLabel(node);

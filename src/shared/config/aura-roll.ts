@@ -21,11 +21,11 @@ export const AURA_ROLL_TABLE: ReadonlyArray<RollEntry> = [
 ];
 
 /** A free spin comes back this often ... */
-export const FREE_SPIN_SECONDS = 10 * 60;
+export const FREE_SPIN_SECONDS = 20 * 60;
 /** ... and at most this many wait for the player. */
 export const MAX_FREE_SPINS = 6;
 /** Spins a new player starts with. */
-export const START_FREE_SPINS = 3;
+export const START_FREE_SPINS = 2;
 /** Price of a spin without a free one. */
 export const SPIN_CRYSTAL_PRICE = 15;
 /** At least an epic aura comes within this many spins (the counter resets on every epic or better). */

@@ -3,7 +3,14 @@
 import React, { useEffect, useState } from "@rbxts/react";
 import { MAX_FREE_SPINS, PITY_SPINS, SPIN_CRYSTAL_PRICE } from "shared/config/aura-roll";
 import { ITEMS, ItemId } from "shared/config/items";
-import { SELL_DUPLICATES_REMOTE, SPIN_AURA_REMOTE, rollOdds, secondsToNextSpin } from "shared/features/aura-roll";
+import {
+	SELL_DUPLICATES_REMOTE,
+	SPIN_AURA_REMOTE,
+	pityOdds,
+	rollOdds,
+	secondsToNextSpin,
+} from "shared/features/aura-roll";
+import { nameKeys } from "shared/features/i18n";
 import { formatDuration } from "shared/lib/format";
 import { useView } from "client/features/profile";
 import { useServerClock } from "client/lib/hooks";
@@ -15,6 +22,12 @@ import { Button, Card, CardStrip, Label, StripSlot, TEXT_SIZES } from "client/li
 import { lastResult, onResult } from "./reel-state";
 
 const ODDS = rollOdds();
+/** The guaranteed spin's chances as one line (names in the viewer's language). */
+function PITY_TEXT(): string {
+	return pityOdds()
+		.map((line) => `${t(nameKeys.item(line.item))} ${string.format("%.1f", line.chance * 100)}%`)
+		.join(", ");
+}
 /** The reel switches this often, slowing down toward the end. */
 const REEL_STEPS = 18;
 
@@ -94,6 +107,12 @@ export function AuraPanel() {
 				<Label text={t("aura.pity", { count: PITY_SPINS - state.pity })} tone="gold" order={2} />
 				<Label text={t("aura.odds")} display={true} order={3} />
 				<Label text={t("aura.oddsHint")} tone="muted" size={TEXT_SIZES.small} order={4} />
+				<Label
+					text={t("aura.pityOdds", { odds: PITY_TEXT() })}
+					tone="muted"
+					size={TEXT_SIZES.small}
+					order={5}
+				/>
 			</Card>
 			<CardStrip cardWidth={ITEM_CARD_WIDTH} cardHeight={ITEM_CARD_HEIGHT} order={5}>
 				{ODDS.map((line, index) => (

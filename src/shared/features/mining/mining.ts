@@ -115,6 +115,18 @@ export class MiningSession<K> {
 		return { kind: "chip", pieces: chipped, taken: state.taken, total };
 	}
 
+	/**
+	 * Spends one swing without hitting a node (a shared crystal cluster): the same cooldown as `hit`, so alternating
+	 * between a cluster and ore never swings faster.
+	 */
+	public trySwing(pickaxe: PickaxeDef, now: number): boolean {
+		if (now < this.lastHitAt || now - this.lastHitAt < pickaxe.swingSeconds * SWING_TOLERANCE) {
+			return false;
+		}
+		this.lastHitAt = now;
+		return true;
+	}
+
 	/** True while the node is depleted for this player. */
 	public isDepleted(node: K, now: number): boolean {
 		const state = this.nodes.get(node);

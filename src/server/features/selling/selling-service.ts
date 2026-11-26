@@ -2,7 +2,7 @@ import { text } from "shared/features/i18n";
 import { CollectionService } from "@rbxts/services";
 import { TAGS } from "shared/config/map-contract";
 import { ORES, ORE_IDS } from "shared/config/ores";
-import { SALE_MADE_REMOTE, SELL_BAG_REMOTE, SELL_DISTANCE, previewSale } from "shared/features/selling";
+import { SALE_MADE_REMOTE, SELL_BAG_REMOTE, SELL_DISTANCE, previewSale, safeMultiplier } from "shared/features/selling";
 import { SELL_QUEST_MIN_ITEMS } from "shared/config/quests";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { MAX_COUNTER } from "shared/lib/repair";
@@ -30,7 +30,8 @@ export function setBaseSellProvider(provider: (player: Player) => number): void 
 
 /** The sell multiplier (pets x market x money booster). Line income uses the same bonus as the sell zone. */
 export function getSellMultiplier(player: Player): number {
-	return sellMultiplierOf(player) * (1 + baseSellOf(player)) * boostOf(player, "money");
+	// One cap for the sell zone and the line (best honest stack: pets x2.5, market x1.3, booster x2 = 6.5).
+	return safeMultiplier(sellMultiplierOf(player) * (1 + baseSellOf(player)) * boostOf(player, "money"));
 }
 
 function handleSell(player: Player, args: Array<unknown>): void {

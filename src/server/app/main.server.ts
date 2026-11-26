@@ -19,6 +19,7 @@ import { startBoostersService } from "server/features/boosters";
 import { startStoreService } from "server/features/store";
 import { startBaseService } from "server/features/base";
 import { startAuraRollService } from "server/features/aura-roll";
+import { startEventsService } from "server/features/events";
 import { startSellingService } from "server/features/selling";
 import { startSettingsService } from "server/features/settings";
 import { startTravelService } from "server/features/travel";
@@ -42,8 +43,6 @@ buildPlotPlaceholders();
 
 startMiningService();
 startUpgradesService();
-// Before the line: its profile listener finishes builds first, and it hooks the plot events.
-startBaseService();
 startSellingService();
 startLayersService();
 startMovementService();
@@ -51,6 +50,9 @@ startTravelService();
 startLiftService();
 startDrillService();
 startLineService();
+// After the line: its offline run uses the base as it was left, so a build finished just before joining does not
+// count for the whole time away. The base's own listener then finishes it.
+startBaseService();
 startChestsService();
 startEquipmentService();
 startDevtoolsService();
@@ -61,5 +63,6 @@ startQuestsService();
 startBoostersService();
 startStoreService();
 startAuraRollService();
+startEventsService();
 
 startProfileService();

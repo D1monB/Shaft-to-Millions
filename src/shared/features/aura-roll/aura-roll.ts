@@ -110,11 +110,20 @@ export interface RollOdds {
 	readonly chance: number;
 }
 
+/** The chances of the guaranteed spin (every PITY_SPINS-th without an epic): epic and better only. */
+export function pityOdds(): RollOdds[] {
+	return oddsOf(AURA_ROLL_TABLE.filter((entry) => isEpicOrBetter(entry.item)));
+}
+
 /** The chances of a normal spin, shown to the player before they spin. */
 export function rollOdds(): RollOdds[] {
+	return oddsOf(AURA_ROLL_TABLE);
+}
+
+function oddsOf(entries: ReadonlyArray<RollEntry>): RollOdds[] {
 	let total = 0;
-	for (const entry of AURA_ROLL_TABLE) {
+	for (const entry of entries) {
 		total += entry.weight;
 	}
-	return AURA_ROLL_TABLE.map((entry) => ({ item: entry.item, chance: entry.weight / total }));
+	return entries.map((entry) => ({ item: entry.item, chance: entry.weight / total }));
 }

@@ -8,6 +8,7 @@ import { QuestState, newQuestState } from "shared/features/quests";
 import { BoostState, newBoostState } from "shared/features/boosters";
 import { BaseState, newBaseState } from "shared/features/base";
 import { AuraRollState, newAuraRollState } from "shared/features/aura-roll";
+import { RaidState, newRaidState } from "shared/features/events";
 import { GearState, createStarterGear } from "shared/features/upgrades";
 
 /**
@@ -62,6 +63,8 @@ export interface ProfileData {
 	soundOn: boolean;
 	/** Daily quests, the story chain and the login streak (decision 055). */
 	quests: QuestState;
+	/** Timed raids: this week's best score and the cooldown (decision 065). */
+	raid: RaidState;
 	/** The aura roll machine: free spins and the pity counter (decision 064). */
 	auraRoll: AuraRollState;
 	/** Buildings on the plot and their timers (decision 063). */
@@ -95,6 +98,7 @@ export function createDefaultProfileData(): ProfileData {
 		boosts: newBoostState(),
 		base: newBaseState(),
 		auraRoll: newAuraRollState(),
+		raid: newRaidState(),
 	};
 }
 
@@ -134,6 +138,7 @@ const profileDataShape = t.interface({
 	language: t.string,
 	soundOn: t.boolean,
 	boosts: t.interface({ money: t.number, ore: t.number, line: t.number }),
+	raid: t.interface({ week: t.integer, best: t.number, startedAt: t.number }),
 	auraRoll: t.interface({ spins: t.integer, spinAt: t.number, pity: t.integer }),
 	base: t.interface({
 		levels: t.table,

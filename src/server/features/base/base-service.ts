@@ -171,10 +171,10 @@ export function startBaseService(): void {
 	setBoostPortionBonusProvider((player) => effectsOf(player)?.boostSeconds ?? 0);
 	setLineBonusProvider((player) => {
 		const effects = effectsOf(player);
-		return effects === undefined ? undefined : { speed: effects.lineSpeed, offlineSeconds: effects.offlineSeconds };
+		return effects === undefined ? undefined : { speed: effects.lineSpeed };
 	});
 
-	// Registered before the line feature starts, so builds finished while away count for the offline line run.
+	// Registered after the line's listener: builds finished while away count from now on, not for the offline run.
 	onProfileLoaded((player) => {
 		const data = getProfileData(player);
 		if (data !== undefined) {

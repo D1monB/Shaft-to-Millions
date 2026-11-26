@@ -35,6 +35,16 @@ export function onHonestSample(listener: (player: Player, position: Vector3) => 
 	honestSampleListeners.push(listener);
 }
 
+let speedPenaltyOf: (player: Player) => number = () => 0;
+
+/**
+ * A short slow (cave-in, decision 065): applied to WalkSpeed only. The movement check keeps the normal speed, so an
+ * honest player whose slow arrives late is never pulled back.
+ */
+export function setSpeedPenaltyProvider(provider: (player: Player) => number): void {
+	speedPenaltyOf = provider;
+}
+
 /** Lets the equipment feature add a speed-aura bonus without movement depending on it. */
 export function setSpeedBonusProvider(provider: (player: Player) => number): void {
 	speedBonusOf = provider;
@@ -97,10 +107,11 @@ function walkSpeedOf(player: Player): number | undefined {
 
 function applySpeed(player: Player): void {
 	const humanoid = player.Character?.FindFirstChildOfClass("Humanoid");
-	const target = walkSpeedOf(player);
-	if (humanoid === undefined || target === undefined) {
+	const speed = walkSpeedOf(player);
+	if (humanoid === undefined || speed === undefined) {
 		return;
 	}
+	const target = speed * (1 - math.clamp(speedPenaltyOf(player), 0, 0.9));
 	if (humanoid.WalkSpeed !== target) {
 		humanoid.WalkSpeed = target;
 	}

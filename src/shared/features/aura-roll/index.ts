@@ -1,6 +1,15 @@
 // aura-roll feature (shared): the spin machine for auras with free spins and a pity guarantee (decision 064).
 // Public API of this feature. Other code imports only from this file.
-export { canSpin, isSpinPay, newAuraRollState, refreshSpins, rollOdds, secondsToNextSpin, spin } from "./aura-roll";
+export {
+	canSpin,
+	isSpinPay,
+	newAuraRollState,
+	pityOdds,
+	refreshSpins,
+	rollOdds,
+	secondsToNextSpin,
+	spin,
+} from "./aura-roll";
 export type { AuraRollState, RollOdds, SpinCheck, SpinPay } from "./aura-roll";
 
 /** Client -> server: (pay: "free" | "crystals"). One spin. */

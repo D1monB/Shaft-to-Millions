@@ -487,7 +487,6 @@ function handleBeltUpgrade(player: Player, args: Array<unknown>): void {
 
 export interface LineBonus {
 	readonly speed: number;
-	readonly offlineSeconds: number;
 }
 
 let lineBonusOf: (player: Player) => LineBonus | undefined = () => undefined;
@@ -738,15 +737,7 @@ function onLoaded(player: Player): void {
 	}
 	// Offline run: the time since the last save, at reduced speed and capped (config/line.ts).
 	if (data.lastSeen > 0) {
-		const bonus = lineBonusOf(player);
-		const result = advanceOffline(
-			data.line,
-			nowUnix() - data.lastSeen,
-			valueOf,
-			roll,
-			bonus?.offlineSeconds,
-			bonus?.speed,
-		);
+		const result = advanceOffline(data.line, nowUnix() - data.lastSeen, valueOf, roll, lineBonusOf(player)?.speed);
 		const income = credit(player, data, result.money);
 		if (income > 0) {
 			notify(player, text("line.offline", { money: formatMoney(income) }), "success");

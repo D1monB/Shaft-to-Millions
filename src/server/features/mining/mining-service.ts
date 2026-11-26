@@ -4,8 +4,10 @@ import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, OreId, isOreId } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
 import { addToBag, bagCapacity, bagFreeSpace } from "shared/features/bag";
+import { baseEffects } from "shared/features/base";
 import {
 	CLICK_DISTANCE,
+	canMineTier,
 	CRIT_CHANCE,
 	CRIT_MULTIPLIER,
 	MAX_MINING_DISTANCE,
@@ -42,6 +44,25 @@ const noticeLimiter = new RateLimiter(1, 0.5);
 const random = new Random();
 
 let yieldBonusOf: (player: Player) => number = () => 0;
+
+type ClusterHandler = (
+	player: Player,
+	node: Instance,
+	swingSeconds: number,
+) => { left: number; needed: number } | undefined;
+let clusterHandler: ClusterHandler | undefined;
+
+/** A shared crystal cluster (decision 065) is handled by the events feature, after the usual checks. */
+export function setClusterHandler(handler: ClusterHandler): void {
+	clusterHandler = handler;
+}
+
+const oreListeners: Array<(player: Player, oreId: OreId, pieces: number) => void> = [];
+
+/** Called with the pieces a hit chipped off into the bag, without boosters or bonuses (the raid counts them). */
+export function onOreMined(listener: (player: Player, oreId: OreId, pieces: number) => void): void {
+	oreListeners.push(listener);
+}
 
 let baseOreBonusOf: (player: Player) => number = () => 0;
 
@@ -92,7 +113,12 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		return;
 	}
 
-	const capacity = bagCapacity(data.gear.equipped.bag);
+	if (node.GetAttribute(ATTRIBUTES.Cluster) === true) {
+		swingAtCluster(player, node, oreId, data);
+		return;
+	}
+
+	const capacity = bagCapacity(data.gear.equipped.bag, baseEffects(data.base).bagBonus);
 	if (bagFreeSpace(data.bag, capacity) <= 0) {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
 			notify(player, text("mining.bagFull"), "error");
@@ -131,6 +157,12 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	const treasure = node.GetAttribute(ATTRIBUTES.Treasure) === true;
 	// Every hit chips ore off the block (decision 052). A treasure crate gives nothing until it is broken.
 	const added = treasure ? 0 : bagChips(player, data, node, oreId, result.pieces, capacity);
+	// The raid counts chipped pieces before boosters and auras (decision 065): the weekly top is not for sale.
+	if (added > 0) {
+		for (const listener of oreListeners) {
+			listener(player, oreId, math.min(result.pieces, added));
+		}
+	}
 	if (crit) {
 		trackQuest(player, "crits", 1);
 	}
@@ -169,6 +201,41 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		}
 		trackQuest(player, "emptyBlocks", 1);
 		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added, crit);
+	}
+}
+
+/** A swing at a crystal cluster: the pickaxe tier still gates it; it needs no bag room and gives no ore. */
+function swingAtCluster(player: Player, node: Instance, oreId: OreId, data: ProfileData): void {
+	const pickaxe = getPickaxe(data.gear.equipped.pickaxe);
+	if (!canMineTier(ORES[oreId], pickaxe)) {
+		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
+			notify(
+				player,
+				text("mining.needPickaxe", {
+					ore: ref(nameKeys.ore(oreId)),
+					pickaxe: pickaxeNameForTier(ORES[oreId].requiredTier),
+				}),
+				"error",
+			);
+		}
+		return;
+	}
+	// The same swing cooldown as ore: alternating targets never swings faster.
+	if (!getSession(player).trySwing(pickaxe, os.clock())) {
+		return;
+	}
+	const progress = clusterHandler?.(player, node, pickaxe.swingSeconds);
+	if (progress !== undefined && node.Parent !== undefined) {
+		fireClient(
+			MINE_PROGRESS_REMOTE,
+			player,
+			node,
+			progress.needed - progress.left,
+			progress.needed,
+			false,
+			oreId,
+			0,
+		);
 	}
 }
 

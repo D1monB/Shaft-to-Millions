@@ -26,6 +26,8 @@ export const ATTRIBUTES = {
 	ShopSlot: "ShopSlot",
 	/** On an ore block: true for a rich vein (decision 046). Set by the server only. */
 	Rich: "Rich",
+	/** On an ore block: true for a shared crystal cluster (decision 065). Set by the server only. */
+	Cluster: "Cluster",
 	/** On an ore block: true for a geode (decision 060). Set by the server only. */
 	Geode: "Geode",
 	/** On an ore block: true for a treasure crate (decision 050). Set by the server only. */

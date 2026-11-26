@@ -65,10 +65,10 @@ export const ORE_RUSH_SECONDS = 60;
 export const ORE_RUSH_RICH_SHARE = 0.35;
 
 /** A treasure crate (decision 050) appears in the pit every this many seconds when none is waiting. */
-export const TREASURE_EVERY_SECONDS = 120;
+export const TREASURE_EVERY_SECONDS = 300;
 
 /** Treasure money = the price of its layer's ore times this. */
-export const TREASURE_MONEY_MULTIPLIER = 150;
+export const TREASURE_MONEY_MULTIPLIER = 40;
 
 /** Treasure crystals: at least this many ... */
 export const TREASURE_MIN_CRYSTALS = 2;
