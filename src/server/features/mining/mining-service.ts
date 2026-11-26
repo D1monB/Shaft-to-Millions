@@ -8,6 +8,7 @@ import {
 	CLICK_DISTANCE,
 	MAX_MINING_DISTANCE,
 	MINE_HIT_REMOTE,
+	parseHitRequest,
 	MINE_PROGRESS_REMOTE,
 	MiningSession,
 	NODE_BROKEN_REMOTE,
@@ -132,19 +133,21 @@ function setupNode(node: Instance): void {
  * distance, swing cooldown, pickaxe tier, bag room) is decided in handleHit exactly as for a click.
  */
 function handleToolHit(player: Player, args: Array<unknown>): void {
-	const [node] = args;
-	// A node removed while the request was on its way arrives as nil: an honest swing, dropped without a log.
-	if (node === undefined) {
-		return;
-	}
-	if (args.size() !== 1 || !typeIs(node, "Instance") || !CollectionService.HasTag(node, TAGS.OreNode)) {
+	const request = parseHitRequest(args, isOreNode);
+	if (request.kind === "abuse") {
 		logAbuse(player, "bad MineHit arguments");
 		return;
 	}
-	const oreId = node.GetAttribute(ATTRIBUTES.OreId);
-	if (isOreId(oreId)) {
-		handleHit(player, node, oreId);
+	if (request.kind === "hit") {
+		const oreId = request.node.GetAttribute(ATTRIBUTES.OreId);
+		if (isOreId(oreId)) {
+			handleHit(player, request.node, oreId);
+		}
 	}
+}
+
+function isOreNode(value: unknown): value is Instance {
+	return typeIs(value, "Instance") && CollectionService.HasTag(value, TAGS.OreNode);
 }
 
 export function startMiningService(): void {

@@ -3,7 +3,7 @@ import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
 import { NotifyKind } from "shared/lib/remote-names";
 import { closePanel, useOpenPanel } from "../panels";
-import { ToastEntry, useToasts } from "../toasts";
+import { ToastEntry, toastText, useToasts } from "../toasts";
 import { Panel } from "./panel";
 import { COLORS, FONTS, RADIUS, SPRINGS, STROKE, TEXT_SIZES } from "./theme";
 
@@ -54,7 +54,7 @@ function Toast(props: { entry: ToastEntry; order: number }) {
 				TextTransparency={fade}
 				BackgroundColor3={TOAST_COLORS[props.entry.kind]}
 				Font={FONTS.display}
-				Text={props.entry.text}
+				Text={toastText(props.entry)}
 				TextSize={TEXT_SIZES.body}
 				TextColor3={COLORS.text}
 				TextWrapped={true}
