@@ -4,7 +4,14 @@ import React from "@rbxts/react";
 import { nameKeys } from "shared/features/i18n";
 import { t } from "client/lib/i18n";
 import { PlayerView } from "shared/features/profile";
-import { HOME, SURFACE, TRAVEL_COOLDOWN, TRAVEL_REMOTE, travelDestinations } from "shared/features/travel";
+import {
+	HOME,
+	SHOP_DISTRICT,
+	SURFACE,
+	TRAVEL_COOLDOWN,
+	TRAVEL_REMOTE,
+	travelDestinations,
+} from "shared/features/travel";
 import { registerHudButton } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { closePanel, openPanel } from "client/lib/panels";
@@ -14,6 +21,9 @@ import { Button, Label } from "client/lib/ui-kit";
 function destinationName(destination: number): string {
 	if (destination === HOME) {
 		return t("travel.home");
+	}
+	if (destination === SHOP_DISTRICT) {
+		return t("travel.shops");
 	}
 	if (destination === SURFACE) {
 		return t("travel.surface");
@@ -38,7 +48,7 @@ function TravelList(props: { view: PlayerView }) {
 					order={index + 2}
 				/>
 			))}
-			{destinations.size() <= 2 && (
+			{destinations.size() <= 3 && (
 				<Label text={t("travel.campsHint")} tone="muted" order={destinations.size() + 2} />
 			)}
 		</>
@@ -54,6 +64,13 @@ function TravelPanel() {
 }
 
 export function startTravelController(): void {
+	registerHudButton(
+		"🛒",
+		() => t("menu.shops"),
+		() => sendToServer(TRAVEL_REMOTE, SHOP_DISTRICT),
+		18,
+		"primary",
+	);
 	// One tap home (the developer's request, decision 053): the server checks the pause and finds the plot.
 	registerHudButton(
 		"🏭",

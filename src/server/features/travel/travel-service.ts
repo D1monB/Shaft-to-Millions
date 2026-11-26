@@ -5,6 +5,7 @@ import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import {
 	HOME,
+	SHOP_DISTRICT,
 	SURFACE,
 	TRAVEL_REMOTE,
 	canTravelTo,
@@ -13,6 +14,7 @@ import {
 } from "shared/features/travel";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { homePositionOf } from "server/features/line";
+import { shopDistrictPosition } from "server/features/upgrades";
 import { teleportCharacter } from "server/features/movement";
 import { getProfileData } from "server/features/profile";
 import { notify } from "server/lib/notify";
@@ -41,6 +43,9 @@ function findDestinationPoint(destination: number): Instance | undefined {
 function destinationPosition(player: Player, destination: number): Vector3 | undefined {
 	if (destination === HOME) {
 		return homePositionOf(player);
+	}
+	if (destination === SHOP_DISTRICT) {
+		return shopDistrictPosition();
 	}
 	const point = findDestinationPoint(destination);
 	return point === undefined ? undefined : getInstancePosition(point);
