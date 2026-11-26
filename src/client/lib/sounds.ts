@@ -67,8 +67,12 @@ const POSITIONAL_MAX_DISTANCE = 90;
  * may each sound but one machine never machine-guns. Never throws.
  */
 export function playSoundAt(id: SoundId, position: Vector3, key: string): void {
-	const def = SOUNDS[id];
-	const throttleKey = `${id}@${key}`;
+	playDefAt(SOUNDS[id], position, `${id}@${key}`);
+}
+
+/** Like playSoundAt, for a sound definition (a machine's own sound, decision 051). */
+export function playDefAt(def: SoundDef, position: Vector3, throttleKey: string): void {
+	const id = `${def.assetId}@${def.speed ?? 1}`;
 	const now = os.clock();
 	if (def.assetId === "" || now - (lastPlayed.get(throttleKey) ?? -math.huge) < def.minGap) {
 		return;

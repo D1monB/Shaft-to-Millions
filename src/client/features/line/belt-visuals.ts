@@ -3,7 +3,8 @@
 // (one model per ore and stage). Purely visual: nothing here affects money, and a lost message just skips an item.
 // Models are pooled per ore and stage, and plots far from the camera are skipped, so busy lines stay cheap on phones.
 import { HttpService, ReplicatedStorage, RunService, Workspace } from "@rbxts/services";
-import { playSoundAt } from "client/lib/sounds";
+import { MACHINE_SOUNDS } from "shared/config/sounds";
+import { playDefAt } from "client/lib/sounds";
 import { LINE_MACHINES } from "shared/config/line";
 import { PLOTS, PLOT_ATTRIBUTES } from "shared/config/map-contract";
 import { ORES, ORE_IDS, OreId } from "shared/config/ores";
@@ -319,7 +320,10 @@ function onFlow(plotIndex: unknown, flat: unknown): void {
 		startRide(ore, route.stage, points, earlier * ITEM_GAP_SECONDS, maxSeconds);
 		// The machine that let the item go makes its sound (decision 049); raw ore leaving the silo is quiet.
 		if (from >= 0) {
-			playSoundAt("machineWork", points[0], `${plotIndex}:${from}`);
+			const sound = MACHINE_SOUNDS[LINE_MACHINES[from]?.id ?? ""];
+			if (sound !== undefined) {
+				playDefAt(sound.work, points[0], `${plotIndex}:${from}`);
+			}
 		}
 	}
 }

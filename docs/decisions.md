@@ -557,3 +557,13 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   are told who found it. Reward rule is pure and tested (`treasureReward`).
 - **Why:** mining felt like "run and break" (feedback 2026-11-26). A visible prize somewhere in the pit gives a goal
   to run to and a small race between players.
+
+## 051. Each machine has its own sound, also when idle (2026-11-26)
+
+- **What:** `MACHINE_SOUNDS` in `config/sounds.ts`: every line machine has a quiet loop (always on once bought, heard
+  within ~60 studs, added only to machines within 90 studs of the camera) and its own "work" sound when it lets an
+  item go (replaces the shared one of decision 049). Built from three licensed ProSoundEffects factory loops ("Oil
+  Refinery Ambience") at different pitches and licensed one-shots (clang, metal hits, whoosh, electric arc, robot
+  buzz); a test checks that no two machines sound the same.
+- **Why:** the developer wants machines to sound alive and different. Better per-machine recordings can replace an id
+  in the config without code changes; the Creator Store search found few licensed industrial loops.

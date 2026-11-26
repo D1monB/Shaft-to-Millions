@@ -10,6 +10,7 @@ import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { toast } from "client/lib/toasts";
 import { startBeltVisuals } from "./belt-visuals";
+import { startMachineHum } from "./machine-hum";
 import { startMachineGauges } from "./machine-gauges";
 import { isOnOwnPlot } from "./own-plot";
 import { UpgradePanel } from "./upgrade-panel";
@@ -36,6 +37,7 @@ function openUpgrades(anchor: Instance): void {
 
 export function startLineController(): void {
 	startBeltVisuals();
+	startMachineHum();
 	startMachineGauges();
 	onPromptForTag(UPGRADE_POINT_TAG, openUpgrades);
 	registerGoalSource((view) => {
