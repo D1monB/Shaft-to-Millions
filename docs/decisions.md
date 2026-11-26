@@ -506,3 +506,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   value multiplier of the owner's last machine), "Your bag now: $X" (refreshed every line tick, sent only on change),
   "E: sell the bag".
 - **Why:** the developer's design; the boards were fixed Ukrainian text with no real numbers.
+
+## 045. HUD icons from images, emoji as fallback (2026-11-26)
+
+- **What:** `config/icons.ts` maps each HUD emoji to an image id; the ui-kit `Glyph` draws the image when one is set,
+  else the emoji. Stat tiles, dock buttons and capsule badges all go through it, so switching to an icon pack is a
+  config change only. Chosen pack (to confirm its terms first): "Simulator Icon Pack" by DevJoob (Creator Store
+  99176447965360, free, 125 icons). Claude cannot insert assets (Studio MCP is read-only), so the developer inserts
+  the pack into ServerStorage once and the ids are read from it.
+- **Why:** the developer wants nicer icons than emoji; uploading our own images to the account is not allowed for Claude.
