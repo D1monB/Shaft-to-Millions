@@ -16,7 +16,7 @@ class GoalsTests {
 	public affordablePrefersPriority() {
 		// Both affordable: the pickaxe unlocks new ore, so it wins although it is pricier.
 		const text = pickGoal({ money: 1000, bagUsed: 0, bagCapacity: 25 }, [BAG, PICK]);
-		Assert.true(text.find("Steel Pickaxe")[0] !== undefined);
+		Assert.true(text.find("Silver Pickaxe")[0] !== undefined);
 	}
 
 	@Test

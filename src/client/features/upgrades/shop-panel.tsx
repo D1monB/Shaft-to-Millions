@@ -21,12 +21,16 @@ import {
 } from "shared/features/upgrades";
 import { PlayerView } from "shared/features/profile";
 import { formatPercent } from "shared/lib/format";
+import { registerHudButton } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, RarityCard } from "client/lib/item-card";
 import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
+import { pickaxeTemplate } from "client/lib/model-icon";
 import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
+import { hideDefaultBackpack } from "./pickaxe-hotbar";
+import { startPickaxeSwing } from "./pickaxe-swing";
 import { BuyButton, Button, COLORS, CardStrip, FONTS, Label, StripSlot, TEXT_SIZES, Tabs } from "client/lib/ui-kit";
 
 const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: StringKey; readonly icon: string }> = [
@@ -131,6 +135,12 @@ function footerOf(def: GearBase, view: PlayerView): React.Element {
 	return <ForSaleFooter def={def} view={view} />;
 }
 
+/** Pickaxes have the map author's 3D models; bags and shoes keep their emoji. */
+function modelOf(id: string): Instance | undefined {
+	const pickaxe = PICKAXES.find((def) => def.id === id);
+	return pickaxe !== undefined ? pickaxeTemplate(pickaxe.tool) : undefined;
+}
+
 function GearCard(props: { slot: GearSlot; icon: string; index: number; view: PlayerView }) {
 	const items = GEAR_BY_SLOT[props.slot];
 	const def = items[props.index];
@@ -142,6 +152,7 @@ function GearCard(props: { slot: GearSlot; icon: string; index: number; view: Pl
 			ramp={RARITY_RAMPS[colour]}
 			light={RARITY_LIGHT[colour]}
 			icon={props.icon}
+			model={modelOf(def.id)}
 			name={t(nameKeys.gear(def.id))}
 			pill={stats.pill}
 			effect={stats.effect}
@@ -207,7 +218,10 @@ function ShopPanel() {
 }
 
 export function startShopController(): void {
-	onPromptForTag(TAGS.Shop, () =>
-		openPanel({ key: "shop", title: t("shop.title"), icon: "🛒", render: () => <ShopPanel /> }),
-	);
+	hideDefaultBackpack();
+	startPickaxeSwing();
+	const open = () => openPanel({ key: "shop", title: t("shop.title"), icon: "🛒", render: () => <ShopPanel /> });
+	onPromptForTag(TAGS.Shop, open);
+	// The map author's map has no shop building: the dock button opens it anywhere (decision 042).
+	registerHudButton("🛒", () => t("menu.shop"), open, 5, "primary");
 }

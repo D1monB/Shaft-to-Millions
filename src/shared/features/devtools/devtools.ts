@@ -13,10 +13,14 @@ export const DEV_MONEY_AMOUNTS: ReadonlyArray<number> = [1_000, 100_000, 10_000_
 /** Pieces of every ore put into the bag by one "ores" command (over the bag limit: it is a test shortcut). */
 export const DEV_ORE_AMOUNT = 30;
 
+/** Crystals given by one "crystals" command (decision 043): enough to open a few chests. */
+export const DEV_CRYSTAL_AMOUNT = 100;
+
 export type DevCommand =
 	| { readonly kind: "money"; readonly amount: number }
 	| { readonly kind: "maxGear" }
 	| { readonly kind: "ores" }
+	| { readonly kind: "crystals" }
 	| { readonly kind: "openLayers" }
 	| { readonly kind: "resetProfile" };
 
@@ -31,7 +35,11 @@ export function parseDevCommand(args: ReadonlyArray<unknown>): DevCommand | unde
 		return { kind: "money", amount };
 	}
 	if (
-		(kind === "maxGear" || kind === "ores" || kind === "openLayers" || kind === "resetProfile") &&
+		(kind === "maxGear" ||
+			kind === "ores" ||
+			kind === "crystals" ||
+			kind === "openLayers" ||
+			kind === "resetProfile") &&
 		args.size() === 1
 	) {
 		return { kind };
@@ -62,6 +70,8 @@ export function applyDevCommand(data: ProfileData, command: DevCommand): void {
 		for (const id of ORE_IDS) {
 			data.bag[id] = math.min((data.bag[id] ?? 0) + DEV_ORE_AMOUNT, MAX_COUNTER);
 		}
+	} else if (command.kind === "crystals") {
+		data.crystals = math.min(data.crystals + DEV_CRYSTAL_AMOUNT, MAX_COUNTER);
 	} else if (command.kind === "resetProfile") {
 		resetProfile(data);
 	} else {

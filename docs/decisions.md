@@ -420,3 +420,150 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the old ordering started at machine 1, walked against the belt and covered only 19 of 89 pieces, so most
   machine places collapsed onto two path points and items could not ride between them. Checked in Play on the
   friend's map: no coverage warning, the 12 machine places follow each other along the path.
+
+## 036. Machine upgrades in the UI, progress bars and the next-machine goal (2026-11-26)
+
+- **What:** every bought machine has an invisible point with a prompt (R, gamepad R1, tap) that opens a panel with
+  the four upgrade tracks; a progress bar and queue counter hang above each machine of the player's own plot; the
+  "what next" banner also offers the next line machine. The server does nothing on the prompt press: a level is still
+  bought only through `UpgradeLineMachine`. Trying it from too far now tells the player to come closer instead of
+  logging abuse.
+- **Why:** upgrades existed on the server but a player had no way to buy them. The bars are drawn on the client from
+  the player's own line state, so they need no extra network traffic; other players do not see them.
+- **Play-test:** the map author's machines are rotated by 90 degrees and up to 30 studs tall, so the bar height is
+  measured from the parts' world extents, capped at 12 studs and drawn on top of the model.
+
+## 037. The map author's 10 pickaxe tools, a pickaxe hotbar, hits with the Tool (2026-11-26)
+
+- **What:** the pickaxe catalog is now the map author's 10 Tools (`ServerStorage.PickaxeTemplates`: wood, copper,
+  iron, silver, obsidian, gold, lava, titanium, luck, iridium). Schema v7 moves old pickaxes to the new one with the
+  same ore tier and at least the same power. The server hands out only the Tool of the equipped pickaxe and puts it
+  in the hand; the copies in `StarterPack` are removed at server start (the place file is unchanged). A swing sends
+  `MineHit(node)`; the server checks it exactly like a click. Our hotbar (owned pickaxes, keys 1..0, tap) replaces
+  Roblox's backpack bar. Belt items are found by their `Ore` and `Stage` attributes.
+- **Why:** Roblox switches ClickDetectors off while a Tool is held, so a pickaxe in hand could not mine; and all 10
+  pickaxes in StarterPack would have been free for everyone. Prices and power are first guesses (balance pass due).
+
+## 038. Pets from the map author's models, scattered ore from the map author's ore models (2026-11-26)
+
+- **What:** the pets controller clones `ReplicatedStorage.PetModels/<itemId>` itself (wing flap, facing, sway; neon
+  ball only if a model is missing). Ore: only 40% of each layer's spawn points hold a block, picked at random; every
+  60 s a quarter of the blocks that no player stands near (24 studs) move to free points. A block is the map author's
+  raw-ore model (`ServerStorage.ItemTemplates/<ore>`, `Stage = 0`) scaled to 4 studs. Numbers in `mining/tuning.ts`.
+- **Why:** the map author's `PetVisuals` script matched balls by the Ukrainian display name and stopped working when
+  pets were named by id; a block on every point looked like a ring of plain cubes. Depletion stays per player, so
+  players do not fight over a block; moved blocks are new instances, so nobody keeps damage or a cooldown on them.
+
+## 039. Intake booth at the start of the belt (2026-11-26)
+
+- **What:** ore is handed in at a booth on the first point of the belt, and rides out of it to machine 1 (before,
+  the drop prompt stood on machine 1's place, so ore looked like it went straight into the washer). The booth is the
+  map author's `ServerStorage.LineTemplates.IntakeBooth` (pivot = belt start, facing the way items ride); while it
+  is missing, a plain wooden box stands behind the belt start. Economy unchanged.
+- **Why:** the developer's design: resources come out of a booth and travel the belt.
+
+## 040. The lift between the mine and the surface (2026-11-26)
+
+- **What:** the map author's `Lift_Cage` rides the `Lift_Tower` (`Map/Mine/Decor/LiftTower`). "Ride" (inside the
+  cage) carries everyone standing in it to the other stop; "Call the lift" at a stop brings the empty cage. The server
+  moves the cage and the riders (anchored), pauses the movement check for them (`holdCharacter`) and puts them down
+  with `teleportCharacter`. Riding down needs the bottom stop's layer opened for everyone aboard; riding up is always
+  allowed. Stops: optional parts `LiftBottom` (attribute `Layer`) and `LiftTop`; without them the cage rides from
+  where it stands to the top of the tower. Speed 14 studs/s, 3–12 s per ride (`lift/tuning.ts`).
+- **Why:** climbing out must not be a punishment (CLAUDE.md), and a lift skipping the descent would break layers.
+
+## 041. Layers open by walking to their ore; ore blocks 8 studs (2026-11-26)
+
+- **What:** in the map author's open pit there are no camps, so only layers 1–2 were ever open and silver, gold,
+  titanium and iridium could not be mined. Now layer N+1 opens when an honest position (one that passed the
+  movement check) comes within 30 studs of a `Tier<N+1>` ore spawn point; camps still work where they exist. The
+  pause between unlocks is 10 s (was 45). Ore blocks are 8 studs (the map author's size; their `OreNodeScale` script
+  can go), mining reach 24 studs, click distance 20.
+- **Why:** play-test 2026-11-26; Output showed `mining on a layer that is not opened`.
+
+## 042. Gear shop from the HUD (2026-11-26)
+
+- **What:** a "Shop" button in the right dock opens the gear shop (pickaxes, bags, shoes) anywhere; `BuyGear` no
+  longer requires standing near a `Shop`-tagged part (a tagged shop still opens it with E).
+- **Why:** the map author's map has no shop building, so there was no way to buy pickaxes or shoes. Buying away from
+  a shop gains nothing: price, materials and tier order are still checked on the server.
+
+## 043. Crystals, the second currency (2026-11-26)
+
+- **What:** `crystals` in the profile (new field with default 0, no schema bump; repaired like money). Breaking a block
+  by hand gives one crystal with the ore's `crystalChance` (2% copper … 6% iridium, `config/ores.ts`). The three
+  chests now cost crystals (pets 15, speed aura 10, pickaxe aura 20) instead of dollars; everything else stays in
+  dollars. HUD capsule under the money; Dev panel "+100 crystals".
+- **Why:** the developer's design. Crystals are NEVER sold for Robux: otherwise every chest becomes a paid random
+  item under Roblox policy. A crystal may come back as at most $50 through chest item resale (`CRYSTAL_RESALE_LIMIT`,
+  tested). Quests that reward crystals come later as their own step.
+
+## 044. The SellStation sells the bag and shows live prices (2026-11-26)
+
+- **What:** the built `SellStation` on an owned plot gets the `SellZone` tag on its `ButtonText` part, so E there
+  opens the usual sell panel and sells the whole bag of raw ore (cheaper than running it through the line). Its
+  boards are rewritten in each viewer's language: "SELL", "PRICES", "Raw ore: ×1", "After your line: ×N" (the
+  value multiplier of the owner's last machine), "Your bag now: $X" (refreshed every line tick, sent only on change),
+  "E: sell the bag".
+- **Why:** the developer's design; the boards were fixed Ukrainian text with no real numbers.
+
+## 045. HUD icons from images, emoji as fallback (2026-11-26)
+
+- **What:** `config/icons.ts` maps each HUD emoji to an image id; the ui-kit `Glyph` draws the image when one is set,
+  else the emoji. Stat tiles, dock buttons and capsule badges all go through it, so switching to an icon pack is a
+  config change only. Chosen pack (to confirm its terms first): "Simulator Icon Pack" by DevJoob (Creator Store
+  99176447965360, free, 125 icons). Claude cannot insert assets (Studio MCP is read-only), so the developer inserts
+  the pack into ServerStorage once and the ids are read from it.
+- **Why:** the developer wants nicer icons than emoji; uploading our own images to the account is not allowed for Claude.
+
+## 046. Rich veins (2026-11-26)
+
+- **What:** each placed ore block (at start and after every shuffle) is a rich vein with 8% chance: it sparkles in the
+  ore's colour and gives 3× ore (still capped by bag room). The server marks it with the `Rich` attribute and reads it
+  when the block breaks. Numbers in `mining/tuning.ts`.
+- **Why:** the developer asked for ore generation "like the best tycoons": a visible jackpot worth walking to, which
+  moves with the shuffle, keeps the pit interesting without changing per-player depletion.
+
+## 047. The map author's silo is the line's intake (2026-11-26)
+
+- **What:** when a plot's Factory has `Silo` (template `ServerStorage.MachineTemplates.Silo`), ore is handed in under
+  its `SiloIntake` (E, chest height) instead of at the plain booth (decision 039, still the fallback). The ore waits
+  in the silo (the line's existing intake queue, up to 500) and comes onto the belt at `SiloOutlet` (new `i` index in
+  the stored belt path, tested). `Silo_Glow` grows brighter with the fill, `FX_Dust` puffs while ore leaves, a
+  counter "N / 500" floats over the silo. Economy unchanged.
+- **Why:** the map author built the silo for exactly this; before, ore passed through it without stopping.
+
+## 048. Critical hits and ore rush (2026-11-26)
+
+- **What:** 12% of counted swings are critical hits (3× pickaxe power), rolled on the server and shown on the client
+  as "CRIT!". Every 8 minutes an ore rush: for 60 s, 35% of the plain blocks nobody stands at become rich veins
+  (decision 046), announced to everyone; afterwards exactly those turn plain again. Numbers in `mining/tuning.ts`.
+- **Why:** the developer found mining a bit dull. Crits make each swing a small gamble; the rush gives the pit a
+  rhythm and a reason to go down now.
+
+## 049. Line machines make a sound (2026-11-26)
+
+- **What:** when a machine on a plot lets an item go, a quiet positional sound plays at it (`machineWork`, the
+  licensed fire whoosh already in config, at most every 2 s per machine, heard within ~90 studs). Client only, from
+  the belt-visual messages; nothing changes on the server.
+- **Why:** the line felt silent (feedback 2026-11-26). A machine-specific licensed sound can replace the id later.
+
+## 050. Treasure crates in the pit (2026-11-26)
+
+- **What:** every 2 minutes, when none is waiting, a treasure crate (the map author's `PropTemplates/Crate`, scaled to
+  6 studs, gold sparkles, light and a "💰 TREASURE" label seen from 250 studs) appears on a free ore point of a random
+  layer, announced to everyone. It mines like that layer's ore (same layer and pickaxe rules). The first player to
+  break it gets the ore price ×30 in dollars and 2–6 crystals; it is destroyed for everyone in the same frame, others
+  are told who found it. Reward rule is pure and tested (`treasureReward`).
+- **Why:** mining felt like "run and break" (feedback 2026-11-26). A visible prize somewhere in the pit gives a goal
+  to run to and a small race between players.
+
+## 051. Each machine has its own sound, also when idle (2026-11-26)
+
+- **What:** `MACHINE_SOUNDS` in `config/sounds.ts`: every line machine has a quiet loop (always on once bought, heard
+  within ~130 studs, added only to machines within 160 studs of the camera) and its own "work" sound when it lets an
+  item go (replaces the shared one of decision 049). Built from three licensed ProSoundEffects factory loops ("Oil
+  Refinery Ambience") at different pitches and licensed one-shots (clang, metal hits, whoosh, electric arc, robot
+  buzz); a test checks that no two machines sound the same.
+- **Why:** the developer wants machines to sound alive and different. Better per-machine recordings can replace an id
+  in the config without code changes; the Creator Store search found few licensed industrial loops.

@@ -6,19 +6,28 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { addToBag, bagCapacity, bagFreeSpace } from "shared/features/bag";
 import {
 	CLICK_DISTANCE,
+	CRIT_CHANCE,
+	CRIT_MULTIPLIER,
 	MAX_MINING_DISTANCE,
+	MINE_HIT_REMOTE,
+	parseHitRequest,
 	MINE_PROGRESS_REMOTE,
 	MiningSession,
 	NODE_BROKEN_REMOTE,
 	getPickaxe,
+	rollCrystals,
 	rollYield,
+	treasureReward,
+	veinYield,
 } from "shared/features/mining";
 import { isLayerOpen } from "shared/features/layers";
+import { formatMoney } from "shared/lib/format";
 import { RateLimiter } from "shared/lib/rate-limiter";
+import { MAX_COUNTER } from "shared/lib/repair";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
-import { declareClientEvent, fireClient, logAbuse } from "server/lib/remotes";
+import { declareClientEvent, fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
 
 const sessions = new Map<Player, MiningSession<Instance>>();
 // Refusal messages ("bag is full") at most every couple of seconds, so clicking does not spam the screen.
@@ -78,7 +87,15 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	}
 
 	const ore = ORES[oreId];
-	const result = getSession(player).hit(node, ore, getPickaxe(data.gear.equipped.pickaxe), os.clock());
+	// A critical hit (decision 048) is rolled here with the server Random; the client only shows it.
+	const crit = random.NextNumber() < CRIT_CHANCE;
+	const result = getSession(player).hit(
+		node,
+		ore,
+		getPickaxe(data.gear.equipped.pickaxe),
+		os.clock(),
+		crit ? CRIT_MULTIPLIER : 1,
+	);
 
 	if (result.kind === "locked") {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
@@ -92,13 +109,42 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 			);
 		}
 	} else if (result.kind === "progress") {
-		fireClient(MINE_PROGRESS_REMOTE, player, node, result.damage, result.hardness);
+		fireClient(MINE_PROGRESS_REMOTE, player, node, result.damage, result.hardness, crit);
+	} else if (result.kind === "broken" && node.GetAttribute(ATTRIBUTES.Treasure) === true) {
+		// A treasure crate (decision 050): the first player to break it takes it, then it is gone for everyone.
+		// Paid and removed in the same frame, so nobody else can break it after the reward.
+		const reward = treasureReward(ore.price, random.NextNumber());
+		data.money = math.min(data.money + reward.money, MAX_COUNTER);
+		data.stats.totalEarned = math.min(data.stats.totalEarned + reward.money, MAX_COUNTER);
+		data.crystals = math.min(data.crystals + reward.crystals, MAX_COUNTER);
+		markDirty(player);
+		node.Destroy();
+		notify(
+			player,
+			text("mining.treasureTaken", { money: formatMoney(reward.money), crystals: reward.crystals }),
+			"success",
+		);
+		for (const other of Players.GetPlayers()) {
+			if (other !== player) {
+				notify(other, text("mining.treasureFound", { name: player.DisplayName }), "info");
+			}
+		}
 	} else if (result.kind === "broken") {
-		const amount = rollYield(yieldBonusOf(player), random.NextNumber());
+		// A rich vein (decision 046) is marked by the server when it places the block; clients cannot set it.
+		const amount = veinYield(
+			rollYield(yieldBonusOf(player), random.NextNumber()),
+			node.GetAttribute(ATTRIBUTES.Rich) === true,
+		);
 		const added = addToBag(data.bag, oreId, amount, capacity);
 		data.stats.oresMined += added;
+		// A rare crystal (decision 043), rolled here with the server Random like the yield.
+		const crystals = added > 0 ? rollCrystals(ore.crystalChance, random.NextNumber()) : 0;
+		if (crystals > 0) {
+			data.crystals += crystals;
+			notify(player, text("mining.crystal", { count: crystals }), "success");
+		}
 		markDirty(player);
-		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added);
+		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added, crit);
 	}
 	// "cooldown" and "depleted" are normal while clicking fast: silently ignored.
 }
@@ -126,8 +172,32 @@ function setupNode(node: Instance): void {
 	detector.MouseClick.Connect((player) => handleHit(player, node, oreId));
 }
 
+/**
+ * A swing of the pickaxe Tool at a node. The client only names the node; whether it counts (owner of the profile,
+ * distance, swing cooldown, pickaxe tier, bag room) is decided in handleHit exactly as for a click.
+ */
+function handleToolHit(player: Player, args: Array<unknown>): void {
+	const request = parseHitRequest(args, isOreNode);
+	if (request.kind === "abuse") {
+		logAbuse(player, "bad MineHit arguments");
+		return;
+	}
+	if (request.kind === "hit") {
+		const oreId = request.node.GetAttribute(ATTRIBUTES.OreId);
+		if (isOreId(oreId)) {
+			handleHit(player, request.node, oreId);
+		}
+	}
+}
+
+function isOreNode(value: unknown): value is Instance {
+	return typeIs(value, "Instance") && CollectionService.HasTag(value, TAGS.OreNode);
+}
+
 export function startMiningService(): void {
 	declareClientEvent(MINE_PROGRESS_REMOTE);
+	// About three swings a second for the fastest pickaxe; the burst forgives network jitter.
+	onClientRequest(MINE_HIT_REMOTE, new RateLimiter(8, 5), handleToolHit);
 	declareClientEvent(NODE_BROKEN_REMOTE);
 	for (const node of CollectionService.GetTagged(TAGS.OreNode)) {
 		setupNode(node);

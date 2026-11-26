@@ -3,6 +3,9 @@
 // (one model per ore and stage). Purely visual: nothing here affects money, and a lost message just skips an item.
 // Models are pooled per ore and stage, and plots far from the camera are skipped, so busy lines stay cheap on phones.
 import { HttpService, ReplicatedStorage, RunService, Workspace } from "@rbxts/services";
+import { MACHINE_SOUNDS } from "shared/config/sounds";
+import { playDefAt } from "client/lib/sounds";
+import { LINE_MACHINES } from "shared/config/line";
 import { PLOTS, PLOT_ATTRIBUTES } from "shared/config/map-contract";
 import { ORES, ORE_IDS, OreId } from "shared/config/ores";
 import {
@@ -20,10 +23,14 @@ import { onServerUnreliable } from "client/lib/remotes";
 const ITEM_SPEED = 8;
 /** A ride never lasts longer than this, so a long belt does not pile up items. */
 const MAX_RIDE_SECONDS = 12;
+/** Shortest ride (s), so a short hop is still seen. */
+const MIN_RIDE_SECONDS = 0.8;
+/** Ride to the SellStation (s): nothing waits for it there. */
+const SELL_RIDE_SECONDS = 4;
 /** Items on screen at once (all plots together); extra items are simply not shown. */
 const MAX_ACTIVE_ITEMS = 120;
 /** Plots farther than this from the camera show no items. */
-const VISIBLE_DISTANCE = 220;
+const VISIBLE_DISTANCE = 300;
 /**
  * The server reports a whole second of moves at once; items leaving the same place in one message start this many
  * seconds apart, so they ride in a row instead of on top of each other.
@@ -114,14 +121,34 @@ function stageOf(template: Instance): number | undefined {
 	return typeIs(digits, "string") ? tonumber(digits) : undefined;
 }
 
-function findTemplate(ore: OreId, stage: number): Model | undefined {
-	const folder = ReplicatedStorage.FindFirstChild(ITEM_TEMPLATES_FOLDER)?.FindFirstChild(ore);
-	for (const child of folder?.GetChildren() ?? []) {
-		if (child.IsA("Model") && stageOf(child) === stage) {
-			return child;
+/** Item models by "ore:stage", read once from the map author's attributes (Ore, Stage) on each model. */
+let templateIndex: Map<string, Model> | undefined;
+
+function buildTemplateIndex(): Map<string, Model> {
+	const index = new Map<string, Model>();
+	for (const folder of ReplicatedStorage.FindFirstChild(ITEM_TEMPLATES_FOLDER)?.GetChildren() ?? []) {
+		for (const model of folder.GetChildren()) {
+			if (!model.IsA("Model")) {
+				continue;
+			}
+			// The Ore attribute wins; a model without it belongs to the ore its folder is named after.
+			const oreAttribute = model.GetAttribute("Ore");
+			const ore = typeIs(oreAttribute, "string") ? oreAttribute : folder.Name;
+			const stage = stageOf(model);
+			if (stage !== undefined && !index.has(`${ore}:${stage}`)) {
+				index.set(`${ore}:${stage}`, model);
+			}
 		}
 	}
-	return undefined;
+	return index;
+}
+
+function findTemplate(ore: OreId, stage: number): Model | undefined {
+	// The folder arrives from the server a moment after the client starts: index it once it is there.
+	if (templateIndex === undefined || templateIndex.size() === 0) {
+		templateIndex = buildTemplateIndex();
+	}
+	return templateIndex.get(`${ore}:${stage}`);
 }
 
 function fallbackModel(ore: OreId): Model {
@@ -177,7 +204,7 @@ function releaseModel(key: string, model: Model): void {
 
 // ---- rides ----
 
-function startRide(ore: OreId, stage: number, points: ReadonlyArray<Vector3>, wait: number): void {
+function startRide(ore: OreId, stage: number, points: ReadonlyArray<Vector3>, wait: number, maxSeconds: number): void {
 	if (points.size() < 2 || rides.size() >= MAX_ACTIVE_ITEMS) {
 		return;
 	}
@@ -196,7 +223,9 @@ function startRide(ore: OreId, stage: number, points: ReadonlyArray<Vector3>, wa
 		model,
 		points,
 		lengths,
-		speed: math.max(ITEM_SPEED, total / MAX_RIDE_SECONDS),
+		// Arrive about when the next machine takes the item (the server moves it into that queue at once), so the
+		// machine never fills up while nothing is seen arriving (feedback 2026-11-26).
+		speed: math.max(ITEM_SPEED, total / math.clamp(maxSeconds, MIN_RIDE_SECONDS, MAX_RIDE_SECONDS)),
 		wait,
 		travelled: 0,
 		segment: 1,
@@ -264,10 +293,6 @@ function onFlow(plotIndex: unknown, flat: unknown): void {
 	if (path === undefined) {
 		return;
 	}
-	const start = path.points[0];
-	if (!isNearCamera(new Vector3(start.x, start.y, start.z))) {
-		return;
-	}
 	const owned = ownedMachines(factory);
 	const moves = flat as Array<unknown>;
 	const leftFrom = new Map<number, number>();
@@ -283,9 +308,23 @@ function onFlow(plotIndex: unknown, flat: unknown): void {
 			continue;
 		}
 		const points = pathBetween(path.points, route.start, route.target).map((p) => new Vector3(p.x, p.y, p.z));
+		// Visible when the camera is near either end of THIS ride: the belt is long, its start may be far away.
+		if (points.size() < 2 || (!isNearCamera(points[0]) && !isNearCamera(points[points.size() - 1]))) {
+			continue;
+		}
+		// The machine the item rides to (index = its stage); the SellStation has no wait, a short ride is fine.
+		const nextMachine = LINE_MACHINES[route.stage];
+		const maxSeconds = route.stage < owned && nextMachine !== undefined ? nextMachine.seconds : SELL_RIDE_SECONDS;
 		const earlier = leftFrom.get(from) ?? 0;
 		leftFrom.set(from, earlier + 1);
-		startRide(ore, route.stage, points, earlier * ITEM_GAP_SECONDS);
+		startRide(ore, route.stage, points, earlier * ITEM_GAP_SECONDS, maxSeconds);
+		// The machine that let the item go makes its sound (decision 049); raw ore leaving the silo is quiet.
+		if (from >= 0) {
+			const sound = MACHINE_SOUNDS[LINE_MACHINES[from]?.id ?? ""];
+			if (sound !== undefined) {
+				playDefAt(sound.work, points[0], `${plotIndex}:${from}`);
+			}
+		}
 	}
 }
 

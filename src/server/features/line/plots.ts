@@ -3,7 +3,7 @@
 // when a player claims a plot, the belt and the SellStation are built there, and each machine appears only after it
 // is bought. A plot without its own Factory uses the first plot's one, placed the same way relative to its Base.
 // The place file is never changed: everything here exists only while the server runs.
-import { PLOTS, PLOT_ATTRIBUTES } from "shared/config/map-contract";
+import { PLOTS, PLOT_ATTRIBUTES, SILO } from "shared/config/map-contract";
 import { HttpService, ServerStorage, Workspace } from "@rbxts/services";
 import { LINE_MACHINES } from "shared/config/line";
 import { BELT_PATH_VALUE } from "shared/features/line";
@@ -147,6 +147,21 @@ export function slotCFrame(plot: Plot, stage: number): CFrame | undefined {
 	return template !== undefined ? plot.layout.transform.mul(template.GetPivot()) : undefined;
 }
 
+/**
+ * The start of the belt on this plot (world space), facing the way items ride; the intake booth stands here.
+ * Falls back to machine 1's place when the belt path is unknown.
+ */
+export function beltStartCFrame(plot: Plot): CFrame | undefined {
+	const points = plot.layout.path?.points;
+	if (points === undefined || points.size() < 2) {
+		return slotCFrame(plot, 1);
+	}
+	const start = plot.layout.transform.PointToWorldSpace(points[0]);
+	const along = plot.layout.transform.PointToWorldSpace(points[1]);
+	const flat = new Vector3(along.X, start.Y, along.Z);
+	return flat.sub(start).Magnitude > 0.01 ? CFrame.lookAt(start, flat) : new CFrame(start);
+}
+
 /** Where the buy sign of machine `stage` stands on this plot, or undefined if no belt was found near it. */
 export function signCFrame(plot: Plot, stage: number): CFrame | undefined {
 	const fill = plot.layout.fills.get(stage);
@@ -193,6 +208,25 @@ export function buildBase(plot: Plot): Folder {
 	return built;
 }
 
+/** Path index nearest to the silo outlet (decision 047), where raw ore comes onto the belt; 0 without a silo. */
+function intakeIndex(plot: Plot, built: Folder): number {
+	const outlet = built.FindFirstChild(SILO.Model)?.FindFirstChild(SILO.Outlet, true);
+	const points = plot.layout.path?.points;
+	if (outlet === undefined || !outlet.IsA("Attachment") || points === undefined) {
+		return 0;
+	}
+	let best = 0;
+	let bestDistance = math.huge;
+	points.forEach((point, index) => {
+		const distance = plot.layout.transform.PointToWorldSpace(point).sub(outlet.WorldPosition).Magnitude;
+		if (distance < bestDistance) {
+			best = index;
+			bestDistance = distance;
+		}
+	});
+	return best;
+}
+
 /**
  * Stores the belt path of this plot (world space) as JSON in the built Factory, for the item visuals on clients:
  * { p: [x, y, z, ...], m: [path index of machine 1..12, -1 if unknown], s: SellStation index }.
@@ -213,7 +247,7 @@ function writeBeltPath(plot: Plot, built: Folder): void {
 	}
 	const value = new Instance("StringValue");
 	value.Name = BELT_PATH_VALUE;
-	value.Value = HttpService.JSONEncode({ p: flat, m: machineIndexes, s: path.sell });
+	value.Value = HttpService.JSONEncode({ p: flat, m: machineIndexes, s: path.sell, i: intakeIndex(plot, built) });
 	value.Parent = built;
 }
 

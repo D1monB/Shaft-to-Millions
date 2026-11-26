@@ -311,6 +311,23 @@ function shiftList(list: unknown): void {
 }
 
 /**
+ * Version 7 replaced the 12 pickaxes with the map author's 10 (decision 037). Each old pickaxe becomes a new one
+ * with at least the same ore tier, so nobody loses progress. Power is not always kept: the slow hammer (13) becomes
+ * lava (9), which still mines faster per second. Old ids that also exist in the new
+ * list (silver, gold, obsidian) are mapped by strength too, not by name. Frozen: never edit this table.
+ */
+const V7_PICKAXE_SHIFT: { readonly [id: string]: string | undefined } = {
+	pickaxe_stone: "pickaxe_copper",
+	pickaxe_light: "pickaxe_iron",
+	pickaxe_gold: "pickaxe_obsidian",
+	pickaxe_hammer: "pickaxe_lava",
+	pickaxe_obsidian: "pickaxe_gold",
+	pickaxe_cobalt: "pickaxe_titanium",
+	pickaxe_drill: "pickaxe_luck",
+	pickaxe_plasma: "pickaxe_iridium",
+};
+
+/**
  * Upgrades saved data from version `from` to `from + 1`.
  * `apply` changes the table it receives (always a copy, never the live save).
  */
@@ -438,6 +455,31 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
 						fields.oreId = shifted(fields.oreId, V6_DRILL_SHIFT);
 					}
 				}
+			}
+		},
+	},
+	{
+		// Version 7 (decision 037): owned and equipped pickaxes move to the new list. Each old id is mapped once from
+		// the saved list, so the swapped names (old gold -> obsidian, old obsidian -> gold) never collide.
+		from: 6,
+		apply: (data) => {
+			if (!typeIs(data.gear, "table")) {
+				return;
+			}
+			const gear = data.gear as PlainTable;
+			if (typeIs(gear.owned, "table")) {
+				const owned: defined[] = [];
+				for (const id of gear.owned as defined[]) {
+					const moved = shifted(id, V7_PICKAXE_SHIFT) as defined;
+					if (!owned.includes(moved)) {
+						owned.push(moved);
+					}
+				}
+				gear.owned = owned;
+			}
+			if (typeIs(gear.equipped, "table")) {
+				const equipped = gear.equipped as PlainTable;
+				equipped.pickaxe = shifted(equipped.pickaxe, V7_PICKAXE_SHIFT);
 			}
 		},
 	},

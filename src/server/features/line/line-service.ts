@@ -1,16 +1,18 @@
 // The tycoon line on the server (decisions 027): choosing a plot, building it for its owner, buying machines and
 // dropping ore through ProximityPrompts, upgrades through a remote, the production tick and the offline run.
 // Everything that moves value happens here; the client sees the result in its view and in the built plot.
-import { Players, ReplicatedStorage, ServerStorage } from "@rbxts/services";
+import { CollectionService, Players, ReplicatedStorage, ServerStorage } from "@rbxts/services";
 import { LINE_MACHINES } from "shared/config/line";
-import { PLOT_ATTRIBUTES } from "shared/config/map-contract";
+import { PLOT_ATTRIBUTES, PLOT_SIGN } from "shared/config/map-contract";
 import { ORES, ORE_IDS, OreId, isOreId } from "shared/config/ores";
 import {
 	ITEM_TEMPLATES_FOLDER,
+	LABEL_HEIGHT_ATTRIBUTE,
 	LINE_DISTANCE,
 	LINE_FLOW_REMOTE,
 	LineMove,
 	UPGRADE_LINE_MACHINE_REMOTE,
+	UPGRADE_POINT_TAG,
 	advanceLine,
 	advanceOffline,
 	applyBuyLineMachine,
@@ -38,11 +40,24 @@ import {
 } from "server/features/profile";
 import { getSellMultiplier } from "server/features/selling";
 import { notify } from "server/lib/notify";
-import { localizePrompt } from "server/lib/localized";
+import { localizeLabel, localizePrompt } from "server/lib/localized";
 import { getRootPosition } from "server/lib/proximity";
 import { declareUnreliableClientEvent, logAbuse, onClientRequest } from "server/lib/remotes";
 import { buildSign } from "./buy-signs";
-import { Plot, buildBase, clearBase, loadPlots, placeMachine, signCFrame, slotCFrame, spawnPosition } from "./plots";
+import { placeIntakeBooth } from "./intake-booth";
+import { refreshSellStation, setupSellStation } from "./sell-station";
+import { Silo, findSilo, refreshSilo } from "./silo";
+import {
+	Plot,
+	beltStartCFrame,
+	buildBase,
+	clearBase,
+	loadPlots,
+	placeMachine,
+	signCFrame,
+	slotCFrame,
+	spawnPosition,
+} from "./plots";
 
 const TICK_SECONDS = 1;
 /** How close (studs) to a plot's spawn point the player must stand to claim it. */
@@ -132,6 +147,9 @@ function makeAnchor(parent: Instance, name: string, cframe: CFrame): BasePart {
 const DROP_KEYS = { keyboard: Enum.KeyCode.E, gamepad: Enum.KeyCode.ButtonX };
 const BUY_KEYS = { keyboard: Enum.KeyCode.F, gamepad: Enum.KeyCode.ButtonY };
 
+/** Opens the upgrade panel. A third key: machine 1 stands at the start of the belt, next to the drop prompt. */
+const UPGRADE_KEYS = { keyboard: Enum.KeyCode.R, gamepad: Enum.KeyCode.ButtonR1 };
+
 /** Runs a plot action for a player: rate limited, and a failure is logged instead of breaking the connection. */
 function guarded(player: Player, action: (player: Player) => void): void {
 	if (!promptLimiter.tryTake(player.UserId, os.clock())) {
@@ -148,8 +166,8 @@ function makePrompt(
 	action: Text,
 	object: Text,
 	keys: { keyboard: Enum.KeyCode; gamepad: Enum.KeyCode },
-	onTriggered: (player: Player) => void,
-): void {
+	onTriggered?: (player: Player) => void,
+): ProximityPrompt {
 	const prompt = new Instance("ProximityPrompt");
 	localizePrompt(prompt, action, object);
 	prompt.KeyboardKeyCode = keys.keyboard;
@@ -159,7 +177,58 @@ function makePrompt(
 	prompt.HoldDuration = 0;
 	prompt.MaxActivationDistance = LINE_DISTANCE - 4;
 	prompt.Parent = parent;
-	prompt.Triggered.Connect((player) => guarded(player, onTriggered));
+	if (onTriggered !== undefined) {
+		prompt.Triggered.Connect((player) => guarded(player, onTriggered));
+	}
+	return prompt;
+}
+
+const UPGRADE_POINTS_FOLDER = "UpgradePoints";
+/** The progress bar never hangs higher than this: some machines are 30 studs tall, out of view from the ground. */
+const MAX_LABEL_HEIGHT = 12;
+
+/**
+ * The world height of the highest visible point of a model. Not GetBoundingBox: that box is turned with the model's
+ * pivot, and the map author's models are rotated by 90 degrees, so its "height" is a horizontal size.
+ */
+function topOf(model: Model): number {
+	let top = -math.huge;
+	for (const part of model.GetDescendants()) {
+		if (part.IsA("BasePart") && part.Transparency < 1) {
+			const { XVector, YVector, ZVector } = part.CFrame;
+			const size = part.Size;
+			const half =
+				(math.abs(XVector.Y) * size.X + math.abs(YVector.Y) * size.Y + math.abs(ZVector.Y) * size.Z) / 2;
+			top = math.max(top, part.Position.Y + half);
+		}
+	}
+	return top === -math.huge ? model.GetPivot().Position.Y : top;
+}
+
+/**
+ * The point at a bought machine: its prompt opens the upgrade panel and the progress bar hangs above it. The server
+ * does nothing on the press (the client opens the panel); a level is bought through the UpgradeLineMachine remote.
+ */
+function addUpgradePoint(plot: Plot, stage: number, machine: Model): void {
+	const cframe = slotCFrame(plot, stage);
+	const def = LINE_MACHINES[stage - 1];
+	if (plot.built === undefined || cframe === undefined || def === undefined) {
+		return;
+	}
+	let folder = plot.built.FindFirstChild(UPGRADE_POINTS_FOLDER);
+	if (folder === undefined) {
+		folder = new Instance("Folder");
+		folder.Name = UPGRADE_POINTS_FOLDER;
+		folder.Parent = plot.built;
+	}
+	const anchor = makeAnchor(folder, `UpgradePoint_${stage}`, cframe);
+	const above = math.max(topOf(machine) - cframe.Position.Y, 0) + 1.5;
+	anchor.SetAttribute(LABEL_HEIGHT_ATTRIBUTE, math.min(above, MAX_LABEL_HEIGHT));
+	anchor.SetAttribute(PLOT_ATTRIBUTES.Stage, stage);
+	const prompt = makePrompt(anchor, text("line.upgrade"), text(nameKeys.machine(def.id)), UPGRADE_KEYS);
+	// Machines stand close together: show only the nearest upgrade prompt.
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton;
+	CollectionService.AddTag(anchor, UPGRADE_POINT_TAG);
 }
 
 const SIGNS_FOLDER = "BuySigns";
@@ -225,11 +294,30 @@ function refreshSigns(plot: Plot, owned: number): void {
 	}
 }
 
+/** The plain booth on the belt start (no silo on this plot); returns where its drop prompt goes. */
+function boothIntake(plot: Plot, built: Folder): CFrame | undefined {
+	const start = beltStartCFrame(plot);
+	if (start === undefined) {
+		return undefined;
+	}
+	const [box, size] = placeIntakeBooth(built, start).GetBoundingBox();
+	return new CFrame(box.Position.sub(new Vector3(0, size.Y / 2 - 3, 0)));
+}
+
+/** The silo of each owned plot, for its gauge. */
+const silos = new Map<Plot, Silo>();
+
+/** The built SellStation of each owned plot, for its live price board. */
+const sellStations = new Map<Plot, Instance>();
+
 /** Builds the plot for its owner: belt and SellStation, every bought machine, the intake and the next slot. */
 function buildFor(plot: Plot, data: ProfileData): void {
 	const built = buildBase(plot);
 	for (let stage = 1; stage <= data.line.machines.size(); stage++) {
-		placeMachine(plot, stage);
+		const machine = placeMachine(plot, stage);
+		if (machine !== undefined) {
+			addUpgradePoint(plot, stage, machine);
+		}
 	}
 	// The belt always runs (decisions 027): ore can ride it even before the first machine.
 	for (const part of built.GetDescendants()) {
@@ -237,10 +325,19 @@ function buildFor(plot: Plot, data: ProfileData): void {
 			part.SetAttribute(PLOT_ATTRIBUTES.ConveyorOn, true);
 		}
 	}
-	const intakeAt = slotCFrame(plot, 1);
+	// Ore is handed in at the map author's silo (decision 047), else at the booth on the belt start (decision 039).
+	const silo = findSilo(built);
+	const intakeAt = silo !== undefined ? new CFrame(silo.intake) : boothIntake(plot, built);
+	if (silo !== undefined) {
+		silos.set(plot, silo);
+	}
 	if (intakeAt !== undefined) {
 		const intake = makeAnchor(built, "Intake", intakeAt);
 		makePrompt(intake, text("line.dropOre"), text("line.beltStart"), DROP_KEYS, (player) => dropOre(player, plot));
+	}
+	const station = setupSellStation(built);
+	if (station !== undefined) {
+		sellStations.set(plot, station);
 	}
 	refreshSigns(plot, data.line.machines.size());
 }
@@ -278,13 +375,15 @@ function buyNext(player: Player, plot: Plot): void {
 	const machine = placeMachine(plot, data.line.machines.size());
 	if (machine !== undefined) {
 		clearOfMachine(machine);
+		addUpgradePoint(plot, data.line.machines.size(), machine);
 	}
 	refreshSigns(plot, data.line.machines.size());
 	notify(player, text("line.built", { name: ref(nameKeys.machine(result.def.id)) }), "success");
 }
 
 function dropOre(player: Player, plot: Plot): void {
-	const data = ownData(player, plot, slotCFrame(plot, 1)?.Position);
+	const intake = plot.built?.FindFirstChild("Intake");
+	const data = ownData(player, plot, intake !== undefined && intake.IsA("BasePart") ? intake.Position : undefined);
 	if (data === undefined) {
 		return;
 	}
@@ -319,7 +418,8 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 		return;
 	}
 	if (!isNear(player, slotCFrame(plot, index + 1)?.Position, LINE_DISTANCE)) {
-		logAbuse(player, "UpgradeLineMachine away from the machine");
+		// Not logged as abuse: an honest player can walk off while the panel is open.
+		notify(player, text("line.tooFar"), "error");
 		return;
 	}
 	const result = tryLineUpgrade(data.line, index, track, data.money);
@@ -358,6 +458,25 @@ function setClaimPromptEnabled(plot: Plot, enabled: boolean): void {
 	}
 }
 
+/**
+ * The map author's name board over the plot (Sign / SurfaceGui / OwnerName) said "Player N" for everyone. It shows
+ * the owner's display name, or "Free plot N" in the viewer's language.
+ */
+function refreshPlotSign(plot: Plot, owner: Player | undefined): void {
+	const sign = plot.model.FindFirstChild(PLOT_SIGN.Part);
+	for (const label of sign?.GetDescendants() ?? []) {
+		if (label.IsA("TextLabel") && label.Name === PLOT_SIGN.Label) {
+			const n = tostring(plot.model.GetAttribute(PLOT_ATTRIBUTES.PlotIndex) ?? "");
+			localizeLabel(
+				label,
+				owner !== undefined
+					? text("line.plotOwner", { name: owner.DisplayName })
+					: text("line.plotFree", { n }),
+			);
+		}
+	}
+}
+
 function claim(player: Player, plot: Plot): void {
 	const data = getProfileData(player);
 	if (data === undefined || ownerOf(plot) !== 0 || !isNear(player, claimAnchor(plot).Position, CLAIM_DISTANCE)) {
@@ -370,6 +489,7 @@ function claim(player: Player, plot: Plot): void {
 	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, player.UserId);
 	plotOf.set(player, plot);
 	setClaimPromptEnabled(plot, false);
+	refreshPlotSign(plot, player);
 	// A broken template must not leave the plot owned and half built: undo the claim and let anyone retry.
 	const [built, err] = pcall(buildFor, plot, data);
 	if (!built) {
@@ -413,6 +533,7 @@ function releasePlot(player: Player): void {
 	plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
 	clearBase(plot);
 	setClaimPromptEnabled(plot, true);
+	refreshPlotSign(plot, undefined);
 }
 
 /** Where the player appears: their own plot, or else the first free one (to take it or walk to another). */
@@ -446,6 +567,15 @@ function tickPlayer(player: Player, seconds: number): void {
 		return;
 	}
 	data.lastSeen = nowUnix();
+	const plot = plotOf.get(player);
+	const station = plot !== undefined ? sellStations.get(plot) : undefined;
+	if (station !== undefined && station.Parent !== undefined) {
+		refreshSellStation(station, data, getSellMultiplier(player));
+	}
+	const silo = plot !== undefined ? silos.get(plot) : undefined;
+	if (silo !== undefined && silo.model.Parent !== undefined) {
+		refreshSilo(silo, data.line);
+	}
 	if (isLineIdle(data.line)) {
 		return;
 	}
@@ -534,6 +664,7 @@ export function startLineService(): void {
 	for (const plot of plots) {
 		plot.model.SetAttribute(PLOT_ATTRIBUTES.Owner, 0);
 		addClaimPrompt(plot);
+		refreshPlotSign(plot, undefined);
 	}
 	onClientRequest(UPGRADE_LINE_MACHINE_REMOTE, new RateLimiter(6, 3), handleUpgrade);
 	onProfileLoaded(onLoaded);

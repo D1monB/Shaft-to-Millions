@@ -19,6 +19,8 @@ import { registerHudStat } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, ItemCard } from "client/lib/item-card";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText, rarityColor } from "client/lib/item-display";
+import { ModelIcon, petTemplate } from "client/lib/model-icon";
+import { playTerminalBurst } from "./terminal-fx";
 import { closePanel, openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { onServerMessage, sendToServer } from "client/lib/remotes";
@@ -156,8 +158,9 @@ function ChestFooter(props: { chestId: ChestId }) {
 		<>
 			<StoragePill count={view.inventory.size()} order={4} />
 			<BuyButton
-				price={chest.dollarPrice}
-				money={view.money}
+				price={chest.crystalPrice}
+				money={view.crystals}
+				currency="crystals"
 				verb={t("common.open")}
 				icon="✨"
 				blocked={full}
@@ -193,6 +196,7 @@ function openChest(chestId: ChestId): void {
 function ChestResult(props: { item: ItemId }) {
 	const def = ITEMS[props.item];
 	const color = rarityColor(props.item);
+	const petModel = def.kind === "pet" ? petTemplate(props.item) : undefined;
 	const [scale, scaleMotion] = useMotion(0.3);
 	useEffect(() => {
 		scaleMotion.spring(1, { tension: 260, friction: 12 });
@@ -213,13 +217,22 @@ function ChestResult(props: { item: ItemId }) {
 					<uicorner CornerRadius={RADIUS.xlarge} />
 					<uistroke Color={COLORS.outline} Thickness={STROKE.heavy} />
 					<uigradient Rotation={90} Color={rampSequence(RARITY_RAMPS[def.rarity])} />
-					<textlabel
-						BackgroundTransparency={1}
-						Size={new UDim2(1, 0, 1, 0)}
-						Text={KIND_ICONS[def.kind]}
-						TextSize={68}
-						ZIndex={3}
-					/>
+					{petModel !== undefined ? (
+						<ModelIcon
+							template={petModel}
+							size={new UDim2(1, -10, 1, -10)}
+							position={UDim2.fromOffset(5, 5)}
+							zIndex={3}
+						/>
+					) : (
+						<textlabel
+							BackgroundTransparency={1}
+							Size={new UDim2(1, 0, 1, 0)}
+							Text={KIND_ICONS[def.kind]}
+							TextSize={68}
+							ZIndex={3}
+						/>
+					)}
 				</frame>
 			</canvasgroup>
 			<frame BackgroundTransparency={1} Position={new UDim2(0, 206, 0, 0)} Size={new UDim2(1, -206, 1, 0)}>
@@ -279,6 +292,7 @@ export function startChestsController(): void {
 	onServerMessage(CHEST_RESULT_REMOTE, (item, chestId) => {
 		if (isItemId(item) && isChestId(chestId)) {
 			playSound("chestOpen");
+			playTerminalBurst(chestId);
 			const rarity = ITEMS[item].rarity;
 			if (rarity === "rare" || rarity === "epic" || rarity === "legendary") {
 				playSound("chestRare");

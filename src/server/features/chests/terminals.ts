@@ -3,7 +3,8 @@
 // the usual chest flow works: the prompt opens the odds panel, and the server checks the player stands near a
 // tagged anchor with that ChestId before charging. The place file is never changed (runtime only).
 import { nameKeys, text } from "shared/features/i18n";
-import { localizePrompt } from "server/lib/localized";
+import { StringKey } from "shared/config/i18n";
+import { localizeLabel, localizePrompt } from "server/lib/localized";
 import { CollectionService, Workspace } from "@rbxts/services";
 import { ChestId, isChestId } from "shared/config/chests";
 import { CHEST_DISTANCE } from "shared/features/chests";
@@ -84,6 +85,16 @@ function titleOnBothSides(terminal: Model): void {
 	copy.Parent = title;
 }
 
+/** The sign's words were typed into the map in Ukrainian; they follow each player's language instead. */
+function localizeTitle(terminal: Model, chestId: ChestId): void {
+	const title = terminal.FindFirstChild(CHEST_TERMINALS.Title);
+	for (const label of title?.GetDescendants() ?? []) {
+		if (label.IsA("TextLabel")) {
+			localizeLabel(label, text(`chest.sign.${chestId}` as StringKey));
+		}
+	}
+}
+
 /** Turns every known terminal on every plot into a chest stand. Returns how many were found. */
 export function setupChestTerminals(): number {
 	const plots = Workspace.FindFirstChild(PLOTS.MapFolder)?.FindFirstChild(PLOTS.PlotsFolder);
@@ -95,6 +106,7 @@ export function setupChestTerminals(): number {
 			if (terminal !== undefined && terminal.IsA("Model") && isChestId(chestId)) {
 				makeStand(terminal, chestId);
 				titleOnBothSides(terminal);
+				localizeTitle(terminal, chestId);
 				count += 1;
 			}
 		}

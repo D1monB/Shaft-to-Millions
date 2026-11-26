@@ -6,6 +6,7 @@ import { createPortal, createRoot } from "@rbxts/react-roblox";
 import { Players } from "@rbxts/services";
 import { GoalBanner } from "client/features/goals";
 import { Hud } from "client/features/hud";
+import { PickaxeHotbar } from "client/features/upgrades";
 import { useLanguageChoice } from "client/lib/i18n";
 import { PanelHost, ToastHost } from "client/lib/ui-kit";
 
@@ -43,6 +44,7 @@ function App() {
 				<uiscale Scale={scale} />
 				<Hud />
 				<GoalBanner />
+				<PickaxeHotbar />
 				<ToastHost />
 				<PanelHost />
 			</frame>

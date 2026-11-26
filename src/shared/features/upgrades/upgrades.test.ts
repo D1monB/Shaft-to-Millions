@@ -168,20 +168,14 @@ class UpgradesTests {
 	}
 
 	@Test
-	public hintPrefersACheaperSidePickaxeThatOpensNewOre() {
-		const gear = createStarterGear();
-		for (const def of PICKAXES) {
-			if (def.tier <= 3) {
-				gear.owned.push(def.id);
-			}
+	public pickaxesAreOneLineFromWeakToStrong() {
+		// Decision 037: the map author's 10 pickaxes, no side items; each is at least as good as the one before.
+		for (let i = 1; i < PICKAXES.size(); i++) {
+			const [before, current] = [PICKAXES[i - 1], PICKAXES[i]];
+			Assert.undefined(current.special);
+			Assert.true(current.tier >= before.tier && current.power > before.power && current.price > before.price);
+			Assert.true(current.swingSeconds <= before.swingSeconds);
 		}
-		// The hammer (tier 4, side item) is cheaper than the titanium pickaxe (tier 4, main line).
-		const hammer = PICKAXES.find((def) => def.id === "pickaxe_hammer");
-		const mainLine = nextGearToBuy("pickaxe", gear);
-		Assert.true((hammer?.price ?? math.huge) < (mainLine?.price ?? 0));
-		Assert.equal(nextGearToBuy("pickaxe", gear, 3)?.id, "pickaxe_hammer");
-		gear.owned.push("pickaxe_hammer");
-		Assert.equal(nextGearToBuy("pickaxe", gear, 4)?.id, mainLine?.id);
 	}
 
 	@Test

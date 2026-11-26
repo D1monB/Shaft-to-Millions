@@ -2,6 +2,7 @@
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useState } from "@rbxts/react";
 import { Gloss } from "./effects";
+import { Glyph } from "./glyph";
 import {
 	BUTTON_RAMPS,
 	ButtonVariant,
@@ -88,13 +89,12 @@ export function StatTile(props: StatTileProps) {
 					/>
 					<uigradient Rotation={90} Color={rampSequence(RAMPS.plank, open ? 0.1 : 0)} />
 					<Gloss zIndex={2} height={0.3} />
-					<textlabel
-						BackgroundTransparency={1}
-						Position={new UDim2(0, 0, 0, 5)}
-						Size={new UDim2(1, 0, 0, 36)}
-						Text={props.icon}
-						TextSize={25}
-						ZIndex={3}
+					<Glyph
+						icon={props.icon}
+						position={new UDim2(0, 0, 0, 5)}
+						size={new UDim2(1, 0, 0, 36)}
+						textSize={25}
+						zIndex={3}
 					/>
 					<textlabel
 						BackgroundTransparency={1}
@@ -189,13 +189,12 @@ export function MenuButton(props: MenuButtonProps) {
 					/>
 					<uigradient Rotation={90} Color={rampSequence(BUTTON_RAMPS[props.variant ?? "secondary"])} />
 					<Gloss zIndex={2} />
-					<textlabel
-						BackgroundTransparency={1}
-						Position={new UDim2(0, 0, 0, 6)}
-						Size={new UDim2(1, 0, 0, 46)}
-						Text={props.icon}
-						TextSize={31}
-						ZIndex={3}
+					<Glyph
+						icon={props.icon}
+						position={new UDim2(0, 0, 0, 6)}
+						size={new UDim2(1, 0, 0, 46)}
+						textSize={31}
+						zIndex={3}
 					/>
 					<textlabel
 						BackgroundTransparency={1}
@@ -240,14 +239,13 @@ export function CapsuleBadge(props: { icon: string; ramp: Ramp; size: number; ro
 				<uicorner CornerRadius={radius} />
 				<uistroke Color={COLORS.outline} Thickness={STROKE.thick} />
 				<uigradient Rotation={90} Color={rampSequence(props.ramp)} />
-				<textlabel
-					BackgroundTransparency={1}
-					Size={new UDim2(1, 0, 1, 0)}
-					Font={FONTS.display}
-					Text={props.icon}
-					TextSize={math.floor(props.size * 0.5)}
-					TextColor3={Color3.fromRGB(69, 26, 3)}
-					ZIndex={2}
+				<Glyph
+					icon={props.icon}
+					size={new UDim2(1, 0, 1, 0)}
+					font={FONTS.display}
+					textSize={math.floor(props.size * 0.5)}
+					textColor={Color3.fromRGB(69, 26, 3)}
+					zIndex={2}
 				/>
 			</frame>
 		</frame>

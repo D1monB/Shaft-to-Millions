@@ -1,8 +1,9 @@
-// The always-visible HUD, laid out exactly like the developer's reference picture:
-//   top centre: money and bag capsules side by side;
-//   left edge, vertically centred: a column of square stat tiles (hover or tap a tile for its full text);
+// The always-visible HUD (layout changed after the developer's feedback 2026-11-26: the big capsules at the top centre
+// were in the way):
+//   top left, under Roblox's own buttons: small money, crystal and bag capsules, one above the other;
+//   left edge, below them: a column of square stat tiles (hover or tap a tile for its full text);
 //   right edge, vertically centred: the coloured dock of menu buttons;
-//   bottom centre: the goal (goals feature).
+//   top centre: the goal (goals feature); bottom centre: the pickaxe hotbar (upgrades feature).
 // Other features plug in their own stats and buttons, so the HUD knows nothing about factories or chests.
 import { t } from "client/lib/i18n";
 import React, { useEffect, useState } from "@rbxts/react";
@@ -10,13 +11,14 @@ import { UserInputService } from "@rbxts/services";
 import { bagCapacity, bagTotal } from "shared/features/bag";
 import { PlayerView } from "shared/features/profile";
 import { useView } from "client/features/profile";
+import { closePanel, openPanel } from "client/lib/panels";
 import {
+	Button,
 	ButtonVariant,
 	COLORS,
 	CapsuleBadge,
 	CurrencyLabel,
 	DEPTH,
-	FONTS,
 	MENU_BUTTON_SIZE,
 	MenuButton,
 	ProgressBar,
@@ -50,6 +52,8 @@ interface ButtonEntry {
 	readonly label: string | (() => string);
 	readonly onClick: () => void;
 	readonly variant: ButtonVariant;
+	/** Shown in the "more" menu instead of the dock, to keep a phone screen clear. */
+	readonly secondary: boolean;
 }
 
 const stats: StatEntry[] = [];
@@ -71,18 +75,23 @@ export function registerHudButton(
 	onClick: () => void,
 	order = 50,
 	variant: ButtonVariant = "secondary",
+	secondary = false,
 ): void {
-	buttons.push({ order, icon, label, onClick, variant });
+	buttons.push({ order, icon, label, onClick, variant, secondary });
 	buttons.sort((a, b) => a.order < b.order);
 }
 
-// ---------------------------------------------------------------- top centre: money and bag
+// ---------------------------------------------------------------- top left: money and bag
 
-const MONEY_WIDTH = 220;
-const BAG_WIDTH = 280;
-const CAPSULE_HEIGHT = 46;
+const CAPSULE_WIDTH = 180;
+const CAPSULE_HEIGHT = 34;
+const CAPSULE_GAP = 8;
 /** Room on the left of a capsule for the badge that sticks out of it. */
-const BADGE_ROOM = 48;
+const BADGE_ROOM = 40;
+/** Below Roblox's own top bar buttons (menu, chat), which take the top-left corner. */
+const TOP_LEFT_Y = 60;
+/** Where the stat tiles start: under both capsules. */
+const STATS_Y = TOP_LEFT_Y + 3 * (CAPSULE_HEIGHT + DEPTH.button + CAPSULE_GAP) + 4;
 
 function Capsule(props: React.PropsWithChildren<{ order: number; width: number }>) {
 	return (
@@ -111,28 +120,39 @@ function Capsule(props: React.PropsWithChildren<{ order: number; width: number }
 
 function MoneyCapsule(props: { money: number }) {
 	return (
-		<Capsule order={1} width={MONEY_WIDTH}>
-			<CapsuleBadge icon="$" ramp={RAMPS.coin} size={52} round={true} rotation={-6} />
+		<Capsule order={1} width={CAPSULE_WIDTH}>
+			<CapsuleBadge icon="$" ramp={RAMPS.coin} size={38} round={true} rotation={-6} />
 			<frame
+				AnchorPoint={new Vector2(0, 0.5)}
 				BackgroundTransparency={1}
-				Position={new UDim2(0, BADGE_ROOM, 0, 4)}
-				Size={new UDim2(1, -(BADGE_ROOM + 16), 1, -8)}
+				Position={new UDim2(0, BADGE_ROOM, 0.5, 0)}
+				Size={new UDim2(1, -(BADGE_ROOM + 12), 1, -6)}
 			>
 				<uilistlayout
 					SortOrder={Enum.SortOrder.LayoutOrder}
 					VerticalAlignment={Enum.VerticalAlignment.Center}
 				/>
-				<textlabel
-					BackgroundTransparency={1}
-					Size={new UDim2(1, 0, 0, 14)}
-					Font={FONTS.display}
-					Text={t("hud.balance")}
-					TextSize={13}
-					TextColor3={COLORS.textMuted}
-					TextXAlignment={Enum.TextXAlignment.Left}
-					LayoutOrder={1}
+				<CurrencyLabel value={props.money} size={20} order={1} />
+			</frame>
+		</Capsule>
+	);
+}
+
+function CrystalCapsule(props: { crystals: number }) {
+	return (
+		<Capsule order={2} width={CAPSULE_WIDTH}>
+			<CapsuleBadge icon="💎" ramp={RAMPS.gem} size={36} round={true} rotation={4} />
+			<frame
+				AnchorPoint={new Vector2(0, 0.5)}
+				BackgroundTransparency={1}
+				Position={new UDim2(0, BADGE_ROOM, 0.5, 0)}
+				Size={new UDim2(1, -(BADGE_ROOM + 12), 1, -6)}
+			>
+				<uilistlayout
+					SortOrder={Enum.SortOrder.LayoutOrder}
+					VerticalAlignment={Enum.VerticalAlignment.Center}
 				/>
-				<CurrencyLabel value={props.money} size={25} order={2} />
+				<CurrencyLabel value={props.crystals} size={20} color={COLORS.crystal} plain={true} order={1} />
 			</frame>
 		</Capsule>
 	);
@@ -141,18 +161,18 @@ function MoneyCapsule(props: { money: number }) {
 function BagCapsule(props: { used: number; capacity: number }) {
 	const full = props.used >= props.capacity;
 	return (
-		<Capsule order={2} width={BAG_WIDTH}>
-			<CapsuleBadge icon="🎒" ramp={RAMPS.close} size={48} rotation={3} />
+		<Capsule order={3} width={CAPSULE_WIDTH}>
+			<CapsuleBadge icon="🎒" ramp={RAMPS.close} size={36} rotation={3} />
 			<frame
 				AnchorPoint={new Vector2(0, 0.5)}
 				BackgroundTransparency={1}
 				Position={new UDim2(0, BADGE_ROOM, 0.5, 0)}
-				Size={new UDim2(1, -(BADGE_ROOM + 12), 0, 30)}
+				Size={new UDim2(1, -(BADGE_ROOM + 10), 0, 22)}
 			>
 				<ProgressBar
 					progress={props.capacity > 0 ? props.used / props.capacity : 0}
 					color={full ? COLORS.canyon : Color3.fromRGB(251, 191, 36)}
-					height={30}
+					height={22}
 					text={full ? t("hud.bagFull") : `${props.used} / ${props.capacity}`}
 				/>
 			</frame>
@@ -160,23 +180,17 @@ function BagCapsule(props: { used: number; capacity: number }) {
 	);
 }
 
-function TopCentre(props: { view: PlayerView }) {
+function TopLeft(props: { view: PlayerView }) {
 	return (
 		<frame
-			AnchorPoint={new Vector2(0.5, 0)}
-			Position={new UDim2(0.5, 0, 0, 12)}
-			Size={new UDim2(0, 0, 0, 0)}
-			AutomaticSize={Enum.AutomaticSize.XY}
+			Position={new UDim2(0, 18, 0, TOP_LEFT_Y)}
+			Size={new UDim2(0, CAPSULE_WIDTH, 0, 0)}
+			AutomaticSize={Enum.AutomaticSize.Y}
 			BackgroundTransparency={1}
 		>
-			{/* The gap leaves room for the bag badge that sticks out to the left of its capsule. */}
-			<uilistlayout
-				FillDirection={Enum.FillDirection.Horizontal}
-				Padding={new UDim(0, 30)}
-				SortOrder={Enum.SortOrder.LayoutOrder}
-				VerticalAlignment={Enum.VerticalAlignment.Top}
-			/>
+			<uilistlayout Padding={new UDim(0, CAPSULE_GAP)} SortOrder={Enum.SortOrder.LayoutOrder} />
 			<MoneyCapsule money={props.view.money} />
+			<CrystalCapsule crystals={props.view.crystals} />
 			<BagCapsule used={bagTotal(props.view.bag)} capacity={bagCapacity(props.view.gear.equipped.bag)} />
 		</frame>
 	);
@@ -204,6 +218,37 @@ function useTouchFirst(): boolean {
 	return touch;
 }
 
+function labelOf(button: ButtonEntry): string {
+	return typeIs(button.label, "function") ? button.label() : button.label;
+}
+
+/** The secondary buttons as a list of big buttons in a panel. */
+function MorePanel() {
+	return (
+		<>
+			{buttons
+				.filter((button) => button.secondary)
+				.map((button, index) => (
+					<Button
+						key={`more_${index}`}
+						text={`${button.icon}  ${labelOf(button)}`}
+						variant={button.variant}
+						height={52}
+						onClick={() => {
+							closePanel();
+							button.onClick();
+						}}
+						order={index}
+					/>
+				))}
+		</>
+	);
+}
+
+function openMore(): void {
+	openPanel({ key: "more", title: t("menu.more"), icon: "⋯", render: () => <MorePanel /> });
+}
+
 function Dock() {
 	const touch = useTouchFirst();
 	return (
@@ -215,16 +260,21 @@ function Dock() {
 			BackgroundTransparency={1}
 		>
 			<uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
-			{buttons.map((button, index) => (
-				<MenuButton
-					key={`menu_${index}`}
-					icon={button.icon}
-					label={typeIs(button.label, "function") ? button.label() : button.label}
-					onClick={button.onClick}
-					variant={button.variant}
-					order={index}
-				/>
-			))}
+			{buttons
+				.filter((button) => !button.secondary)
+				.map((button, index) => (
+					<MenuButton
+						key={`menu_${index}`}
+						icon={button.icon}
+						label={labelOf(button)}
+						onClick={button.onClick}
+						variant={button.variant}
+						order={index}
+					/>
+				))}
+			{buttons.some((button) => button.secondary) && (
+				<MenuButton icon="⋯" label={t("menu.more")} onClick={openMore} variant="slate" order={99} />
+			)}
 		</frame>
 	);
 }
@@ -252,18 +302,18 @@ function StatGrid(props: { view: PlayerView }) {
 	});
 	return (
 		<frame
-			Position={new UDim2(0, 18, 0, 12)}
-			Size={new UDim2(0, STAT_TILE_SIZE * 2 + TILE_GAP, 1, -24)}
+			Position={new UDim2(0, 18, 0, STATS_Y)}
+			Size={new UDim2(0, STAT_TILE_SIZE * 2 + TILE_GAP, 1, -(STATS_Y + 12))}
 			BackgroundTransparency={1}
 		>
-			{/* One column centred on the left edge, like the reference. The frame spans the screen height, so the grid
-			    fills it top to bottom and starts a second column by itself only when a short screen (a phone in
-			    landscape) has no room for all tiles. */}
+			{/* One column under the capsules. The frame spans the rest of the screen height, so the grid fills it top to
+			    bottom and starts a second column by itself only when a short screen (a phone in landscape) has no
+			    room for all tiles. */}
 			<uigridlayout
 				CellSize={new UDim2(0, STAT_TILE_SIZE, 0, STAT_TILE_SIZE + DEPTH.button)}
 				CellPadding={new UDim2(0, TILE_GAP, 0, 8)}
 				FillDirection={Enum.FillDirection.Vertical}
-				VerticalAlignment={Enum.VerticalAlignment.Center}
+				VerticalAlignment={Enum.VerticalAlignment.Top}
 				SortOrder={Enum.SortOrder.LayoutOrder}
 			/>
 			{tiles}
@@ -278,7 +328,7 @@ export function Hud() {
 	}
 	return (
 		<>
-			<TopCentre view={view} />
+			<TopLeft view={view} />
 			<StatGrid view={view} />
 			<Dock />
 		</>

@@ -171,12 +171,12 @@ class MiningTests {
 
 	@Test
 	public swappingToAFastPickaxeRightAfterAHitIsStillOnCooldown() {
-		// Regression: the hammer (slow, strong) then the light pickaxe (fast) must not give two hits at once.
-		const hammer = getPickaxe("pickaxe_hammer");
-		const light = getPickaxe("pickaxe_light");
+		// Regression: a slow pickaxe then a fast one must not give two hits at once.
+		const hammer = PICKAXES[0];
+		const light = PICKAXES[PICKAXES.size() - 1];
 		Assert.true(hammer.swingSeconds > light.swingSeconds);
 		const session = new MiningSession<string>();
-		Assert.equal(session.hit("a", ORES.copper, hammer, 10).kind, "broken");
+		Assert.notEqual(session.hit("a", ORES.copper, hammer, 10).kind, "cooldown");
 		Assert.equal(session.hit("b", ORES.copper, light, 10 + light.swingSeconds * 0.5).kind, "cooldown");
 		Assert.notEqual(session.hit("b", ORES.copper, light, 10 + light.swingSeconds).kind, "cooldown");
 	}

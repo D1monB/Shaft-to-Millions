@@ -1,6 +1,7 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { ORE_IDS } from "./ores";
-import { ORE_BREAK_SOUNDS, SOUNDS, SOUND_IDS, SoundDef, isValidAssetId } from "./sounds";
+import { LINE_MACHINES } from "./line";
+import { MACHINE_SOUNDS, ORE_BREAK_SOUNDS, SOUNDS, SOUND_IDS, SoundDef, isValidAssetId } from "./sounds";
 
 function checkDef(name: string, def: SoundDef): void {
 	Assert.true(isValidAssetId(def.assetId), `${name}: bad assetId "${def.assetId}"`);
@@ -29,6 +30,27 @@ class SoundConfigTests {
 			const key = `${def.assetId}@${def.speed ?? 1}`;
 			Assert.false(seen.has(key), `ore ${id}: sounds exactly like another ore`);
 			seen.add(key);
+		}
+	}
+
+	@Test
+	public everyMachineSoundsDifferent() {
+		const loops = new Set<string>();
+		const works = new Set<string>();
+		for (const machine of LINE_MACHINES) {
+			const def = MACHINE_SOUNDS[machine.id];
+			Assert.true(def !== undefined, `machine ${machine.id}: no sounds`);
+			if (def === undefined) {
+				continue;
+			}
+			checkDef(`machine ${machine.id} loop`, def.loop);
+			checkDef(`machine ${machine.id} work`, def.work);
+			const loopKey = `${def.loop.assetId}@${def.loop.speed ?? 1}`;
+			const workKey = `${def.work.assetId}@${def.work.speed ?? 1}`;
+			Assert.false(loops.has(loopKey), `machine ${machine.id}: hums like another machine`);
+			Assert.false(works.has(workKey), `machine ${machine.id}: works like another machine`);
+			loops.add(loopKey);
+			works.add(workKey);
 		}
 	}
 

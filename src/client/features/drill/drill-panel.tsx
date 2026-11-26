@@ -17,7 +17,6 @@ import {
 } from "shared/features/drill";
 import { intakeRoom } from "shared/features/line";
 import { getPickaxe, hitsRequired } from "shared/features/mining";
-import { walkSpeedFor } from "shared/features/movement";
 import { PlayerView } from "shared/features/profile";
 import { formatCount, formatMoney } from "shared/lib/format";
 import { deepCopy } from "shared/lib/tables";
@@ -29,13 +28,6 @@ import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
 import { BuyButton, Button, COLORS, Card, Label, ProgressBar, TEXT_SIZES } from "client/lib/ui-kit";
-
-let speedBonusOf: (view: PlayerView) => number = () => 0;
-
-/** Equipment sets this so the HUD shows the same speed the server applies. */
-export function setClientSpeedBonus(provider: (view: PlayerView) => number): void {
-	speedBonusOf = provider;
-}
 
 function DrillShop(props: { layer: number; view: PlayerView }) {
 	const def = DRILLS[props.layer];
@@ -179,10 +171,7 @@ export function startDrillController(): void {
 		}),
 		short: `${view.deepestLayer}/${LAYER_COUNT}`,
 	}));
-	registerHudStat(25, (view) => {
-		const speed = math.floor(walkSpeedFor(view.gear.equipped.shoes, speedBonusOf(view)));
-		return { icon: "👟", text: t("hud.walkSpeed", { speed }), short: `${speed}` };
-	});
+	// No walk speed tile: it is in the shop and the items panel (HUD clean-up, 2026-11-26).
 
 	registerGoalSource((view) => {
 		for (let layer = 1; layer <= LAYER_COUNT; layer++) {

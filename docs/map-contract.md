@@ -92,6 +92,8 @@ Workspace
 
 - Усередині кожного термінала має бути Attachment `PromptPoint` (запасний варіант: `RollButton`). Кнопка «Подивитись»
   стає над ним на висоті грудей гравця (низ термінала + 3 стади), бо вгорі гравець її не бачить.
+- Необов'язковий `ParticleEmitter` `RollBurst` (`Rate = 0`, атрибут `EmitCount`) спалахує в гравця, коли йому випав
+  предмет. Рухомі частини анімує скрипт друга `MachineAnimator` (тег `MachineAnim`), а не наш код.
 - Під час гри сервер додає в термінал невидиму частину `ChestStand` з тегом `Chest` і атрибутом `ChestId`.
   У файлі карти нічого не змінюється.
 - Перейменування терміналів або папки `Terminals` вимкне сундуки: назви записані в `src/shared/config/map-contract.ts`
@@ -99,7 +101,7 @@ Workspace
 
 ## Ore spawn points (decision 034)
 
-- `Workspace/Map/Mine/OreSpawns/Tier<N>/<any BasePart>`: one ore block per point, layer N's ore. The point's bottom
+- `Workspace/Map/Mine/OreSpawns/Tier<N>/<any BasePart>`: a possible place for one ore block (40% hold one at a time, decision 038), layer N's ore. The point's bottom
   is the block's bottom. Points may be invisible; their name does not matter.
 - `Workspace/Map/Mine/TunnelEntrance/Portal` (BasePart): Tier5 points within 60 studs of it grow iridium.
 - More points or a new tier folder need no code change (a new tier needs a layer and an ore in the config).
@@ -117,3 +119,22 @@ Workspace
 
 Якщо змінити форму чи розмір кута, треба оновити числа в коді. Якщо маршрут зламаний, в Output з'явиться
 попередження `[line] belt path ...`.
+
+## Intake booth (decision 039)
+
+- `ServerStorage/LineTemplates/IntakeBooth` (Model, optional). Its **pivot** is where the belt starts, and its front
+  (LookVector, -Z) faces the way items ride. The server puts a copy at the start of every owned plot's belt, with the
+  "Drop ore" prompt (E) at its middle. Without the model a plain wooden box stands in for it.
+
+## Lift (decision 040)
+
+- `Workspace/Map/Mine/Decor/LiftTower/Lift_Cage` (Model) rides, `Lift_Tower` (Model) is the shaft.
+- Optional BaseParts in the same folder: `LiftBottom` and `LiftTop` mark where the cage's floor stops; `LiftBottom`
+  may have a number attribute `Layer` (riding down needs that layer opened). Without them the cage rides from where
+  it stands to the top of the tower.
+
+## SellStation boards (decision 044)
+
+- `Factory/SellStation` keeps these names: `SignText/SurfaceGui/Title`, `PriceScreen/SurfaceGui/PriceList/{Title, Ore,
+  Ingot, Part}`, `ButtonText/SurfaceGui/Label` (TextLabels; the server rewrites their text). `ButtonText` must be a
+  BasePart near the counter: the sell prompt (E) sits on it.

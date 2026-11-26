@@ -66,6 +66,23 @@ export function teleportCharacter(player: Player, target: Vector3): void {
 	}
 }
 
+/** Players the server itself is carrying (a lift ride): not checked, the server moves them. */
+const held = new Set<Player>();
+
+/**
+ * Starts or ends a server-carried ride (the lift). While held the character is not checked. End it with `false`
+ * BEFORE the final teleportCharacter, so the check waits for the client at the ride's end like after any teleport.
+ */
+export function holdCharacter(player: Player, hold: boolean): void {
+	if (hold) {
+		held.add(player);
+	} else {
+		held.delete(player);
+	}
+	states.delete(player);
+	pending.delete(player);
+}
+
 /** Moves the character to a spot keeping where it faces, and stops any speed the client built up. */
 function putAt(character: Model, root: BasePart, position: Vector3): void {
 	const pivot = character.GetPivot();
@@ -109,6 +126,10 @@ function checkPosition(player: Player): void {
 	// There is NO exemption for Humanoid.Sit: the client controls its own character, so "I am seated" proves nothing,
 	// and the game has no vehicles. If seats or vehicles come, trust only a server-known Seat (humanoid.SeatPart).
 	if (humanoid.Health <= 0) {
+		return;
+	}
+	if (held.has(player)) {
+		states.delete(player);
 		return;
 	}
 
@@ -175,6 +196,7 @@ function checkPosition(player: Player): void {
 function forget(player: Player): void {
 	states.delete(player);
 	pending.delete(player);
+	held.delete(player);
 	logLimiter.forget(player.UserId);
 }
 

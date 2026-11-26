@@ -1,5 +1,5 @@
 import { Assert, Test } from "@rbxts/lunit";
-import { CHESTS, CHEST_IDS } from "shared/config/chests";
+import { CHESTS, CHEST_IDS, CRYSTAL_RESALE_LIMIT } from "shared/config/chests";
 import { ITEMS } from "shared/config/items";
 import { MAX_WALK_SPEED, SHOES } from "shared/config/shoes";
 import type { OwnedItem } from "shared/features/chests";
@@ -160,7 +160,7 @@ class EquipmentTests {
 			for (const line of chestOdds(chestId)) {
 				expected += line.chance * itemSellValue(line.item);
 			}
-			Assert.true(expected < CHESTS[chestId].dollarPrice * 0.5, `${chestId}: ${expected}`);
+			Assert.true(expected < CHESTS[chestId].crystalPrice * CRYSTAL_RESALE_LIMIT, `${chestId}: ${expected}`);
 		}
 	}
 }

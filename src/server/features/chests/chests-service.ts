@@ -1,4 +1,4 @@
-// Chests: opening with dollars (at a chest stand) and with Robux (Developer Products via ProcessReceipt).
+// Chests: opening with crystals (at a chest stand, decision 043) and with Robux (Developer Products via ProcessReceipt).
 // Every roll happens here, on the server, with the server's Random.
 import { nameKeys, text } from "shared/features/i18n";
 import { CollectionService, MarketplaceService, Players, PolicyService } from "@rbxts/services";
@@ -11,7 +11,7 @@ import {
 	ROBUX_CHESTS_ALLOWED_ATTRIBUTE,
 	OPEN_CHEST_REMOTE,
 	addItem,
-	canOpenWithDollars,
+	canOpenWithCrystals,
 	rollChest,
 } from "shared/features/chests";
 import { ProfileData } from "shared/features/profile";
@@ -70,7 +70,7 @@ function grantRoll(player: Player, data: ProfileData, chestId: ChestId): ItemId 
 	return item;
 }
 
-function handleOpenWithDollars(player: Player, args: Array<unknown>): void {
+function handleOpenWithCrystals(player: Player, args: Array<unknown>): void {
 	const [chestId] = args;
 	if (args.size() !== 1 || !isChestId(chestId)) {
 		logAbuse(player, "bad OpenChest arguments");
@@ -90,13 +90,17 @@ function handleOpenWithDollars(player: Player, args: Array<unknown>): void {
 		logAbuse(player, "OpenChest away from the chest");
 		return;
 	}
-	const check = canOpenWithDollars(chestId, data.money, data.inventory.size());
+	const check = canOpenWithCrystals(chestId, data.crystals, data.inventory.size());
 	if (!check.ok) {
-		notify(player, check.reason === "money" ? text("common.notEnoughMoney") : text("chest.inventoryFull"), "error");
+		notify(
+			player,
+			check.reason === "crystals" ? text("common.notEnoughCrystals") : text("chest.inventoryFull"),
+			"error",
+		);
 		return;
 	}
 	// Charge and grant in the same frame: no yield in between, so no way to get one without the other.
-	data.money -= CHESTS[chestId].dollarPrice;
+	data.crystals -= CHESTS[chestId].crystalPrice;
 	grantRoll(player, data, chestId);
 }
 
@@ -136,7 +140,7 @@ function processReceipt(receipt: ReceiptInfo): Enum.ProductPurchaseDecision {
 
 export function startChestsService(): void {
 	declareClientEvent(CHEST_RESULT_REMOTE);
-	onClientRequest(OPEN_CHEST_REMOTE, new RateLimiter(3, 1), handleOpenWithDollars);
+	onClientRequest(OPEN_CHEST_REMOTE, new RateLimiter(3, 1), handleOpenWithCrystals);
 	MarketplaceService.ProcessReceipt = processReceipt;
 
 	const addPrompt = (instance: Instance) => {

@@ -7,19 +7,12 @@ import { CollectionService, TweenService } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, isOreId } from "shared/config/ores";
 import { PICKAXES } from "shared/config/pickaxes";
-import {
-	MINE_PROGRESS_REMOTE,
-	NODE_BROKEN_REMOTE,
-	canMineTier,
-	getPickaxe,
-	hitsRequired,
-} from "shared/features/mining";
+import { MINE_PROGRESS_REMOTE, NODE_BROKEN_REMOTE, canMineTier, getPickaxe } from "shared/features/mining";
 import { PlayerView } from "shared/features/profile";
 import { formatMoney } from "shared/lib/format";
-import { registerHudStat } from "client/features/hud";
 import { getView, onViewChanged } from "client/features/profile";
 import { onServerMessage } from "client/lib/remotes";
-import { playOreBreak, playSound } from "client/lib/sounds";
+import { playOreBreak } from "client/lib/sounds";
 import { COLORS, FONTS } from "client/lib/ui-kit";
 
 function anchorPart(node: Instance): BasePart | undefined {
@@ -102,8 +95,7 @@ function refreshNodeLabel(node: Instance, view: PlayerView): void {
 	const ore = ORES[oreId];
 	const pickaxe = getPickaxe(view.gear.equipped.pickaxe);
 	if (canMineTier(ore, pickaxe)) {
-		const hits = hitsRequired(ore.hardness, pickaxe.power);
-		label.Text = t("mining.label", { ore: t(nameKeys.ore(oreId)), price: formatMoney(ore.price), hits });
+		label.Text = t("mining.label", { ore: t(nameKeys.ore(oreId)), price: formatMoney(ore.price) });
 		label.TextColor3 = COLORS.text;
 	} else {
 		const neededDef = PICKAXES.find((p) => p.tier >= ore.requiredTier);
@@ -241,11 +233,7 @@ function hideNode(node: Instance, seconds: number): void {
 
 export function startMiningController(): void {
 	// The bag is shown in the HUD top bar; only the pickaxe goes to the stat column.
-	registerHudStat(20, (view) => {
-		const name = t(nameKeys.gear(getPickaxe(view.gear.equipped.pickaxe).id));
-		// The first word fits on the tile ("Iron"); the whole name is in the tooltip.
-		return { icon: "⛏️", text: t("hud.pickaxe", { name }), short: name.split(" ")[0] ?? name };
-	});
+	// No pickaxe tile: the hotbar at the bottom already shows the pickaxe (HUD clean-up, 2026-11-26).
 
 	onViewChanged(refreshAllLabels);
 	// Ore labels are world texts built here, so a language change rewrites them too.
@@ -266,19 +254,23 @@ export function startMiningController(): void {
 		bars.delete(node);
 	});
 
-	onServerMessage(MINE_PROGRESS_REMOTE, (node, damage, hardness) => {
+	onServerMessage(MINE_PROGRESS_REMOTE, (node, damage, hardness, crit) => {
 		if (typeIs(node, "Instance") && typeIs(damage, "number") && typeIs(hardness, "number")) {
 			showProgress(node, damage, hardness);
-			playSound("hit");
+			// The hit sound plays on the swing itself (pickaxe-swing), not here: waiting for the server made it late.
+			const part = anchorPart(node);
+			if (crit === true && part !== undefined) {
+				showPopup(part, t("mining.crit"));
+			}
 		}
 	});
-	onServerMessage(NODE_BROKEN_REMOTE, (node, respawnSeconds, oreId, amount) => {
+	onServerMessage(NODE_BROKEN_REMOTE, (node, respawnSeconds, oreId, amount, crit) => {
 		if (!typeIs(node, "Instance") || !typeIs(respawnSeconds, "number") || !isOreId(oreId)) {
 			return;
 		}
 		const part = anchorPart(node);
 		if (part !== undefined && typeIs(amount, "number") && amount > 0) {
-			showPopup(part, `+${amount} ${t(nameKeys.ore(oreId))}`);
+			showPopup(part, `${crit === true ? `${t("mining.crit")} ` : ""}+${amount} ${t(nameKeys.ore(oreId))}`);
 		}
 		playOreBreak(oreId);
 		bars.get(node)?.gui.Destroy();

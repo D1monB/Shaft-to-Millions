@@ -1,7 +1,13 @@
 // Pure mining rules. No Roblox API: the server service passes in the time and the definitions.
 import { OreDef } from "shared/config/ores";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
-import { SWING_TOLERANCE } from "./tuning";
+import {
+	RICH_YIELD_MULTIPLIER,
+	SWING_TOLERANCE,
+	TREASURE_EXTRA_CRYSTALS,
+	TREASURE_MIN_CRYSTALS,
+	TREASURE_MONEY_MULTIPLIER,
+} from "./tuning";
 
 /** The pickaxe with this id. An unknown id (broken save, item from a newer server) falls back to the starter. */
 export function getPickaxe(id: string): PickaxeDef {
@@ -53,7 +59,8 @@ export class MiningSession<K> {
 	private readonly nodes = new Map<K, NodeState>();
 	private lastHitAt = -math.huge;
 
-	public hit(node: K, ore: OreDef, pickaxe: PickaxeDef, now: number): HitResult {
+	/** `damageMultiplier` > 1 is a critical hit (decision 048); anything not finite or below 1 counts as 1. */
+	public hit(node: K, ore: OreDef, pickaxe: PickaxeDef, now: number, damageMultiplier = 1): HitResult {
 		if (!canMineTier(ore, pickaxe)) {
 			return { kind: "locked", requiredTier: ore.requiredTier };
 		}
@@ -72,7 +79,11 @@ export class MiningSession<K> {
 		}
 
 		this.lastHitAt = now;
-		state.damage += pickaxe.power;
+		const multiplier =
+			damageMultiplier === damageMultiplier && damageMultiplier >= 1 && damageMultiplier < math.huge
+				? damageMultiplier
+				: 1;
+		state.damage += pickaxe.power * multiplier;
 		if (state.damage >= ore.hardness) {
 			state.damage = 0;
 			state.depletedUntil = now + ore.respawnSeconds;
@@ -91,4 +102,38 @@ export class MiningSession<K> {
 	public forgetNode(node: K): void {
 		this.nodes.delete(node);
 	}
+}
+
+/**
+ * Crystals from one broken block (decision 043): 1 with probability `chance`, else 0. `roll` is the server's
+ * Random:NextNumber() in [0, 1). Bad input gives 0, so a broken config never hands out crystals.
+ */
+export function rollCrystals(chance: number, roll: number): number {
+	if (!(chance > 0) || chance !== chance || !(roll >= 0) || roll !== roll) {
+		return 0;
+	}
+	return roll < math.min(chance, 1) ? 1 : 0;
+}
+
+/** Ore from one broken block: a rich vein (decision 046) multiplies the rolled amount. Bad input gives the amount. */
+export function veinYield(amount: number, rich: boolean): number {
+	return rich && amount > 0 && amount < math.huge ? amount * RICH_YIELD_MULTIPLIER : amount;
+}
+
+export interface TreasureReward {
+	readonly money: number;
+	readonly crystals: number;
+}
+
+/**
+ * What a treasure crate (decision 050) gives: money from its layer's ore price and a few crystals. `roll` is the
+ * server's Random:NextNumber() in [0, 1); bad input gives the smallest reward, never more.
+ */
+export function treasureReward(orePrice: number, roll: number): TreasureReward {
+	const price = orePrice === orePrice && orePrice > 0 && orePrice < math.huge ? orePrice : 0;
+	const unit = roll === roll ? math.clamp(roll, 0, 0.999999) : 0;
+	return {
+		money: math.floor(price * TREASURE_MONEY_MULTIPLIER),
+		crystals: TREASURE_MIN_CRYSTALS + math.floor(unit * (TREASURE_EXTRA_CRYSTALS + 1)),
+	};
 }

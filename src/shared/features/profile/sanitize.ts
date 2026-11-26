@@ -25,6 +25,7 @@ export function sanitize(data: PlainTable): string[] {
 	const repairs: string[] = [];
 
 	repairInteger(data, "money", 0, MAX_COUNTER, 0, "money", repairs);
+	repairInteger(data, "crystals", 0, MAX_COUNTER, 0, "crystals", repairs);
 
 	const stats = repairTable(data, "stats", "stats", repairs);
 	repairInteger(stats, "totalEarned", 0, MAX_COUNTER, 0, "stats.totalEarned", repairs);

@@ -205,6 +205,8 @@ export interface StoredBeltPath {
 	readonly machines: ReadonlyArray<number>;
 	/** Path index of the SellStation, -1 if unknown. */
 	readonly sell: number;
+	/** Path index where raw ore comes onto the belt (the silo outlet, decision 047); 0 = the start of the belt. */
+	readonly intake: number;
 }
 
 function isIndex(value: unknown, size: number): value is number {
@@ -219,7 +221,7 @@ export function parseBeltPath(decoded: unknown): StoredBeltPath | undefined {
 	if (!typeIs(decoded, "table")) {
 		return undefined;
 	}
-	const data = decoded as { p?: unknown; m?: unknown; s?: unknown };
+	const data = decoded as { p?: unknown; m?: unknown; s?: unknown; i?: unknown };
 	if (!typeIs(data.p, "table") || !typeIs(data.m, "table")) {
 		return undefined;
 	}
@@ -247,7 +249,8 @@ export function parseBeltPath(decoded: unknown): StoredBeltPath | undefined {
 		machines.push(index);
 	}
 	const sell = isIndex(data.s, points.size()) ? data.s : -1;
-	return { points, machines, sell };
+	const intake = isIndex(data.i, points.size()) && data.i >= 0 ? data.i : 0;
+	return { points, machines, sell, intake };
 }
 
 /** Where one item rides on screen: from path index `start` to `target`, shown as the model of `stage` (0 = raw). */
@@ -259,7 +262,7 @@ export interface BeltRoute {
 
 /**
  * The ride of an item that left place `from` of a line with `owned` machines (see LineMove): raw ore (-1) goes from
- * the start of the belt to machine 1, or to the SellStation without machines; the output of machine i goes to
+ * the intake point (the silo outlet, or the start of the belt) to machine 1, or to the SellStation without machines; the output of machine i goes to
  * machine i + 1, or to the SellStation after the last one. Undefined when the plot lacks a place or nothing moves.
  */
 export function routeFor(path: StoredBeltPath, from: number, owned: number): BeltRoute | undefined {
@@ -269,7 +272,7 @@ export function routeFor(path: StoredBeltPath, from: number, owned: number): Bel
 	if (from >= owned || from >= path.machines.size()) {
 		return undefined;
 	}
-	const start = from === -1 ? 0 : path.machines[from];
+	const start = from === -1 ? path.intake : path.machines[from];
 	const nextStage = from + 1;
 	const target = nextStage < owned && nextStage < path.machines.size() ? path.machines[nextStage] : path.sell;
 	if (start === undefined || target === undefined || start < 0 || target < 0 || start === target) {

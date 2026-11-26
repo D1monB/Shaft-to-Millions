@@ -40,15 +40,15 @@ export function rollChest(chestId: ChestId, roll: number): ItemId {
 	return rewards[rewards.size() - 1].item;
 }
 
-export type DollarOpenCheck =
-	{ readonly ok: true } | { readonly ok: false; readonly reason: "money" | "inventory-full" };
+export type CrystalOpenCheck =
+	{ readonly ok: true } | { readonly ok: false; readonly reason: "crystals" | "inventory-full" };
 
-export function canOpenWithDollars(chestId: ChestId, money: number, inventorySize: number): DollarOpenCheck {
+export function canOpenWithCrystals(chestId: ChestId, crystals: number, inventorySize: number): CrystalOpenCheck {
 	if (inventorySize >= INVENTORY_LIMIT) {
 		return { ok: false, reason: "inventory-full" };
 	}
-	if (!(money >= CHESTS[chestId].dollarPrice)) {
-		return { ok: false, reason: "money" };
+	if (!(crystals >= CHESTS[chestId].crystalPrice)) {
+		return { ok: false, reason: "crystals" };
 	}
 	return { ok: true };
 }

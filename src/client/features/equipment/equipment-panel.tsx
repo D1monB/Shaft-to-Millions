@@ -23,7 +23,6 @@ import { getPickaxe, hitsRequired } from "shared/features/mining";
 import { shoesFor, walkSpeedFor } from "shared/features/movement";
 import { PlayerView } from "shared/features/profile";
 import { formatMoney, formatPercent } from "shared/lib/format";
-import { setClientSpeedBonus } from "client/features/drill";
 import { registerHudButton, registerHudStat } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { setClientSellMultiplier } from "client/features/selling";
@@ -194,7 +193,6 @@ function EquipmentPanel() {
 
 export function startEquipmentController(): void {
 	setClientSellMultiplier((view) => bonusesOf(view).sellMultiplier);
-	setClientSpeedBonus((view) => bonusesOf(view).speedBonus);
 
 	registerHudButton(
 		"🎒",

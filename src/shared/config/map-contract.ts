@@ -22,6 +22,10 @@ export const ATTRIBUTES = {
 	OreId: "OreId",
 	LayerId: "LayerId",
 	ChestId: "ChestId",
+	/** On an ore block: true for a rich vein (decision 046). Set by the server only. */
+	Rich: "Rich",
+	/** On an ore block: true for a treasure crate (decision 050). Set by the server only. */
+	Treasure: "Treasure",
 } as const;
 
 /**
@@ -49,12 +53,76 @@ export const CHEST_TERMINALS = {
 	FallbackPoint: "RollButton",
 	/** The name sign of a terminal (a Part with a SurfaceGui). */
 	Title: "TitleText",
+	/** ParticleEmitter (Rate 0) that bursts when a roll comes out. */
+	Burst: "RollBurst",
 	/** Terminal model name -> chest id (config/chests.ts). */
 	Chests: {
 		Terminal_Pets: "pet_chest",
 		Terminal_PickaxeAura: "pickaxe_chest",
 		Terminal_CharAura: "speed_chest",
 	},
+} as const;
+
+/**
+ * The booth at the start of each plot's belt (decision 039): ServerStorage/LineTemplates/IntakeBooth, a Model whose
+ * pivot is where the belt starts, facing the way items ride. Optional: a plain booth stands in while it is missing.
+ */
+export const INTAKE_BOOTH = {
+	TemplateFolder: "LineTemplates",
+	Model: "IntakeBooth",
+} as const;
+
+/**
+ * The lift (decision 040): Workspace/Map/Mine/Decor/LiftTower holds the cage Model and the tower Model. Optional
+ * BaseParts LiftTop / LiftBottom in the same folder mark where the cage's floor stops (LiftBottom may carry a number
+ * attribute Layer: riding down needs that layer opened). Without them the cage rides from where it stands to the top
+ * of the tower.
+ */
+export const LIFT = {
+	Path: ["Map", "Mine", "Decor", "LiftTower"],
+	Cage: "Lift_Cage",
+	Tower: "Lift_Tower",
+	Top: "LiftTop",
+	Bottom: "LiftBottom",
+	LayerAttribute: "Layer",
+} as const;
+
+/**
+ * The SellStation at the end of each plot's belt (decision 044): Factory/SellStation with the map author's boards.
+ * Paths go from the station; "SurfaceGui" is searched at any depth below the part named before it.
+ */
+export const SELL_STATION = {
+	Model: "SellStation",
+	SignTitle: ["SignText", "SurfaceGui", "Title"],
+	PriceTitle: ["PriceScreen", "SurfaceGui", "PriceList", "Title"],
+	PriceOre: ["PriceScreen", "SurfaceGui", "PriceList", "Ore"],
+	PriceIngot: ["PriceScreen", "SurfaceGui", "PriceList", "Ingot"],
+	PricePart: ["PriceScreen", "SurfaceGui", "PriceList", "Part"],
+	ButtonLabel: ["ButtonText", "SurfaceGui", "Label"],
+} as const;
+
+/**
+ * The map author's silo on the belt (decision 047): Factory/Silo. Ore is handed in at its SiloIntake attachment and
+ * comes onto the belt at SiloOutlet; Silo_Glow shows how full it is, FX_Dust puffs while ore leaves it.
+ */
+export const SILO = {
+	Model: "Silo",
+	Intake: "SiloIntake",
+	Outlet: "SiloOutlet",
+	Gauge: "Silo_Glow",
+	Dust: "FX_Dust",
+} as const;
+
+/** The treasure crate model (decision 050): ServerStorage/PropTemplates/Crate. A gold block stands in without it. */
+export const TREASURE = {
+	TemplateFolder: "PropTemplates",
+	Model: "Crate",
+} as const;
+
+/** The name board over each plot: Map/Plots/<PlotN>/Sign with a TextLabel OwnerName inside (any depth). */
+export const PLOT_SIGN = {
+	Part: "Sign",
+	Label: "OwnerName",
 } as const;
 
 export const PLOT_ATTRIBUTES = {

@@ -54,3 +54,51 @@ export function playSound(id: SoundId): void {
 export function playOreBreak(oreId: OreId): void {
 	play(`ore_${oreId}`, ORE_BREAK_SOUNDS[oreId]);
 }
+
+/** Positional copies, each on its own attachment, moved to where the sound happens. */
+const POSITIONAL_POOL_SIZE = 6;
+const positional = new Map<string, Attachment[]>();
+
+/** Sounds this loud this far away (studs) fade out: machines are heard on your plot, not across the map. */
+const POSITIONAL_MAX_DISTANCE = 160;
+
+/**
+ * Plays a sound at a place in the world (a machine on the belt). `key` throttles per source, so twelve machines
+ * may each sound but one machine never machine-guns. Never throws.
+ */
+export function playSoundAt(id: SoundId, position: Vector3, key: string): void {
+	playDefAt(SOUNDS[id], position, `${id}@${key}`);
+}
+
+/** Like playSoundAt, for a sound definition (a machine's own sound, decision 051). */
+export function playDefAt(def: SoundDef, position: Vector3, throttleKey: string): void {
+	const id = `${def.assetId}@${def.speed ?? 1}`;
+	const now = os.clock();
+	if (def.assetId === "" || now - (lastPlayed.get(throttleKey) ?? -math.huge) < def.minGap) {
+		return;
+	}
+	lastPlayed.set(throttleKey, now);
+	let pool = positional.get(id);
+	if (pool === undefined) {
+		pool = [];
+		for (let i = 0; i < POSITIONAL_POOL_SIZE; i++) {
+			const attachment = new Instance("Attachment");
+			attachment.Name = `${id}_at_${i}`;
+			const sound = new Instance("Sound");
+			sound.SoundId = def.assetId;
+			sound.Volume = def.volume;
+			sound.PlaybackSpeed = def.speed ?? 1;
+			sound.RollOffMinDistance = 15;
+			sound.RollOffMaxDistance = POSITIONAL_MAX_DISTANCE;
+			sound.Parent = attachment;
+			attachment.Parent = game.Workspace.Terrain;
+			pool.push(attachment);
+		}
+		positional.set(id, pool);
+	}
+	const index = nextIndex.get(`${id}@pos`) ?? 0;
+	nextIndex.set(`${id}@pos`, (index + 1) % pool.size());
+	const attachment = pool[index];
+	attachment.WorldPosition = position;
+	attachment.FindFirstChildOfClass("Sound")?.Play();
+}
