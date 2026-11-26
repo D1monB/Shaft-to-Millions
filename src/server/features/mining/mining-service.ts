@@ -25,6 +25,7 @@ import {
 	veinYield,
 } from "shared/features/mining";
 import { isLayerOpen } from "shared/features/layers";
+import { liveBonuses, liveEventAt } from "shared/features/progress";
 import { formatMoney } from "shared/lib/format";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { MAX_COUNTER } from "shared/lib/repair";
@@ -190,7 +191,10 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		}
 	} else {
 		// A rare crystal (decision 043) for emptying a block, rolled here with the server Random like the yield.
-		const crystals = rollCrystals(ore.crystalChance, random.NextNumber());
+		const crystals = rollCrystals(
+			ore.crystalChance * liveBonuses(liveEventAt(os.time())).crystals,
+			random.NextNumber(),
+		);
 		if (node.GetAttribute(ATTRIBUTES.Geode) === true) {
 			payGeode(player, data);
 		}
@@ -274,7 +278,9 @@ function bagChips(
 		veinYield(
 			scaleYield(pieces, yieldBonusOf(player) + baseOreBonusOf(player), random.NextNumber()),
 			node.GetAttribute(ATTRIBUTES.Rich) === true,
-		) * boostOf(player, "ore");
+		) *
+		boostOf(player, "ore") *
+		liveBonuses(liveEventAt(os.time())).ore;
 	const added = addToBag(data.bag, oreId, amount, capacity);
 	data.stats.oresMined = math.min(data.stats.oresMined + added, MAX_COUNTER);
 	trackQuest(player, "mineOre", added, oreId);

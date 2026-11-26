@@ -636,6 +636,22 @@ function releasePlot(player: Player): void {
 	refreshPlotSign(plot, undefined);
 }
 
+/** Builds the player's plot again from their profile (after a rebirth). */
+export function rebuildPlot(player: Player): void {
+	const plot = plotOf.get(player);
+	const data = getProfileData(player);
+	if (plot === undefined || data === undefined) {
+		return;
+	}
+	clearBase(plot);
+	silos.delete(plot);
+	sellStations.delete(plot);
+	const [built, err] = pcall(buildFor, plot, data);
+	if (!built) {
+		warn(`[line] rebuilding ${plot.model.Name} failed: ${err}`);
+	}
+}
+
 /** How far inside the plot's edge the base teleport lands, studs. */
 const HOME_EDGE_INSET = 25;
 

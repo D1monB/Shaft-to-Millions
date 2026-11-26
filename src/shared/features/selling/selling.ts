@@ -22,7 +22,9 @@ export interface SalePreview {
 }
 
 /** Highest sell multiplier we ever apply, whatever the bonuses say. Protects the economy from data bugs. */
-export const MAX_SELL_MULTIPLIER = 7;
+export const MAX_SELL_MULTIPLIER = 100;
+/** Cap of the stackable bonuses (pets, market, booster, friends); rebirths and live events multiply on top. */
+export const STACK_SELL_CAP = 7;
 
 export function safeMultiplier(multiplier: number): number {
 	if (multiplier !== multiplier || multiplier < 1) {

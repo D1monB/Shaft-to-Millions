@@ -7,6 +7,7 @@ import { Players } from "@rbxts/services";
 import { GoalBanner } from "client/features/goals";
 import { Hud } from "client/features/hud";
 import { PickaxeHotbar } from "client/features/upgrades";
+import { GuideCard } from "client/features/progress";
 import { useLanguageChoice } from "client/lib/i18n";
 import { PanelHost, ToastHost } from "client/lib/ui-kit";
 
@@ -44,6 +45,7 @@ function App() {
 				<uiscale Scale={scale} />
 				<Hud />
 				<GoalBanner />
+				<GuideCard />
 				<PickaxeHotbar />
 				<ToastHost />
 				<PanelHost />

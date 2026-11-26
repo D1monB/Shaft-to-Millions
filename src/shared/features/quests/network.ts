@@ -4,8 +4,8 @@
  */
 export const CLAIM_QUEST_REMOTE = "ClaimQuest";
 
-export type ClaimWhat = "daily" | "allDone" | "chain" | "streak";
+export type ClaimWhat = "daily" | "allDone" | "chain" | "streak" | "skip";
 
 export function isClaimWhat(value: unknown): value is ClaimWhat {
-	return value === "daily" || value === "allDone" || value === "chain" || value === "streak";
+	return value === "daily" || value === "allDone" || value === "chain" || value === "streak" || value === "skip";
 }

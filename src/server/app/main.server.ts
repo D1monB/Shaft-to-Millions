@@ -23,6 +23,7 @@ import { startEventsService } from "server/features/events";
 import { startHealthService } from "server/features/health";
 import { startAdminService } from "server/features/admin";
 import { startPromoService } from "server/features/promo";
+import { startCreatures, startProgressService } from "server/features/progress";
 import { startSellingService } from "server/features/selling";
 import { startSettingsService } from "server/features/settings";
 import { startTravelService } from "server/features/travel";
@@ -70,5 +71,7 @@ startEventsService();
 startHealthService();
 startAdminService();
 startPromoService();
+startProgressService();
+startCreatures();
 
 startProfileService();

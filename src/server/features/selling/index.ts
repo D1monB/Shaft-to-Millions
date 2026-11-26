@@ -3,6 +3,7 @@
 export {
 	getSellMultiplier,
 	setBaseSellProvider,
+	setProgressSellProvider,
 	setSellMultiplierProvider,
 	startSellingService,
 } from "./selling-service";

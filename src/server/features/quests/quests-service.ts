@@ -15,6 +15,7 @@ import {
 	isClaimWhat,
 	recordEvent,
 	rollOver,
+	skipChain,
 	streakReward,
 } from "shared/features/quests";
 import { formatMoney } from "shared/lib/format";
@@ -82,6 +83,12 @@ function handleClaim(player: Player, args: Array<unknown>): void {
 		return;
 	}
 	rollOver(data.quests, today(), roll);
+	if (what === "skip") {
+		if (skipChain(data.quests)) {
+			markDirty(player);
+		}
+		return;
+	}
 	let result: ClaimResult;
 	if (what === "daily") {
 		result = claimDaily(data.quests, index, snapshotOf(data), data.deepestLayer);

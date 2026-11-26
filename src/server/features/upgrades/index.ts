@@ -2,3 +2,4 @@
 // Public API of this feature. Other code imports only from this file.
 export { startUpgradesService } from "./upgrades-service";
 export { shopDistrictPosition } from "./gear-shops";
+export { syncPickaxeTool } from "./pickaxe-tools";

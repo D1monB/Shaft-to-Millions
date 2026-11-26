@@ -61,6 +61,20 @@ interface ButtonEntry {
 }
 
 const stats: StatEntry[] = [];
+
+/** Menus that stay hidden for a brand-new player (decision 070), decided by the progress feature. */
+export type GatedMenu = "base" | "aura" | "raid";
+let menuGate: (menu: GatedMenu, view: PlayerView) => boolean = () => true;
+let latestView: PlayerView | undefined;
+
+export function setMenuGate(gate: (menu: GatedMenu, view: PlayerView) => boolean): void {
+	menuGate = gate;
+}
+
+/** For a button's `visible`: true once this menu is unlocked (or before the profile arrives). */
+export function isMenuUnlocked(menu: GatedMenu): boolean {
+	return latestView === undefined || menuGate(menu, latestView);
+}
 /** Bumped when a tile's value comes from somewhere else than the profile (e.g. health). */
 const hudVersion = new Store(0);
 
@@ -245,7 +259,7 @@ function MorePanel() {
 	return (
 		<>
 			{buttons
-				.filter((button) => button.secondary)
+				.filter((button) => button.secondary && button.visible())
 				.map((button, index) => (
 					<Button
 						key={`more_${index}`}
@@ -358,6 +372,7 @@ function StatGrid(props: { view: PlayerView }) {
 
 export function Hud() {
 	const view = useView();
+	latestView = view;
 	useStore(hudVersion);
 	if (view === undefined) {
 		return undefined;

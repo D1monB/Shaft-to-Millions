@@ -88,6 +88,7 @@ const KEPT_ON_RESET: ReadonlyArray<string> = [
 	"purchaseIds",
 	"redeemedCodes",
 	"devRole",
+	"calendar",
 	"language",
 	"soundOn",
 ];

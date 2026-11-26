@@ -672,3 +672,18 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 
 - **Decision:** a prompt (T) on any piece of the own conveyor opens the belt panel with three upgrades: speed (as before), silo (500 → 2500 ore waiting) and polishing (+0 → +15% money from the line). Schema v9 (the bigger silo raises the intake cap). The Dev panel can also take money and crystals (never below 0), heal, open all layers, give all boosters for 30 min, fill aura spins, teleport to a player and, **owner only with a second tap**, reset a player's progress (Robux receipts, used promo codes, developer role and settings are kept; the player is kicked and rejoins fresh).
 - **Why:** the developer's requests.
+
+## 070. Retention pack: guide, calendar, rebirth, titles, friends, live events, creatures (2026-11-26)
+
+- **Decision:**
+  - Newcomer guide: a closable card plus a glowing arrow (mine → sell → buy gear → claim plot → first machine), read from progress, so better gear skips steps. Base, aura machine and raid menus appear one by one (all at once if the guide is closed).
+  - Story quests can be skipped without a reward; a gear quest counts as done when the player owns that item or a better one of the slot (donors).
+  - 30-day calendar (missed days do not reset it); day 30 gives 200 crystals and all boosters.
+  - Rebirth: $25M, x3 per rebirth, up to 20; resets money, gear, line, drills and layers; keeps items, crystals, base, quests; +50% money each, +100 crystals.
+  - 12 achievements with titles over the head (unlocks computed from the profile, checked on the server).
+  - Friends on the same server: +10% money each, up to 3; invite button.
+  - Live events by the UTC calendar: weekends double ore; every third week more crystals, the next one x1.25 money.
+  - Wild creatures (the pet models) appear on opened layers; offering ore from the bag may tame them into a pet (layer 1: 30 copper, 50%; layer 5: 80 titanium, 8%). No combat.
+  - Sell cap: x7 for pets, market, booster and friends; rebirths and live events multiply on top.
+- **Why:** the developer chose all seven proposals to keep players longer.
+- **Note:** creatures are a first version of stage 4 (taming without combat); numbers are guesses until play-tested.

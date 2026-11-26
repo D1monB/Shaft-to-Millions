@@ -12,6 +12,7 @@ import {
 	QuestReward,
 	STREAK_REWARDS,
 } from "shared/config/quests";
+import { GEAR_BY_SLOT, findGear } from "shared/features/upgrades";
 import { isFiniteNumber } from "shared/lib/validate";
 
 export interface DailyEntry {
@@ -145,6 +146,27 @@ function matches(def: QuestDef, kind: QuestEventKind, ore?: string): boolean {
 	return def.kind === kind && (def.ore === undefined || def.ore === ore);
 }
 
+/** True when the player owns the item or a better one of the same slot (a donor who skipped ahead is done). */
+function ownsAtLeast(gearId: string, owned: ReadonlyArray<string>): boolean {
+	const found = findGear(gearId);
+	if (found === undefined) {
+		return false;
+	}
+	const items = GEAR_BY_SLOT[found.slot];
+	const from = items.findIndex((item) => item.id === gearId);
+	return items.some((item, index) => index >= from && owned.includes(item.id));
+}
+
+/** Skips the active story quest without a reward (the player's choice, decision 070). */
+export function skipChain(state: QuestState): boolean {
+	if (CHAIN_QUESTS[state.chain] === undefined) {
+		return false;
+	}
+	state.chain += 1;
+	state.chainCount = 0;
+	return true;
+}
+
 /** Progress of a quest: events counted for event kinds, the profile value for state kinds. */
 export function questProgress(def: QuestDef, counted: number, snapshot: QuestSnapshot): number {
 	switch (def.kind) {
@@ -153,7 +175,7 @@ export function questProgress(def: QuestDef, counted: number, snapshot: QuestSna
 		case "layer":
 			return snapshot.deepestLayer;
 		case "gear":
-			return def.gear !== undefined && snapshot.ownedGear.includes(def.gear) ? 1 : 0;
+			return def.gear !== undefined && ownsAtLeast(def.gear, snapshot.ownedGear) ? 1 : 0;
 		case "belt":
 			return snapshot.beltLevel;
 		case "drills":
