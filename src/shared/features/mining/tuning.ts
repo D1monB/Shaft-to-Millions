@@ -48,3 +48,15 @@ export const ORE_RUSH_SECONDS = 60;
 
 /** ... and makes this share of the blocks no one stands at rich for its duration. */
 export const ORE_RUSH_RICH_SHARE = 0.35;
+
+/** A treasure crate (decision 050) appears in the pit every this many seconds when none is waiting. */
+export const TREASURE_EVERY_SECONDS = 120;
+
+/** Treasure money = the price of its layer's ore times this. */
+export const TREASURE_MONEY_MULTIPLIER = 30;
+
+/** Treasure crystals: at least this many ... */
+export const TREASURE_MIN_CRYSTALS = 2;
+
+/** ... and up to this many more, at random. */
+export const TREASURE_EXTRA_CRYSTALS = 4;

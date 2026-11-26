@@ -24,6 +24,10 @@ export const EN = {
 	"mining.crit": "CRIT!",
 	"mining.rushStart": "⛏️ Ore rush! For {seconds} s many blocks in the pit are rich veins.",
 	"mining.rushEnd": "The ore rush is over.",
+	"mining.treasureLabel": "💰 TREASURE",
+	"mining.treasureSpawned": "💰 A treasure appeared in {layer}! First to break it takes it.",
+	"mining.treasureTaken": "💰 Treasure! +{money} and +{crystals} 💎",
+	"mining.treasureFound": "{name} found the treasure.",
 	"common.buyFor": "{verb} for {price}",
 	"common.short": "{price} · need {missing}",
 

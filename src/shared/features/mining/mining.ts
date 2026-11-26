@@ -1,7 +1,13 @@
 // Pure mining rules. No Roblox API: the server service passes in the time and the definitions.
 import { OreDef } from "shared/config/ores";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
-import { RICH_YIELD_MULTIPLIER, SWING_TOLERANCE } from "./tuning";
+import {
+	RICH_YIELD_MULTIPLIER,
+	SWING_TOLERANCE,
+	TREASURE_EXTRA_CRYSTALS,
+	TREASURE_MIN_CRYSTALS,
+	TREASURE_MONEY_MULTIPLIER,
+} from "./tuning";
 
 /** The pickaxe with this id. An unknown id (broken save, item from a newer server) falls back to the starter. */
 export function getPickaxe(id: string): PickaxeDef {
@@ -112,4 +118,22 @@ export function rollCrystals(chance: number, roll: number): number {
 /** Ore from one broken block: a rich vein (decision 046) multiplies the rolled amount. Bad input gives the amount. */
 export function veinYield(amount: number, rich: boolean): number {
 	return rich && amount > 0 && amount < math.huge ? amount * RICH_YIELD_MULTIPLIER : amount;
+}
+
+export interface TreasureReward {
+	readonly money: number;
+	readonly crystals: number;
+}
+
+/**
+ * What a treasure crate (decision 050) gives: money from its layer's ore price and a few crystals. `roll` is the
+ * server's Random:NextNumber() in [0, 1); bad input gives the smallest reward, never more.
+ */
+export function treasureReward(orePrice: number, roll: number): TreasureReward {
+	const price = orePrice === orePrice && orePrice > 0 && orePrice < math.huge ? orePrice : 0;
+	const unit = roll === roll ? math.clamp(roll, 0, 0.999999) : 0;
+	return {
+		money: math.floor(price * TREASURE_MONEY_MULTIPLIER),
+		crystals: TREASURE_MIN_CRYSTALS + math.floor(unit * (TREASURE_EXTRA_CRYSTALS + 1)),
+	};
 }

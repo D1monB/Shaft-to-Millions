@@ -24,6 +24,10 @@ export const RU: Strings = {
 	"mining.crit": "КРИТ!",
 	"mining.rushStart": "⛏️ Рудная лихорадка! {seconds} с в карьере много богатых жил.",
 	"mining.rushEnd": "Рудная лихорадка закончилась.",
+	"mining.treasureLabel": "💰 СОКРОВИЩЕ",
+	"mining.treasureSpawned": "💰 В слое «{layer}» появилось сокровище! Кто первым разобьёт, тот заберёт.",
+	"mining.treasureTaken": "💰 Сокровище! +{money} и +{crystals} 💎",
+	"mining.treasureFound": "{name} нашёл сокровище.",
 	"common.buyFor": "{verb} за {price}",
 	"common.short": "{price} · не хватает {missing}",
 

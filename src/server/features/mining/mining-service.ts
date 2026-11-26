@@ -17,10 +17,13 @@ import {
 	getPickaxe,
 	rollCrystals,
 	rollYield,
+	treasureReward,
 	veinYield,
 } from "shared/features/mining";
 import { isLayerOpen } from "shared/features/layers";
+import { formatMoney } from "shared/lib/format";
 import { RateLimiter } from "shared/lib/rate-limiter";
+import { MAX_COUNTER } from "shared/lib/repair";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
@@ -107,6 +110,25 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		}
 	} else if (result.kind === "progress") {
 		fireClient(MINE_PROGRESS_REMOTE, player, node, result.damage, result.hardness, crit);
+	} else if (result.kind === "broken" && node.GetAttribute(ATTRIBUTES.Treasure) === true) {
+		// A treasure crate (decision 050): the first player to break it takes it, then it is gone for everyone.
+		// Paid and removed in the same frame, so nobody else can break it after the reward.
+		const reward = treasureReward(ore.price, random.NextNumber());
+		data.money = math.min(data.money + reward.money, MAX_COUNTER);
+		data.stats.totalEarned = math.min(data.stats.totalEarned + reward.money, MAX_COUNTER);
+		data.crystals = math.min(data.crystals + reward.crystals, MAX_COUNTER);
+		markDirty(player);
+		node.Destroy();
+		notify(
+			player,
+			text("mining.treasureTaken", { money: formatMoney(reward.money), crystals: reward.crystals }),
+			"success",
+		);
+		for (const other of Players.GetPlayers()) {
+			if (other !== player) {
+				notify(other, text("mining.treasureFound", { name: player.DisplayName }), "info");
+			}
+		}
 	} else if (result.kind === "broken") {
 		// A rich vein (decision 046) is marked by the server when it places the block; clients cannot set it.
 		const amount = veinYield(

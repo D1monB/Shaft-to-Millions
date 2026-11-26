@@ -24,6 +24,8 @@ export const ATTRIBUTES = {
 	ChestId: "ChestId",
 	/** On an ore block: true for a rich vein (decision 046). Set by the server only. */
 	Rich: "Rich",
+	/** On an ore block: true for a treasure crate (decision 050). Set by the server only. */
+	Treasure: "Treasure",
 } as const;
 
 /**
@@ -109,6 +111,12 @@ export const SILO = {
 	Outlet: "SiloOutlet",
 	Gauge: "Silo_Glow",
 	Dust: "FX_Dust",
+} as const;
+
+/** The treasure crate model (decision 050): ServerStorage/PropTemplates/Crate. A gold block stands in without it. */
+export const TREASURE = {
+	TemplateFolder: "PropTemplates",
+	Model: "Crate",
 } as const;
 
 /** The name board over each plot: Map/Plots/<PlotN>/Sign with a TextLabel OwnerName inside (any depth). */

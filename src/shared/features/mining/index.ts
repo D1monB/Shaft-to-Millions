@@ -1,8 +1,17 @@
 // mining feature (shared): tool tiers, hits per node, swing cooldown, node respawn and ore yield.
 // Pure logic, unit tested. The server feature applies it; the client only shows effects.
 // Public API of this feature. Other code imports only from this file.
-export { MiningSession, canMineTier, getPickaxe, hitsRequired, rollCrystals, rollYield, veinYield } from "./mining";
-export type { HitResult } from "./mining";
+export {
+	MiningSession,
+	canMineTier,
+	getPickaxe,
+	hitsRequired,
+	rollCrystals,
+	rollYield,
+	treasureReward,
+	veinYield,
+} from "./mining";
+export type { HitResult, TreasureReward } from "./mining";
 export { MINE_HIT_REMOTE, MINE_PROGRESS_REMOTE, NODE_BROKEN_REMOTE } from "./network";
 export {
 	CLICK_DISTANCE,
@@ -19,6 +28,7 @@ export {
 	ORE_RUSH_SECONDS,
 	RICH_ORE_CHANCE,
 	RICH_YIELD_MULTIPLIER,
+	TREASURE_EVERY_SECONDS,
 } from "./tuning";
 export { activeCount, pickRandom } from "./ore-generation";
 export { oreForSpawn, tierOf } from "./ore-spawns";

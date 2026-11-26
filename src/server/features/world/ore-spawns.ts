@@ -5,9 +5,9 @@
 // block if the model is missing. Blocks are tagged OreNode, so the mining service picks them up; they exist only while
 // the server runs, the place file is never changed.
 import { CollectionService, Players, ServerStorage, Workspace } from "@rbxts/services";
-import { ATTRIBUTES, ORE_SPAWNS, PLOTS, PLOT_ATTRIBUTES, TAGS } from "shared/config/map-contract";
+import { ATTRIBUTES, ORE_SPAWNS, PLOTS, PLOT_ATTRIBUTES, TAGS, TREASURE } from "shared/config/map-contract";
 import { ORES, OreId } from "shared/config/ores";
-import { text } from "shared/features/i18n";
+import { nameKeys, ref, text } from "shared/features/i18n";
 import { ITEM_TEMPLATES_FOLDER } from "shared/features/line";
 import {
 	ORE_FILL_FRACTION,
@@ -18,11 +18,13 @@ import {
 	ORE_RUSH_SECONDS,
 	ORE_SHUFFLE_SECONDS,
 	RICH_ORE_CHANCE,
+	TREASURE_EVERY_SECONDS,
 	activeCount,
 	oreForSpawn,
 	pickRandom,
 	tierOf,
 } from "shared/features/mining";
+import { localizeLabel } from "server/lib/localized";
 import { notify } from "server/lib/notify";
 
 /** Size of one ore block (studs, its longest side). 8 = the map author's choice (their OreNodeScale script did the same). */
@@ -34,6 +36,7 @@ interface SpawnPoint {
 }
 
 interface Layer {
+	readonly tier: number;
 	readonly points: ReadonlyArray<SpawnPoint>;
 	/** The block standing on each occupied point. */
 	readonly blocks: Map<SpawnPoint, Instance>;
@@ -185,7 +188,7 @@ function playerNear(position: Vector3): boolean {
 
 /** Moves a share of the layer's blocks that nobody stands at to free points. */
 function shuffle(layer: Layer, parent: Instance): void {
-	const free = layer.points.filter((point) => !layer.blocks.has(point));
+	const free = layer.points.filter((point) => !layer.blocks.has(point) && point !== treasure?.point);
 	const movable = new Array<SpawnPoint>();
 	for (const [point] of layer.blocks) {
 		if (!playerNear(point.spawn.Position)) {
@@ -221,9 +224,112 @@ function readLayers(spawns: Instance, portalPosition: Vector3 | undefined): Arra
 				}
 			}
 		}
-		layers.push({ points, blocks: new Map() });
+		layers.push({ tier, points, blocks: new Map() });
 	}
 	return layers;
+}
+
+/** Size of the treasure crate (studs, its longest side). */
+const TREASURE_SIZE = 6;
+
+/** The waiting treasure crate, if any (decision 050). */
+let treasure: { readonly point: SpawnPoint; readonly block: Instance } | undefined;
+
+function treasureBlock(): PVInstance {
+	const template = ServerStorage.FindFirstChild(TREASURE.TemplateFolder)?.FindFirstChild(TREASURE.Model);
+	if (template !== undefined && template.IsA("Model")) {
+		const model = template.Clone();
+		for (const descendant of model.GetDescendants()) {
+			if (descendant.IsA("BasePart")) {
+				descendant.Anchored = true;
+			} else if (descendant.IsA("LuaSourceContainer")) {
+				descendant.Destroy();
+			}
+		}
+		const size = model.GetExtentsSize();
+		const longest = math.max(size.X, size.Y, size.Z);
+		if (longest > 0) {
+			model.ScaleTo(model.GetScale() * (TREASURE_SIZE / longest));
+		}
+		return model;
+	}
+	const block = new Instance("Part");
+	block.Anchored = true;
+	block.Size = new Vector3(TREASURE_SIZE, TREASURE_SIZE * 0.7, TREASURE_SIZE * 0.8);
+	block.Color = Color3.fromRGB(245, 200, 60);
+	block.Material = Enum.Material.Metal;
+	return block;
+}
+
+/** A gold glow and a label seen from far away, so players run to it. */
+function decorateTreasure(block: Instance): void {
+	const part = block.IsA("BasePart") ? block : block.FindFirstChildWhichIsA("BasePart", true);
+	if (part === undefined) {
+		return;
+	}
+	const sparkles = new Instance("Sparkles");
+	sparkles.SparkleColor = Color3.fromRGB(255, 215, 80);
+	sparkles.Parent = part;
+	const light = new Instance("PointLight");
+	light.Color = Color3.fromRGB(255, 200, 90);
+	light.Range = 18;
+	light.Brightness = 2;
+	light.Parent = part;
+	const gui = new Instance("BillboardGui");
+	gui.Size = UDim2.fromOffset(160, 40);
+	gui.StudsOffsetWorldSpace = new Vector3(0, TREASURE_SIZE, 0);
+	gui.AlwaysOnTop = true;
+	gui.MaxDistance = 250;
+	const label = new Instance("TextLabel");
+	label.BackgroundTransparency = 1;
+	label.Size = UDim2.fromScale(1, 1);
+	label.Font = Enum.Font.FredokaOne;
+	label.TextScaled = true;
+	label.TextColor3 = Color3.fromRGB(253, 224, 71);
+	label.TextStrokeTransparency = 0.1;
+	label.Parent = gui;
+	localizeLabel(label, text("mining.treasureLabel"));
+	gui.Parent = part;
+}
+
+/** Puts a treasure crate on a random free point of a random layer and tells everyone where. */
+function spawnTreasure(layers: ReadonlyArray<Layer>, parent: Instance): void {
+	if (treasure !== undefined && treasure.block.Parent !== undefined) {
+		return;
+	}
+	treasure = undefined;
+	const candidates = layers.filter((layer) => layer.points.some((point) => !layer.blocks.has(point)));
+	const [layer] = pickRandom(candidates, 1, nextNumber);
+	if (layer === undefined) {
+		return;
+	}
+	const [point] = pickRandom(
+		layer.points.filter((candidate) => !layer.blocks.has(candidate)),
+		1,
+		nextNumber,
+	);
+	if (point === undefined) {
+		return;
+	}
+	const block = treasureBlock();
+	block.Name = "Treasure";
+	block.PivotTo(new CFrame(point.spawn.Position));
+	const [box, size] = block.IsA("Model")
+		? block.GetBoundingBox()
+		: block.IsA("BasePart")
+			? [block.CFrame, block.Size]
+			: [block.GetPivot(), Vector3.zero];
+	const floor = point.spawn.Position.Y - point.spawn.Size.Y / 2;
+	block.PivotTo(block.GetPivot().add(new Vector3(0, floor - (box.Position.Y - size.Y / 2), 0)));
+	block.SetAttribute(ATTRIBUTES.OreId, point.oreId);
+	block.SetAttribute(ATTRIBUTES.Treasure, true);
+	decorateTreasure(block);
+	block.Parent = parent;
+	CollectionService.AddTag(block, TAGS.OreNode);
+	treasure = { point, block };
+	for (const player of Players.GetPlayers()) {
+		notify(player, text("mining.treasureSpawned", { layer: ref(nameKeys.layer(layer.tier)) }), "success");
+	}
 }
 
 /** Builds the ore blocks and starts moving them; returns how many. Run before the mining service starts. */
@@ -246,6 +352,15 @@ export function spawnMapOre(): number {
 		}
 	}
 	folder.Parent = Workspace;
+	task.spawn(() => {
+		for (;;) {
+			task.wait(TREASURE_EVERY_SECONDS);
+			const [ok, err] = pcall(spawnTreasure, layers, folder);
+			if (!ok) {
+				warn(`[ore] treasure failed: ${err}`);
+			}
+		}
+	});
 	task.spawn(() => {
 		for (;;) {
 			task.wait(ORE_RUSH_EVERY_SECONDS);

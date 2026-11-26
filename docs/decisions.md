@@ -547,3 +547,13 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   licensed fire whoosh already in config, at most every 2 s per machine, heard within ~90 studs). Client only, from
   the belt-visual messages; nothing changes on the server.
 - **Why:** the line felt silent (feedback 2026-11-26). A machine-specific licensed sound can replace the id later.
+
+## 050. Treasure crates in the pit (2026-11-26)
+
+- **What:** every 2 minutes, when none is waiting, a treasure crate (the map author's `PropTemplates/Crate`, scaled to
+  6 studs, gold sparkles, light and a "💰 TREASURE" label seen from 250 studs) appears on a free ore point of a random
+  layer, announced to everyone. It mines like that layer's ore (same layer and pickaxe rules). The first player to
+  break it gets the ore price ×30 in dollars and 2–6 crystals; it is destroyed for everyone in the same frame, others
+  are told who found it. Reward rule is pure and tested (`treasureReward`).
+- **Why:** mining felt like "run and break" (feedback 2026-11-26). A visible prize somewhere in the pit gives a goal
+  to run to and a small race between players.

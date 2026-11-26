@@ -24,6 +24,10 @@ export const PL: Strings = {
 	"mining.crit": "KRYT!",
 	"mining.rushStart": "⛏️ Gorączka rudy! Przez {seconds} s w kopalni jest wiele bogatych żył.",
 	"mining.rushEnd": "Gorączka rudy się skończyła.",
+	"mining.treasureLabel": "💰 SKARB",
+	"mining.treasureSpawned": "💰 W warstwie {layer} pojawił się skarb! Kto pierwszy rozbije, ten weźmie.",
+	"mining.treasureTaken": "💰 Skarb! +{money} i +{crystals} 💎",
+	"mining.treasureFound": "{name} znalazł skarb.",
 	"common.buyFor": "{verb} za {price}",
 	"common.short": "{price} · brakuje {missing}",
 
