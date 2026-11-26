@@ -40,6 +40,7 @@ import {
 	onProfileLoaded,
 	onProfileReleasing,
 } from "server/features/profile";
+import { trackQuest } from "server/features/quests";
 import { getSellMultiplier } from "server/features/selling";
 import { notify } from "server/lib/notify";
 import { localizeLabel, localizePrompt } from "server/lib/localized";
@@ -87,6 +88,7 @@ function ownerOf(plot: Plot): number {
 function credit(player: Player, data: ProfileData, money: number): number {
 	const income = lineIncome(money, getSellMultiplier(player));
 	if (income > 0) {
+		trackQuest(player, "earnMoney", income);
 		data.money = math.min(data.money + income, MAX_COUNTER);
 		data.stats.totalEarned = math.min(data.stats.totalEarned + income, MAX_COUNTER);
 	}
@@ -436,6 +438,7 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 	data.money = result.money;
 	applyLineUpgrade(data.line, index, track as Parameters<typeof applyLineUpgrade>[2]);
 	markDirty(player);
+	trackQuest(player, "upgradeMachine", 1);
 	notify(player, text("line.upgraded", { level: result.upgrade.level }), "success");
 }
 
@@ -475,6 +478,7 @@ function handleBeltUpgrade(player: Player, args: Array<unknown>): void {
 	data.money = result.money;
 	data.line.beltLevel = result.level;
 	markDirty(player);
+	trackQuest(player, "upgradeMachine", 1);
 	notify(player, text("line.beltUpgraded", { level: result.level }), "success");
 }
 
@@ -629,6 +633,7 @@ function tickPlayer(player: Player, seconds: number): void {
 	const moves: LineMove[] = [];
 	const result = advanceLine(data.line, seconds, valueOf, roll, moves);
 	credit(player, data, result.money);
+	trackQuest(player, "lineSold", result.sold);
 	markDirty(player);
 	broadcastFlow(player, moves);
 }

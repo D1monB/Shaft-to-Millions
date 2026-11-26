@@ -14,6 +14,7 @@ import { startLineService } from "server/features/line";
 import { startMiningService } from "server/features/mining";
 import { startMovementService } from "server/features/movement";
 import { startProfileService } from "server/features/profile";
+import { startQuestsService } from "server/features/quests";
 import { startSellingService } from "server/features/selling";
 import { startSettingsService } from "server/features/settings";
 import { startTravelService } from "server/features/travel";
@@ -50,5 +51,6 @@ startDevtoolsService();
 startLeaderboardService();
 startLanguageService();
 startSettingsService();
+startQuestsService();
 
 startProfileService();

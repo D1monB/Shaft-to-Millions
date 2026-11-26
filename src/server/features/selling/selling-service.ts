@@ -6,6 +6,7 @@ import { SALE_MADE_REMOTE, SELL_BAG_REMOTE, SELL_DISTANCE, previewSale } from "s
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { formatMoney } from "shared/lib/format";
 import { getProfileData, markDirty } from "server/features/profile";
+import { trackQuest } from "server/features/quests";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
 import { declareClientEvent, fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
@@ -48,6 +49,8 @@ function handleSell(player: Player, args: Array<unknown>): void {
 	data.stats.totalEarned += preview.total;
 	markDirty(player);
 	notify(player, text("sell.sold", { count: preview.itemCount, money: formatMoney(preview.total) }), "success");
+	trackQuest(player, "sellBag", 1);
+	trackQuest(player, "earnMoney", preview.total);
 	fireClient(SALE_MADE_REMOTE, player, preview.total);
 }
 

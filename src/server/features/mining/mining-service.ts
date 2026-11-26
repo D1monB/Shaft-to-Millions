@@ -26,6 +26,7 @@ import { RateLimiter } from "shared/lib/rate-limiter";
 import { MAX_COUNTER } from "shared/lib/repair";
 import { ProfileData } from "shared/features/profile";
 import { getProfileData, markDirty } from "server/features/profile";
+import { trackQuest } from "server/features/quests";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
 import { declareClientEvent, fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
@@ -118,6 +119,9 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	const treasure = node.GetAttribute(ATTRIBUTES.Treasure) === true;
 	// Every hit chips ore off the block (decision 052). A treasure crate gives nothing until it is broken.
 	const added = treasure ? 0 : bagChips(player, data, node, oreId, result.pieces, capacity);
+	if (crit) {
+		trackQuest(player, "crits", 1);
+	}
 	if (result.kind === "chip") {
 		fireClient(MINE_PROGRESS_REMOTE, player, node, result.taken, result.total, crit, oreId, added);
 	} else if (treasure) {
@@ -128,6 +132,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		data.stats.totalEarned = math.min(data.stats.totalEarned + reward.money, MAX_COUNTER);
 		data.crystals = math.min(data.crystals + reward.crystals, MAX_COUNTER);
 		markDirty(player);
+		trackQuest(player, "treasure", 1);
 		node.Destroy();
 		notify(
 			player,
@@ -147,6 +152,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 			markDirty(player);
 			notify(player, text("mining.crystal", { count: crystals }), "success");
 		}
+		trackQuest(player, "emptyBlocks", 1);
 		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added, crit);
 	}
 }
@@ -170,6 +176,7 @@ function bagChips(
 	);
 	const added = addToBag(data.bag, oreId, amount, capacity);
 	data.stats.oresMined = math.min(data.stats.oresMined + added, MAX_COUNTER);
+	trackQuest(player, "mineOre", added, oreId);
 	markDirty(player);
 	return added;
 }
