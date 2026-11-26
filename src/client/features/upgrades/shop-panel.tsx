@@ -27,6 +27,8 @@ import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
 import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
+import { hideDefaultBackpack } from "./pickaxe-hotbar";
+import { startPickaxeSwing } from "./pickaxe-swing";
 import { BuyButton, Button, COLORS, CardStrip, FONTS, Label, StripSlot, TEXT_SIZES, Tabs } from "client/lib/ui-kit";
 
 const TABS: ReadonlyArray<{ readonly key: GearSlot; readonly label: StringKey; readonly icon: string }> = [
@@ -207,6 +209,8 @@ function ShopPanel() {
 }
 
 export function startShopController(): void {
+	hideDefaultBackpack();
+	startPickaxeSwing();
 	onPromptForTag(TAGS.Shop, () =>
 		openPanel({ key: "shop", title: t("shop.title"), icon: "🛒", render: () => <ShopPanel /> }),
 	);

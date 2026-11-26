@@ -7,6 +7,7 @@ import { addToBag, bagCapacity, bagFreeSpace } from "shared/features/bag";
 import {
 	CLICK_DISTANCE,
 	MAX_MINING_DISTANCE,
+	MINE_HIT_REMOTE,
 	MINE_PROGRESS_REMOTE,
 	MiningSession,
 	NODE_BROKEN_REMOTE,
@@ -18,7 +19,7 @@ import { RateLimiter } from "shared/lib/rate-limiter";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
-import { declareClientEvent, fireClient, logAbuse } from "server/lib/remotes";
+import { declareClientEvent, fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
 
 const sessions = new Map<Player, MiningSession<Instance>>();
 // Refusal messages ("bag is full") at most every couple of seconds, so clicking does not spam the screen.
@@ -126,8 +127,30 @@ function setupNode(node: Instance): void {
 	detector.MouseClick.Connect((player) => handleHit(player, node, oreId));
 }
 
+/**
+ * A swing of the pickaxe Tool at a node. The client only names the node; whether it counts (owner of the profile,
+ * distance, swing cooldown, pickaxe tier, bag room) is decided in handleHit exactly as for a click.
+ */
+function handleToolHit(player: Player, args: Array<unknown>): void {
+	const [node] = args;
+	// A node removed while the request was on its way arrives as nil: an honest swing, dropped without a log.
+	if (node === undefined) {
+		return;
+	}
+	if (args.size() !== 1 || !typeIs(node, "Instance") || !CollectionService.HasTag(node, TAGS.OreNode)) {
+		logAbuse(player, "bad MineHit arguments");
+		return;
+	}
+	const oreId = node.GetAttribute(ATTRIBUTES.OreId);
+	if (isOreId(oreId)) {
+		handleHit(player, node, oreId);
+	}
+}
+
 export function startMiningService(): void {
 	declareClientEvent(MINE_PROGRESS_REMOTE);
+	// About three swings a second for the fastest pickaxe; the burst forgives network jitter.
+	onClientRequest(MINE_HIT_REMOTE, new RateLimiter(8, 5), handleToolHit);
 	declareClientEvent(NODE_BROKEN_REMOTE);
 	for (const node of CollectionService.GetTagged(TAGS.OreNode)) {
 		setupNode(node);

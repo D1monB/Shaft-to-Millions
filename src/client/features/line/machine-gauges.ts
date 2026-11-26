@@ -38,6 +38,8 @@ function createGauge(anchor: BasePart): Gauge {
 	gui.StudsOffsetWorldSpace = new Vector3(0, typeIs(height, "number") ? height : 6, 0);
 	gui.MaxDistance = MAX_DISTANCE;
 	gui.LightInfluence = 0;
+	// The bar is often inside a tall machine's body (its height is capped), so it is drawn over the model.
+	gui.AlwaysOnTop = true;
 	gui.ResetOnSpawn = false;
 
 	const label = new Instance("TextLabel");

@@ -101,8 +101,8 @@ class LegacySaveTests {
 	@Test
 	public version2GearLevelsBecomeOwnedItemsNeverWeaker() {
 		const data = load(version2Save()).data;
-		// Old level 3 pickaxe (gold), level 2 bag (leather), level 4 shoes (spring): equipped and owned.
-		Assert.equal(data.gear.equipped.pickaxe, "pickaxe_gold");
+		// Old level 3 pickaxe (gold in v3, the obsidian one since v7), level 2 bag, level 4 shoes: equipped and owned.
+		Assert.equal(data.gear.equipped.pickaxe, "pickaxe_obsidian");
 		Assert.equal(data.gear.equipped.bag, "bag_leather");
 		Assert.equal(data.gear.equipped.shoes, "shoes_spring");
 		for (const id of [data.gear.equipped.pickaxe, data.gear.equipped.bag, data.gear.equipped.shoes]) {

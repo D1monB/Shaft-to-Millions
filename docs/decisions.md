@@ -430,3 +430,16 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   logging abuse.
 - **Why:** upgrades existed on the server but a player had no way to buy them. The bars are drawn on the client from
   the player's own line state, so they need no extra network traffic; other players do not see them.
+- **Play-test:** the map author's machines are rotated by 90 degrees and up to 30 studs tall, so the bar height is
+  measured from the parts' world extents, capped at 12 studs and drawn on top of the model.
+
+## 037. The map author's 10 pickaxe tools, a pickaxe hotbar, hits with the Tool (2026-11-26)
+
+- **What:** the pickaxe catalog is now the map author's 10 Tools (`ServerStorage.PickaxeTemplates`: wood, copper,
+  iron, silver, obsidian, gold, lava, titanium, luck, iridium). Schema v7 moves old pickaxes to the new one with the
+  same ore tier and at least the same power. The server hands out only the Tool of the equipped pickaxe and puts it
+  in the hand; the copies in `StarterPack` are removed at server start (the place file is unchanged). A swing sends
+  `MineHit(node)`; the server checks it exactly like a click. Our hotbar (owned pickaxes, keys 1..0, tap) replaces
+  Roblox's backpack bar. Belt items are found by their `Ore` and `Stage` attributes.
+- **Why:** Roblox switches ClickDetectors off while a Tool is held, so a pickaxe in hand could not mine; and all 10
+  pickaxes in StarterPack would have been free for everyone. Prices and power are first guesses (balance pass due).

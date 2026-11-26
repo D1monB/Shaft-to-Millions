@@ -2,6 +2,7 @@ import { Assert, Test } from "@rbxts/lunit";
 import { PlainTable } from "shared/lib/tables";
 import { MIGRATIONS, Migration, isMigrationChainComplete, migrate } from "./migrations";
 import { CURRENT_SCHEMA_VERSION } from "./schema";
+import { PICKAXES } from "shared/config/pickaxes";
 import { findGear } from "shared/features/upgrades";
 
 // Fake two-step history, used only here: v1 had `coins`, v2 renamed it to `gold`, v3 added a `title`.
@@ -198,7 +199,8 @@ class MigrationsTests {
 	public version3MapsEveryOldLevelToAnItemOfTheSameSlot() {
 		for (let level = 1; level <= 6; level++) {
 			const raw = { schemaVersion: 2, levels: { pickaxe: level, bag: level, shoes: level, warehouse: 1 } };
-			const result = migrate(raw as unknown as PlainTable, MIGRATIONS, 3);
+			// Up to the current version: old pickaxe ids are only valid until v7 moves them to the new list.
+			const result = migrate(raw as unknown as PlainTable, MIGRATIONS, CURRENT_SCHEMA_VERSION);
 			Assert.true(result.ok);
 			if (result.ok) {
 				const equipped = (result.data.gear as { equipped: { [slot: string]: string } }).equipped;
@@ -442,6 +444,75 @@ class MigrationsTests {
 				);
 				Assert.undefined((bag as PlainTable).obsidian);
 			}
+		}
+	}
+
+	@Test
+	public version7MovesPickaxesByStrengthNotByName() {
+		const raw = {
+			schemaVersion: 6,
+			gear: {
+				owned: [
+					"pickaxe_wood",
+					"pickaxe_gold",
+					"pickaxe_obsidian",
+					"pickaxe_stone",
+					"pickaxe_copper",
+					"bag_sack",
+				],
+				equipped: { pickaxe: "pickaxe_obsidian", bag: "bag_sack", shoes: "shoes_old" },
+			},
+		};
+		const result = migrate(raw as unknown as PlainTable, MIGRATIONS, 7);
+		Assert.true(result.ok);
+		if (result.ok) {
+			const gear = result.data.gear as { owned: string[]; equipped: { pickaxe: string } };
+			// Old obsidian (golden, tier 4) is the new gold; old gold (silver, tier 3) is the new obsidian.
+			Assert.equal(gear.equipped.pickaxe, "pickaxe_gold");
+			Assert.true(gear.owned.includes("pickaxe_obsidian"));
+			// Stone and copper both become copper, listed once.
+			Assert.equal(gear.owned.filter((id) => id === "pickaxe_copper").size(), 1);
+			Assert.equal(gear.owned.size(), 5);
+			for (const id of gear.owned) {
+				Assert.notUndefined(findGear(id), `${id} is not a known item after v7`);
+			}
+		}
+	}
+
+	@Test
+	public version7KeepsTheOreTierOfEveryOldPickaxe() {
+		// The ore tier of each pickaxe before version 7.
+		const oldTiers: ReadonlyArray<[string, number]> = [
+			["pickaxe_wood", 1],
+			["pickaxe_stone", 1],
+			["pickaxe_copper", 2],
+			["pickaxe_iron", 2],
+			["pickaxe_light", 2],
+			["pickaxe_silver", 3],
+			["pickaxe_gold", 3],
+			["pickaxe_hammer", 4],
+			["pickaxe_obsidian", 4],
+			["pickaxe_cobalt", 5],
+			["pickaxe_drill", 5],
+			["pickaxe_plasma", 5],
+		];
+		for (const [oldId, tier] of oldTiers) {
+			const raw = { schemaVersion: 6, gear: { owned: [oldId], equipped: { pickaxe: oldId } } };
+			const result = migrate(raw as unknown as PlainTable, MIGRATIONS, 7);
+			Assert.true(result.ok);
+			if (result.ok) {
+				const id = (result.data.gear as { equipped: { pickaxe: string } }).equipped.pickaxe;
+				const moved = PICKAXES.find((def) => def.id === id);
+				Assert.true(moved !== undefined && moved.tier >= tier, `${oldId} -> ${id} loses its ore tier`);
+			}
+		}
+	}
+
+	@Test
+	public version7SurvivesBrokenGear() {
+		for (const gear of [undefined, "x", { owned: "x", equipped: 5 }, { owned: [1, {}], equipped: {} }]) {
+			const result = migrate({ schemaVersion: 6, gear } as unknown as PlainTable, MIGRATIONS, 7);
+			Assert.true(result.ok);
 		}
 	}
 }

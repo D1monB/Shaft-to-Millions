@@ -3,6 +3,6 @@
 // Public API of this feature. Other code imports only from this file.
 export { MiningSession, canMineTier, getPickaxe, hitsRequired, rollYield } from "./mining";
 export type { HitResult } from "./mining";
-export { MINE_PROGRESS_REMOTE, NODE_BROKEN_REMOTE } from "./network";
+export { MINE_HIT_REMOTE, MINE_PROGRESS_REMOTE, NODE_BROKEN_REMOTE } from "./network";
 export { CLICK_DISTANCE, MAX_MINING_DISTANCE, PORTAL_ORE_RADIUS } from "./tuning";
 export { oreForSpawn, tierOf } from "./ore-spawns";

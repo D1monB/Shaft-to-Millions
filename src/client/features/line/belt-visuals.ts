@@ -114,14 +114,34 @@ function stageOf(template: Instance): number | undefined {
 	return typeIs(digits, "string") ? tonumber(digits) : undefined;
 }
 
-function findTemplate(ore: OreId, stage: number): Model | undefined {
-	const folder = ReplicatedStorage.FindFirstChild(ITEM_TEMPLATES_FOLDER)?.FindFirstChild(ore);
-	for (const child of folder?.GetChildren() ?? []) {
-		if (child.IsA("Model") && stageOf(child) === stage) {
-			return child;
+/** Item models by "ore:stage", read once from the map author's attributes (Ore, Stage) on each model. */
+let templateIndex: Map<string, Model> | undefined;
+
+function buildTemplateIndex(): Map<string, Model> {
+	const index = new Map<string, Model>();
+	for (const folder of ReplicatedStorage.FindFirstChild(ITEM_TEMPLATES_FOLDER)?.GetChildren() ?? []) {
+		for (const model of folder.GetChildren()) {
+			if (!model.IsA("Model")) {
+				continue;
+			}
+			// The Ore attribute wins; a model without it belongs to the ore its folder is named after.
+			const oreAttribute = model.GetAttribute("Ore");
+			const ore = typeIs(oreAttribute, "string") ? oreAttribute : folder.Name;
+			const stage = stageOf(model);
+			if (stage !== undefined && !index.has(`${ore}:${stage}`)) {
+				index.set(`${ore}:${stage}`, model);
+			}
 		}
 	}
-	return undefined;
+	return index;
+}
+
+function findTemplate(ore: OreId, stage: number): Model | undefined {
+	// The folder arrives from the server a moment after the client starts: index it once it is there.
+	if (templateIndex === undefined || templateIndex.size() === 0) {
+		templateIndex = buildTemplateIndex();
+	}
+	return templateIndex.get(`${ore}:${stage}`);
 }
 
 function fallbackModel(ore: OreId): Model {

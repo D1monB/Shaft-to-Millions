@@ -171,6 +171,26 @@ function makePrompt(
 }
 
 const UPGRADE_POINTS_FOLDER = "UpgradePoints";
+/** The progress bar never hangs higher than this: some machines are 30 studs tall, out of view from the ground. */
+const MAX_LABEL_HEIGHT = 12;
+
+/**
+ * The world height of the highest visible point of a model. Not GetBoundingBox: that box is turned with the model's
+ * pivot, and the map author's models are rotated by 90 degrees, so its "height" is a horizontal size.
+ */
+function topOf(model: Model): number {
+	let top = -math.huge;
+	for (const part of model.GetDescendants()) {
+		if (part.IsA("BasePart") && part.Transparency < 1) {
+			const { XVector, YVector, ZVector } = part.CFrame;
+			const size = part.Size;
+			const half =
+				(math.abs(XVector.Y) * size.X + math.abs(YVector.Y) * size.Y + math.abs(ZVector.Y) * size.Z) / 2;
+			top = math.max(top, part.Position.Y + half);
+		}
+	}
+	return top === -math.huge ? model.GetPivot().Position.Y : top;
+}
 
 /**
  * The point at a bought machine: its prompt opens the upgrade panel and the progress bar hangs above it. The server
@@ -189,8 +209,8 @@ function addUpgradePoint(plot: Plot, stage: number, machine: Model): void {
 		folder.Parent = plot.built;
 	}
 	const anchor = makeAnchor(folder, `UpgradePoint_${stage}`, cframe);
-	const [box, size] = machine.GetBoundingBox();
-	anchor.SetAttribute(LABEL_HEIGHT_ATTRIBUTE, math.max(box.Position.Y + size.Y / 2 - cframe.Position.Y, 0) + 1.5);
+	const above = math.max(topOf(machine) - cframe.Position.Y, 0) + 1.5;
+	anchor.SetAttribute(LABEL_HEIGHT_ATTRIBUTE, math.min(above, MAX_LABEL_HEIGHT));
 	anchor.SetAttribute(PLOT_ATTRIBUTES.Stage, stage);
 	const prompt = makePrompt(anchor, text("line.upgrade"), text(nameKeys.machine(def.id)), UPGRADE_KEYS);
 	// Machines stand close together: show only the nearest upgrade prompt.

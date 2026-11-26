@@ -22,4 +22,10 @@ export type {
 	GearSlot,
 	GearState,
 } from "./upgrades";
-export { BUY_GEAR_REMOTE, EQUIP_GEAR_REMOTE, SHOP_DISTANCE } from "./network";
+export {
+	BUY_GEAR_REMOTE,
+	EQUIP_GEAR_REMOTE,
+	PICKAXE_ID_ATTRIBUTE,
+	PICKAXE_TEMPLATES_FOLDER,
+	SHOP_DISTANCE,
+} from "./network";
