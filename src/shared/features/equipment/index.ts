@@ -10,6 +10,7 @@ export {
 	isEquipped,
 	itemSellValue,
 	newEquipped,
+	sellDuplicates,
 	sellItem,
 	unequipItem,
 } from "./equipment";

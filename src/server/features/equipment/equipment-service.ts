@@ -2,7 +2,7 @@
 // Bonuses are always recomputed from saved data with the shared formula: nothing about them is trusted.
 import { text } from "shared/features/i18n";
 import { Players } from "@rbxts/services";
-import { ITEMS, ItemId, RARITY_COLORS } from "shared/config/items";
+import { ITEMS, ItemId, RARITY_COLORS, Rarity } from "shared/config/items";
 import {
 	EQUIP_BEST_REMOTE,
 	EQUIP_REMOTE,
@@ -129,18 +129,53 @@ function refreshVisuals(player: Player, lastSignature: Map<Player, string>): voi
 	}
 	lastSignature.set(player, signature);
 	root.FindFirstChild(VISUAL_NAME)?.Destroy();
-	const folder = new Instance("Folder");
+	// An Attachment, so the particles and lights come from the character's middle.
+	const folder = new Instance("Attachment");
 	folder.Name = VISUAL_NAME;
 
 	for (const uid of [data.equipped.speedAura, data.equipped.pickaxeAura]) {
 		const owned = uid === undefined ? undefined : data.inventory.find((entry) => entry.uid === uid);
 		if (owned !== undefined) {
-			const sparkles = new Instance("Sparkles");
-			sparkles.SparkleColor = rgb(RARITY_COLORS[ITEMS[owned.item].rarity]);
-			sparkles.Parent = folder;
+			addAuraEffects(folder, ITEMS[owned.item].rarity);
 		}
 	}
 	folder.Parent = root;
+}
+
+/** How loud an aura looks: rarer auras glow brighter and throw more particles (decision 064). */
+const AURA_LOOKS: { readonly [K in Rarity]: { rate: number; light: number; speed: number } } = {
+	common: { rate: 5, light: 0, speed: 2 },
+	uncommon: { rate: 9, light: 0.6, speed: 3 },
+	rare: { rate: 14, light: 1, speed: 4 },
+	epic: { rate: 24, light: 1.6, speed: 5 },
+	legendary: { rate: 40, light: 2.6, speed: 7 },
+};
+
+/** A particle stream in the rarity colour rising around the character, plus a light for rarer auras. */
+function addAuraEffects(folder: Instance, rarity: Rarity): void {
+	const look = AURA_LOOKS[rarity];
+	const color = rgb(RARITY_COLORS[rarity]);
+	const emitter = new Instance("ParticleEmitter");
+	emitter.Color = new ColorSequence(color);
+	emitter.Rate = look.rate;
+	emitter.Lifetime = new NumberRange(0.8, 1.5);
+	emitter.Speed = new NumberRange(look.speed * 0.5, look.speed);
+	emitter.SpreadAngle = new Vector2(180, 180);
+	emitter.LightEmission = 0.8;
+	emitter.Size = new NumberSequence([new NumberSequenceKeypoint(0, 0.45), new NumberSequenceKeypoint(1, 0)]);
+	emitter.Parent = folder;
+	if (look.light > 0) {
+		const light = new Instance("PointLight");
+		light.Color = color;
+		light.Brightness = look.light;
+		light.Range = 6 + look.light * 4;
+		light.Parent = folder;
+	}
+	if (rarity === "legendary") {
+		const sparkles = new Instance("Sparkles");
+		sparkles.SparkleColor = color;
+		sparkles.Parent = folder;
+	}
 }
 
 export function startEquipmentService(): void {
