@@ -13,6 +13,7 @@ import {
 } from "shared/config/line";
 import { CHAIN_QUESTS, DAILY_COUNT } from "shared/config/quests";
 import { BOOSTER_IDS } from "shared/config/boosters";
+import { MAX_REDEEMED_CODES } from "shared/features/promo";
 import { MAX_FREE_SPINS, PITY_SPINS } from "shared/config/aura-roll";
 import { BUILDINGS, BUILDING_IDS, isBuildingId } from "shared/config/base";
 import { MAX_BUILDERS } from "shared/features/base";
@@ -67,6 +68,12 @@ export function sanitize(data: PlainTable): string[] {
 	}
 	repairQuests(data, repairs);
 	repairBase(data, repairs);
+	// Anything but a real true is no developer role.
+	if (!typeIs(data.devRole, "boolean")) {
+		data.devRole = false;
+		repairs.push("devRole");
+	}
+	repairRedeemed(data, repairs);
 	const raid = repairTable(data, "raid", "raid", repairs);
 	repairInteger(raid, "week", 0, MAX_DAY, 0, "raid.week", repairs);
 	repairNumber(raid, "best", 0, MAX_COUNTER, 0, "raid.best", repairs);
@@ -197,6 +204,23 @@ function repairBase(data: PlainTable, repairs: string[]): void {
 		repairs.push("base.jobs");
 	}
 	base.jobs = jobs;
+}
+
+/** Used promo codes: short strings only, at most MAX_REDEEMED_CODES. */
+function repairRedeemed(data: PlainTable, repairs: string[]): void {
+	const raw = data.redeemedCodes;
+	const clean: string[] = [];
+	if (typeIs(raw, "table")) {
+		for (const code of raw as unknown[]) {
+			if (typeIs(code, "string") && code.size() <= 24 && clean.size() < MAX_REDEEMED_CODES) {
+				clean.push(code);
+			}
+		}
+	}
+	if (!typeIs(raw, "table") || clean.size() !== (raw as unknown[]).size()) {
+		repairs.push("redeemedCodes");
+	}
+	data.redeemedCodes = clean;
 }
 
 /** A day number far in the future (year ~2300); only stops a broken save from blocking quests for ever. */

@@ -56,6 +56,8 @@ interface ButtonEntry {
 	readonly variant: ButtonVariant;
 	/** Shown in the "more" menu instead of the dock, to keep a phone screen clear. */
 	readonly secondary: boolean;
+	/** Hidden while this returns false (e.g. the developer button); call refreshHud when it changes. */
+	readonly visible: () => boolean;
 }
 
 const stats: StatEntry[] = [];
@@ -84,8 +86,9 @@ export function registerHudButton(
 	order = 50,
 	variant: ButtonVariant = "secondary",
 	secondary = false,
+	visible: () => boolean = () => true,
 ): void {
-	buttons.push({ order, icon, label, onClick, variant, secondary });
+	buttons.push({ order, icon, label, onClick, variant, secondary, visible });
 	buttons.sort((a, b) => a.order < b.order);
 }
 
@@ -266,6 +269,7 @@ function openMore(): void {
 
 function Dock() {
 	const touch = useTouchFirst();
+	useStore(hudVersion);
 	return (
 		<frame
 			AnchorPoint={new Vector2(1, 0.5)}
@@ -292,7 +296,7 @@ function Dock() {
 				SortOrder={Enum.SortOrder.LayoutOrder}
 			/>
 			{buttons
-				.filter((button) => !button.secondary)
+				.filter((button) => !button.secondary && button.visible())
 				.map((button, index) => (
 					<MenuButton
 						key={`menu_${index}`}

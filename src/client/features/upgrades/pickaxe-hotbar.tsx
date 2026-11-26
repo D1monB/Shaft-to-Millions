@@ -6,11 +6,11 @@ import { Players, StarterGui, UserInputService } from "@rbxts/services";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
 import { nameKeys } from "shared/features/i18n";
 import { EQUIP_GEAR_REMOTE, PICKAXE_ID_ATTRIBUTE } from "shared/features/upgrades";
-import { ModelIcon, pickaxeTemplate } from "client/lib/model-icon";
 import { useView } from "client/features/profile";
 import { t } from "client/lib/i18n";
 import { sendToServer } from "client/lib/remotes";
-import { ACCENTS, COLORS, FONTS, GLASS_TRANSPARENCY, RADIUS, STROKE, TEXT_SIZES } from "client/lib/ui-kit";
+import { COLORS, FONTS, RADIUS, STROKE, TEXT_SIZES } from "client/lib/ui-kit";
+import { CHOSEN_LIFT, HotbarSlot } from "./hotbar-slot";
 
 const SLOT = 60;
 /** On a touch screen (phones): smaller, so ten slots leave room for the thumbs. */
@@ -90,52 +90,6 @@ function choose(def: PickaxeDef, equipped: string): void {
 	}
 }
 
-/** The map author's pickaxe model in a ViewportFrame (no image assets needed). */
-function PickaxeModel(props: { tool: string }) {
-	const template = pickaxeTemplate(props.tool);
-	return template === undefined ? undefined : (
-		<ModelIcon template={template} size={new UDim2(1, -8, 1, -8)} position={new UDim2(0, 4, 0, 4)} />
-	);
-}
-
-function Slot(props: { def: PickaxeDef; index: number; chosen: boolean; held: boolean; onClick: () => void }) {
-	const accent = ACCENTS.orange;
-	return (
-		<textbutton
-			Text=""
-			AutoButtonColor={false}
-			BackgroundColor3={props.held ? COLORS.woodLight : COLORS.woodDark}
-			BackgroundTransparency={GLASS_TRANSPARENCY}
-			Size={UDim2.fromOffset(slotSize(), slotSize())}
-			LayoutOrder={props.index}
-			Event={{ Activated: props.onClick }}
-		>
-			<uicorner CornerRadius={RADIUS.medium} />
-			<uistroke
-				Color={props.chosen ? accent : COLORS.outline}
-				Thickness={props.chosen ? STROKE.heavy + 0.5 : STROKE.thin}
-				ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
-			/>
-			<PickaxeModel tool={props.def.tool} />
-			{props.index < KEYS.size() && (
-				<textlabel
-					BackgroundTransparency={1}
-					Position={UDim2.fromOffset(5, 2)}
-					Size={UDim2.fromOffset(16, 16)}
-					Font={FONTS.display}
-					Text={`${(props.index + 1) % 10}`}
-					TextSize={TEXT_SIZES.small}
-					TextColor3={props.chosen ? accent : COLORS.textMuted}
-					TextXAlignment={Enum.TextXAlignment.Left}
-					ZIndex={2}
-				>
-					<uistroke Color={COLORS.outline} Thickness={1.5} />
-				</textlabel>
-			)}
-		</textbutton>
-	);
-}
-
 export function PickaxeHotbar() {
 	const view = useView();
 	const held = useHeldPickaxe();
@@ -161,44 +115,58 @@ export function PickaxeHotbar() {
 		return undefined;
 	}
 	const chosen = PICKAXES.find((def) => def.id === equipped);
+	const size = slotSize();
+	const trayHeight = size + CHOSEN_LIFT + 14;
 	return (
 		<frame
 			AnchorPoint={new Vector2(0.5, 1)}
 			Position={new UDim2(0.5, 0, 1, -BOTTOM_OFFSET)}
-			Size={UDim2.fromOffset(0, slotSize() + 26)}
+			Size={UDim2.fromOffset(0, trayHeight + 30)}
 			AutomaticSize={Enum.AutomaticSize.X}
 			BackgroundTransparency={1}
 		>
 			{chosen !== undefined && (
-				<textlabel
-					BackgroundTransparency={1}
-					Size={new UDim2(1, 0, 0, 22)}
-					Font={FONTS.display}
-					Text={t(nameKeys.gear(chosen.id))}
-					TextSize={TEXT_SIZES.body}
-					TextColor3={held === chosen.id ? COLORS.white : COLORS.textMuted}
-				>
-					<uistroke Color={COLORS.outline} Thickness={2} />
-				</textlabel>
+				<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, 24)}>
+					<textlabel
+						AnchorPoint={new Vector2(0.5, 0)}
+						Position={new UDim2(0.5, 0, 0, 0)}
+						Size={new UDim2(0, 0, 0, 24)}
+						AutomaticSize={Enum.AutomaticSize.X}
+						BackgroundColor3={COLORS.outline}
+						BackgroundTransparency={0.25}
+						Font={FONTS.display}
+						Text={`⛏ ${t(nameKeys.gear(chosen.id))}  ·  ${t("hotbar.power", { power: chosen.power })}`}
+						TextSize={TEXT_SIZES.small + 1}
+						TextColor3={held === chosen.id ? COLORS.white : COLORS.textMuted}
+					>
+						<uicorner CornerRadius={RADIUS.round} />
+						<uipadding PaddingLeft={new UDim(0, 12)} PaddingRight={new UDim(0, 12)} />
+					</textlabel>
+				</frame>
 			)}
 			<frame
-				BackgroundTransparency={1}
-				Position={UDim2.fromOffset(0, 26)}
-				Size={UDim2.fromOffset(0, slotSize())}
+				BackgroundColor3={Color3.fromRGB(20, 18, 28)}
+				BackgroundTransparency={0.25}
+				Position={UDim2.fromOffset(0, 30)}
+				Size={UDim2.fromOffset(0, trayHeight)}
 				AutomaticSize={Enum.AutomaticSize.X}
 			>
+				<uicorner CornerRadius={RADIUS.large} />
+				<uistroke Color={COLORS.outline} Thickness={STROKE.thick} />
+				<uipadding PaddingLeft={new UDim(0, 8)} PaddingRight={new UDim(0, 8)} PaddingTop={new UDim(0, 4)} />
 				<uilistlayout
 					FillDirection={Enum.FillDirection.Horizontal}
-					Padding={new UDim(0, GAP)}
+					Padding={new UDim(0, GAP - 2)}
 					SortOrder={Enum.SortOrder.LayoutOrder}
 				/>
 				{owned.map((def, index) => (
-					<Slot
+					<HotbarSlot
 						key={def.id}
 						def={def}
 						index={index}
+						size={size}
+						keyLabel={index < KEYS.size() ? `${(index + 1) % 10}` : undefined}
 						chosen={def.id === equipped}
-						held={def.id === held}
 						onClick={() => choose(def, equipped)}
 					/>
 				))}

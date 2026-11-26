@@ -658,3 +658,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   - "TP to base" lands at the base's edge facing the canyon.
   - Cheaper economy (about 5 days for the first area): early gear and first machines much cheaper, expensive ones a little; base prices and top build times lower.
 - **Why:** the developer's play feedback.
+
+## 068. Slow belt, new gauges and hotbar, developer panel, promo codes (2026-11-26)
+
+- **Decision:**
+  - The line runs at x0.6 of the machine times at conveyor level 1; the belt texture (the map author's `ConveyorAnimator`) is driven through its `ConveyorSpeed` attribute: 1.5 studs/s at level 1 up to x2, instead of 5.
+  - New machine cards (status, percent, queue bar) and a new pickaxe tray (tier colours, tier badge, raised chosen card).
+  - Developer panel ("Dev" button): the owner is fixed by UserId 12034221780; developers (granted only by the owner, saved as `devRole`) can give money and crystals, bring and kick players, never the owner. The server checks every action; given money is not counted as earned.
+  - Promo codes live only in a DataStore (the repository is public): the owner creates and deletes them in the Dev panel; each player can use a code once; a use is counted with UpdateAsync; redeeming is rate limited.
+- **Why:** the developer's requests.

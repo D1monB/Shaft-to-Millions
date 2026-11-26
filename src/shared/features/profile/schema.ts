@@ -63,6 +63,10 @@ export interface ProfileData {
 	soundOn: boolean;
 	/** Daily quests, the story chain and the login streak (decision 055). */
 	quests: QuestState;
+	/** Developer role granted by the owner (decision 068). Only the server writes it. */
+	devRole: boolean;
+	/** Promo codes this player already used (decision 068). */
+	redeemedCodes: string[];
 	/** Timed raids: this week's best score and the cooldown (decision 065). */
 	raid: RaidState;
 	/** The aura roll machine: free spins and the pity counter (decision 064). */
@@ -99,6 +103,8 @@ export function createDefaultProfileData(): ProfileData {
 		base: newBaseState(),
 		auraRoll: newAuraRollState(),
 		raid: newRaidState(),
+		devRole: false,
+		redeemedCodes: [],
 	};
 }
 
@@ -138,6 +144,8 @@ const profileDataShape = t.interface({
 	language: t.string,
 	soundOn: t.boolean,
 	boosts: t.interface({ money: t.number, ore: t.number, line: t.number }),
+	devRole: t.boolean,
+	redeemedCodes: t.array(t.string),
 	raid: t.interface({ week: t.integer, best: t.number, startedAt: t.number }),
 	auraRoll: t.interface({ spins: t.integer, spinAt: t.number, pity: t.integer }),
 	base: t.interface({

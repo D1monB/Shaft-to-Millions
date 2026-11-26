@@ -154,7 +154,7 @@ export function startDevtoolsController(): void {
 	}
 	registerHudButton(
 		"🛠",
-		"Dev",
+		"Test",
 		() => openPanel({ key: "devtools", title: "Dev tools", icon: "🛠", render: () => <DevPanel /> }),
 		90,
 		"slate",

@@ -19,11 +19,12 @@ import {
 } from "shared/features/line";
 import { onServerUnreliable } from "client/lib/remotes";
 import { popCoins } from "./coin-pop";
+import { LINE_BASE_SPEED } from "shared/config/line";
 
 /** Ride speed in studs per second. Visual only: the server's timing does not depend on it. */
-const ITEM_SPEED = 4;
+const ITEM_SPEED = 2.5;
 /** A ride never lasts longer than this, so a long belt does not pile up items. */
-const MAX_RIDE_SECONDS = 20;
+const MAX_RIDE_SECONDS = 26;
 /** Shortest ride (s), so a short hop is still seen. */
 const MIN_RIDE_SECONDS = 2;
 /** Ride to the SellStation (s): nothing waits for it there. */
@@ -235,7 +236,10 @@ function startRide(
 		lengths,
 		// Arrive about when the next machine takes the item (the server moves it into that queue at once), so the
 		// machine never fills up while nothing is seen arriving (feedback 2026-11-26).
-		speed: math.max(ITEM_SPEED, total / math.clamp(maxSeconds, MIN_RIDE_SECONDS, MAX_RIDE_SECONDS)),
+		speed: math.max(
+			ITEM_SPEED,
+			total / math.clamp(maxSeconds / LINE_BASE_SPEED, MIN_RIDE_SECONDS, MAX_RIDE_SECONDS),
+		),
 		wait,
 		travelled: 0,
 		segment: 1,
