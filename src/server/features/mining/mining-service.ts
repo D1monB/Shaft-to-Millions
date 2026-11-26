@@ -6,6 +6,7 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { addToBag, bagCapacity, bagFreeSpace } from "shared/features/bag";
 import {
 	CLICK_DISTANCE,
+	canMineTier,
 	CRIT_CHANCE,
 	CRIT_MULTIPLIER,
 	MAX_MINING_DISTANCE,
@@ -42,6 +43,25 @@ const noticeLimiter = new RateLimiter(1, 0.5);
 const random = new Random();
 
 let yieldBonusOf: (player: Player) => number = () => 0;
+
+type ClusterHandler = (
+	player: Player,
+	node: Instance,
+	swingSeconds: number,
+) => { left: number; needed: number } | undefined;
+let clusterHandler: ClusterHandler | undefined;
+
+/** A shared crystal cluster (decision 065) is handled by the events feature, after the usual checks. */
+export function setClusterHandler(handler: ClusterHandler): void {
+	clusterHandler = handler;
+}
+
+const oreListeners: Array<(player: Player, oreId: OreId, pieces: number) => void> = [];
+
+/** Called for ore that really went into a bag (the raid counts it). */
+export function onOreMined(listener: (player: Player, oreId: OreId, pieces: number) => void): void {
+	oreListeners.push(listener);
+}
 
 let baseOreBonusOf: (player: Player) => number = () => 0;
 
@@ -89,6 +109,11 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	if (!isLayerOpen(ORES[oreId].layer, data.deepestLayer)) {
 		// Reaching a layer's ore without opening its camp means skipping the descent (teleport).
 		logAbuse(player, "mining on a layer that is not opened");
+		return;
+	}
+
+	if (node.GetAttribute(ATTRIBUTES.Cluster) === true) {
+		swingAtCluster(player, node, oreId, data);
 		return;
 	}
 
@@ -172,6 +197,37 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	}
 }
 
+/** A swing at a crystal cluster: the pickaxe tier still gates it; it needs no bag room and gives no ore. */
+function swingAtCluster(player: Player, node: Instance, oreId: OreId, data: ProfileData): void {
+	const pickaxe = getPickaxe(data.gear.equipped.pickaxe);
+	if (!canMineTier(ORES[oreId], pickaxe)) {
+		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
+			notify(
+				player,
+				text("mining.needPickaxe", {
+					ore: ref(nameKeys.ore(oreId)),
+					pickaxe: pickaxeNameForTier(ORES[oreId].requiredTier),
+				}),
+				"error",
+			);
+		}
+		return;
+	}
+	const progress = clusterHandler?.(player, node, pickaxe.swingSeconds);
+	if (progress !== undefined && node.Parent !== undefined) {
+		fireClient(
+			MINE_PROGRESS_REMOTE,
+			player,
+			node,
+			progress.needed - progress.left,
+			progress.needed,
+			false,
+			oreId,
+			0,
+		);
+	}
+}
+
 /** An emptied geode (decision 060): crystals, and sometimes a short random booster. */
 function payGeode(player: Player, data: ProfileData): void {
 	const reward = geodeReward(random.NextNumber(), random.NextNumber(), random.NextNumber(), BOOSTER_IDS.size());
@@ -210,6 +266,11 @@ function bagChips(
 		) * boostOf(player, "ore");
 	const added = addToBag(data.bag, oreId, amount, capacity);
 	data.stats.oresMined = math.min(data.stats.oresMined + added, MAX_COUNTER);
+	if (added > 0) {
+		for (const listener of oreListeners) {
+			listener(player, oreId, added);
+		}
+	}
 	trackQuest(player, "mineOre", added, oreId);
 	markDirty(player);
 	return added;

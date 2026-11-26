@@ -67,6 +67,10 @@ export function sanitize(data: PlainTable): string[] {
 	}
 	repairQuests(data, repairs);
 	repairBase(data, repairs);
+	const raid = repairTable(data, "raid", "raid", repairs);
+	repairInteger(raid, "week", 0, MAX_DAY, 0, "raid.week", repairs);
+	repairNumber(raid, "best", 0, MAX_COUNTER, 0, "raid.best", repairs);
+	repairNumber(raid, "startedAt", 0, MAX_TIMESTAMP, 0, "raid.startedAt", repairs);
 	const auraRoll = repairTable(data, "auraRoll", "auraRoll", repairs);
 	repairInteger(auraRoll, "spins", 0, MAX_FREE_SPINS, 0, "auraRoll.spins", repairs);
 	repairNumber(auraRoll, "spinAt", 0, MAX_TIMESTAMP, 0, "auraRoll.spinAt", repairs);

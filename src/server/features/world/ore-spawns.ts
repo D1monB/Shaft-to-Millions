@@ -5,6 +5,7 @@
 // block if the model is missing. Blocks are tagged OreNode, so the mining service picks them up; they exist only while
 // the server runs, the place file is never changed.
 import { CollectionService, Players, ServerStorage, Workspace } from "@rbxts/services";
+import { CLUSTER_EVERY_SECONDS } from "shared/config/events";
 import { ATTRIBUTES, ORE_SPAWNS, PLOTS, PLOT_ATTRIBUTES, TAGS, TREASURE } from "shared/config/map-contract";
 import { ORES, OreId } from "shared/config/ores";
 import { nameKeys, ref, text } from "shared/features/i18n";
@@ -208,7 +209,7 @@ function playerNear(position: Vector3): boolean {
 
 /** Moves a share of the layer's blocks that nobody stands at to free points. */
 function shuffle(layer: Layer, parent: Instance): void {
-	const free = layer.points.filter((point) => !layer.blocks.has(point) && point !== treasure?.point);
+	const free = layer.points.filter((point) => !layer.blocks.has(point) && !isEventPoint(point));
 	const movable = new Array<SpawnPoint>();
 	for (const [point] of layer.blocks) {
 		if (!playerNear(point.spawn.Position)) {
@@ -352,6 +353,98 @@ function spawnTreasure(layers: ReadonlyArray<Layer>, parent: Instance): void {
 	}
 }
 
+/** The waiting crystal cluster, if any (decision 065). */
+let cluster: { readonly point: SpawnPoint; readonly block: Instance } | undefined;
+
+/** A point holding a treasure or a cluster: ore blocks keep off it. */
+function isEventPoint(point: SpawnPoint): boolean {
+	return point === treasure?.point || (cluster?.block.Parent !== undefined && point === cluster.point);
+}
+
+/** A tall glowing crystal made of neon shards, with a label seen from far away. */
+function clusterModel(): Model {
+	const model = new Instance("Model");
+	const colors = [Color3.fromRGB(140, 220, 255), Color3.fromRGB(180, 130, 255), Color3.fromRGB(120, 255, 220)];
+	for (let i = 0; i < 7; i++) {
+		const shard = new Instance("Part");
+		shard.Anchored = true;
+		shard.Material = Enum.Material.Neon;
+		shard.Color = colors[i % 3];
+		const height = i === 0 ? 8 : 4 + (i % 3);
+		shard.Size = new Vector3(1.4, height, 1.4);
+		const angle = (i / 6) * math.pi * 2;
+		const radius = i === 0 ? 0 : 2.2;
+		shard.CFrame = new CFrame(math.cos(angle) * radius, height / 2, math.sin(angle) * radius).mul(
+			CFrame.Angles(math.sin(angle) * 0.35, 0, -math.cos(angle) * 0.35),
+		);
+		shard.Parent = model;
+		if (i === 0) {
+			model.PrimaryPart = shard;
+		}
+	}
+	return model;
+}
+
+/** Puts the shared cluster on a free point of a random layer and tells everyone. */
+function spawnCluster(layers: ReadonlyArray<Layer>, parent: Instance): void {
+	if (cluster !== undefined && cluster.block.Parent !== undefined) {
+		return;
+	}
+	const free = (layer: Layer) => layer.points.filter((point) => !layer.blocks.has(point) && !isEventPoint(point));
+	const [layer] = pickRandom(
+		layers.filter((candidate) => free(candidate).size() > 0),
+		1,
+		nextNumber,
+	);
+	if (layer === undefined) {
+		return;
+	}
+	const [point] = pickRandom(free(layer), 1, nextNumber);
+	if (point === undefined) {
+		return;
+	}
+	const model = clusterModel();
+	model.Name = "CrystalCluster";
+	const floor = point.spawn.Position.Y - point.spawn.Size.Y / 2;
+	model.PivotTo(new CFrame(point.spawn.Position.X, floor + 4, point.spawn.Position.Z));
+	model.SetAttribute(ATTRIBUTES.OreId, point.oreId);
+	model.SetAttribute(ATTRIBUTES.Cluster, true);
+	decorateCluster(model);
+	model.Parent = parent;
+	CollectionService.AddTag(model, TAGS.OreNode);
+	cluster = { point, block: model };
+	for (const player of Players.GetPlayers()) {
+		notify(player, text("events.clusterSpawned", { layer: ref(nameKeys.layer(layer.tier)) }), "success");
+	}
+}
+
+function decorateCluster(model: Model): void {
+	const part = model.PrimaryPart;
+	if (part === undefined) {
+		return;
+	}
+	const light = new Instance("PointLight");
+	light.Color = Color3.fromRGB(150, 200, 255);
+	light.Range = 30;
+	light.Brightness = 3;
+	light.Parent = part;
+	const gui = new Instance("BillboardGui");
+	gui.Size = UDim2.fromOffset(200, 40);
+	gui.StudsOffsetWorldSpace = new Vector3(0, 8, 0);
+	gui.AlwaysOnTop = true;
+	gui.MaxDistance = 250;
+	const label = new Instance("TextLabel");
+	label.BackgroundTransparency = 1;
+	label.Size = UDim2.fromScale(1, 1);
+	label.Font = Enum.Font.FredokaOne;
+	label.TextScaled = true;
+	label.TextColor3 = Color3.fromRGB(150, 230, 255);
+	label.TextStrokeTransparency = 0.1;
+	label.Parent = gui;
+	localizeLabel(label, text("events.clusterLabel"));
+	gui.Parent = part;
+}
+
 /** Builds the ore blocks and starts moving them; returns how many. Run before the mining service starts. */
 export function spawnMapOre(): number {
 	const mine = Workspace.FindFirstChild(PLOTS.MapFolder)?.FindFirstChild(ORE_SPAWNS.Mine);
@@ -372,6 +465,15 @@ export function spawnMapOre(): number {
 		}
 	}
 	folder.Parent = Workspace;
+	task.spawn(() => {
+		for (;;) {
+			task.wait(CLUSTER_EVERY_SECONDS);
+			const [ok, err] = pcall(spawnCluster, layers, folder);
+			if (!ok) {
+				warn(`[ore] cluster failed: ${err}`);
+			}
+		}
+	});
 	task.spawn(() => {
 		for (;;) {
 			task.wait(TREASURE_EVERY_SECONDS);

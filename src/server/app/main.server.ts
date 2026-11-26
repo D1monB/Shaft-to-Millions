@@ -19,6 +19,7 @@ import { startBoostersService } from "server/features/boosters";
 import { startStoreService } from "server/features/store";
 import { startBaseService } from "server/features/base";
 import { startAuraRollService } from "server/features/aura-roll";
+import { startEventsService } from "server/features/events";
 import { startSellingService } from "server/features/selling";
 import { startSettingsService } from "server/features/settings";
 import { startTravelService } from "server/features/travel";
@@ -61,5 +62,6 @@ startQuestsService();
 startBoostersService();
 startStoreService();
 startAuraRollService();
+startEventsService();
 
 startProfileService();

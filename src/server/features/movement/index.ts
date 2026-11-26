@@ -5,5 +5,6 @@ export {
 	onHonestSample,
 	teleportCharacter,
 	setSpeedBonusProvider,
+	setSpeedPenaltyProvider,
 	startMovementService,
 } from "./movement-service";
