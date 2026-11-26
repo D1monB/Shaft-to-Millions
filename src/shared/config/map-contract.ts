@@ -83,6 +83,20 @@ export const LIFT = {
 	LayerAttribute: "Layer",
 } as const;
 
+/**
+ * The SellStation at the end of each plot's belt (decision 044): Factory/SellStation with the map author's boards.
+ * Paths go from the station; "SurfaceGui" is searched at any depth below the part named before it.
+ */
+export const SELL_STATION = {
+	Model: "SellStation",
+	SignTitle: ["SignText", "SurfaceGui", "Title"],
+	PriceTitle: ["PriceScreen", "SurfaceGui", "PriceList", "Title"],
+	PriceOre: ["PriceScreen", "SurfaceGui", "PriceList", "Ore"],
+	PriceIngot: ["PriceScreen", "SurfaceGui", "PriceList", "Ingot"],
+	PricePart: ["PriceScreen", "SurfaceGui", "PriceList", "Part"],
+	ButtonLabel: ["ButtonText", "SurfaceGui", "Label"],
+} as const;
+
 /** The name board over each plot: Map/Plots/<PlotN>/Sign with a TextLabel OwnerName inside (any depth). */
 export const PLOT_SIGN = {
 	Part: "Sign",

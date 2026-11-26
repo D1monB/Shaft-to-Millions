@@ -62,6 +62,12 @@ export const RU: Strings = {
 
 	// ---- selling
 	"sell.title": "Скупка руды",
+	"sell.stationTitle": "ПРОДАЖА",
+	"sell.pricesTitle": "ЦЕНЫ",
+	"sell.priceOre": "Сырая руда: ×1",
+	"sell.priceLine": "После вашей линии: {value}",
+	"sell.priceBag": "Ваша сумка сейчас: {value}",
+	"sell.stationButton": "E: продать сумку",
 	"sell.empty": "Сумка пуста. Возвращайся с рудой! ⛏️",
 	"sell.base": "Без бонусов: {money}",
 	"sell.petBonus": "🐾 Бонус питомцев: +{percent}",

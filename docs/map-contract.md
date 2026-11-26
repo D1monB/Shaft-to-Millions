@@ -132,3 +132,9 @@ Workspace
 - Optional BaseParts in the same folder: `LiftBottom` and `LiftTop` mark where the cage's floor stops; `LiftBottom`
   may have a number attribute `Layer` (riding down needs that layer opened). Without them the cage rides from where
   it stands to the top of the tower.
+
+## SellStation boards (decision 044)
+
+- `Factory/SellStation` keeps these names: `SignText/SurfaceGui/Title`, `PriceScreen/SurfaceGui/PriceList/{Title, Ore,
+  Ingot, Part}`, `ButtonText/SurfaceGui/Label` (TextLabels; the server rewrites their text). `ButtonText` must be a
+  BasePart near the counter: the sell prompt (E) sits on it.

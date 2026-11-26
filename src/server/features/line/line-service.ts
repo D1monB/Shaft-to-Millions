@@ -45,6 +45,7 @@ import { getRootPosition } from "server/lib/proximity";
 import { declareUnreliableClientEvent, logAbuse, onClientRequest } from "server/lib/remotes";
 import { buildSign } from "./buy-signs";
 import { placeIntakeBooth } from "./intake-booth";
+import { refreshSellStation, setupSellStation } from "./sell-station";
 import {
 	Plot,
 	beltStartCFrame,
@@ -292,6 +293,9 @@ function refreshSigns(plot: Plot, owned: number): void {
 	}
 }
 
+/** The built SellStation of each owned plot, for its live price board. */
+const sellStations = new Map<Plot, Instance>();
+
 /** Builds the plot for its owner: belt and SellStation, every bought machine, the intake and the next slot. */
 function buildFor(plot: Plot, data: ProfileData): void {
 	const built = buildBase(plot);
@@ -314,6 +318,10 @@ function buildFor(plot: Plot, data: ProfileData): void {
 		const [box, size] = booth.GetBoundingBox();
 		const intake = makeAnchor(built, "Intake", new CFrame(box.Position.sub(new Vector3(0, size.Y / 2 - 3, 0))));
 		makePrompt(intake, text("line.dropOre"), text("line.beltStart"), DROP_KEYS, (player) => dropOre(player, plot));
+	}
+	const station = setupSellStation(built);
+	if (station !== undefined) {
+		sellStations.set(plot, station);
 	}
 	refreshSigns(plot, data.line.machines.size());
 }
@@ -543,6 +551,11 @@ function tickPlayer(player: Player, seconds: number): void {
 		return;
 	}
 	data.lastSeen = nowUnix();
+	const plot = plotOf.get(player);
+	const station = plot !== undefined ? sellStations.get(plot) : undefined;
+	if (station !== undefined && station.Parent !== undefined) {
+		refreshSellStation(station, data, getSellMultiplier(player));
+	}
 	if (isLineIdle(data.line)) {
 		return;
 	}

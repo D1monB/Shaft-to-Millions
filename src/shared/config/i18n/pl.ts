@@ -62,6 +62,12 @@ export const PL: Strings = {
 
 	// ---- selling
 	"sell.title": "Skup rudy",
+	"sell.stationTitle": "SPRZEDAŻ",
+	"sell.pricesTitle": "CENY",
+	"sell.priceOre": "Surowa ruda: ×1",
+	"sell.priceLine": "Po twojej linii: {value}",
+	"sell.priceBag": "Twoja torba teraz: {value}",
+	"sell.stationButton": "E: sprzedaj torbę",
 	"sell.empty": "Torba jest pusta. Wróć z rudą! ⛏️",
 	"sell.base": "Bez bonusów: {money}",
 	"sell.petBonus": "🐾 Bonus zwierzaków: +{percent}",

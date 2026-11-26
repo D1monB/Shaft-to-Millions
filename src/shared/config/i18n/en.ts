@@ -62,6 +62,12 @@ export const EN = {
 
 	// ---- selling
 	"sell.title": "Ore Buyer",
+	"sell.stationTitle": "SELL",
+	"sell.pricesTitle": "PRICES",
+	"sell.priceOre": "Raw ore: ×1",
+	"sell.priceLine": "After your line: {value}",
+	"sell.priceBag": "Your bag now: {value}",
+	"sell.stationButton": "E: sell the bag",
 	"sell.empty": "Your bag is empty. Come back with ore! ⛏️",
 	"sell.base": "Without bonuses: {money}",
 	"sell.petBonus": "🐾 Pet bonus: +{percent}",

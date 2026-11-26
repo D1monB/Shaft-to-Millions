@@ -497,3 +497,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the developer's design. Crystals are NEVER sold for Robux: otherwise every chest becomes a paid random
   item under Roblox policy. A crystal may come back as at most $50 through chest item resale (`CRYSTAL_RESALE_LIMIT`,
   tested). Quests that reward crystals come later as their own step.
+
+## 044. The SellStation sells the bag and shows live prices (2026-11-26)
+
+- **What:** the built `SellStation` on an owned plot gets the `SellZone` tag on its `ButtonText` part, so E there
+  opens the usual sell panel and sells the whole bag of raw ore (cheaper than running it through the line). Its
+  boards are rewritten in each viewer's language: "SELL", "PRICES", "Raw ore: ×1", "After your line: ×N" (the
+  value multiplier of the owner's last machine), "Your bag now: $X" (refreshed every line tick, sent only on change),
+  "E: sell the bag".
+- **Why:** the developer's design; the boards were fixed Ukrainian text with no real numbers.
