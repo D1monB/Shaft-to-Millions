@@ -471,3 +471,12 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   allowed. Stops: optional parts `LiftBottom` (attribute `Layer`) and `LiftTop`; without them the cage rides from
   where it stands to the top of the tower. Speed 14 studs/s, 3–12 s per ride (`lift/tuning.ts`).
 - **Why:** climbing out must not be a punishment (CLAUDE.md), and a lift skipping the descent would break layers.
+
+## 041. Layers open by walking to their ore; ore blocks 8 studs (2026-11-26)
+
+- **What:** in the map author's open pit there are no camps, so only layers 1–2 were ever open and silver, gold,
+  titanium and iridium could not be mined. Now layer N+1 opens when an honest position (one that passed the
+  movement check) comes within 30 studs of a `Tier<N+1>` ore spawn point; camps still work where they exist. The
+  pause between unlocks is 10 s (was 45). Ore blocks are 8 studs (the map author's size; their `OreNodeScale` script
+  can go), mining reach 24 studs, click distance 20.
+- **Why:** play-test 2026-11-26; Output showed `mining on a layer that is not opened`.

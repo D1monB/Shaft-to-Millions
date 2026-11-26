@@ -14,11 +14,14 @@ export function reachLayer(deepestLayer: number, layer: number): number | undefi
 }
 
 /**
- * Minimum seconds between two layer unlocks (and after joining). A real descent takes minutes, so honest players
- * never notice; a teleport exploit can no longer open every layer within seconds.
- * A full server-side movement check is still planned (see docs/roadmap.md).
+ * Minimum seconds between two layer unlocks (and after joining). A second guard behind the server movement check
+ * (decision 014): even a teleport that slipped past it cannot open every layer within seconds. Short, because in the
+ * map author's open pit the layers are a short walk apart (decision 041).
  */
-export const MIN_SECONDS_BETWEEN_UNLOCKS = 45;
+export const MIN_SECONDS_BETWEEN_UNLOCKS = 10;
+
+/** A layer opens when an honest position comes this close (studs) to one of its ore spawn points (decision 041). */
+export const LAYER_ZONE_RADIUS = 30;
 
 /** Seconds until the next layer may be unlocked. 0 = allowed now. A clock going backwards counts as "just unlocked". */
 export function unlockCooldownLeft(now: number, lastUnlockAt: number): number {

@@ -19,8 +19,8 @@ import {
 	tierOf,
 } from "shared/features/mining";
 
-/** Size of one ore block (studs, its longest side). Matches the old placeholders, so mining distances feel the same. */
-const NODE_SIZE = 4;
+/** Size of one ore block (studs, its longest side). 8 = the map author's choice (their OreNodeScale script did the same). */
+const NODE_SIZE = 8;
 
 interface SpawnPoint {
 	readonly spawn: BasePart;

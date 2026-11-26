@@ -3,12 +3,14 @@
 //
 // Camps are NOT Roblox spawn points (SpawnLocation.Enabled = false or a plain Part): Roblox would otherwise spawn
 // new players at random camps, including locked deep ones. The server moves the character itself instead.
-import { CollectionService, Players } from "@rbxts/services";
+import { CollectionService, Players, Workspace } from "@rbxts/services";
 import { nameKeys, ref, text } from "shared/features/i18n";
-import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
-import { reachLayer, unlockCooldownLeft } from "shared/features/layers";
+import { ATTRIBUTES, ORE_SPAWNS, PLOTS, TAGS } from "shared/config/map-contract";
+import { LAYER_ZONE_RADIUS, reachLayer, unlockCooldownLeft } from "shared/features/layers";
+import { tierOf } from "shared/features/mining";
+import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
-import { teleportCharacter } from "server/features/movement";
+import { onHonestSample, teleportCharacter } from "server/features/movement";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition } from "server/lib/proximity";
@@ -22,6 +24,25 @@ const waitNoticeLimiter = new RateLimiter(1, 0.2);
 // The camp each player respawns at. Not saved: after a rejoin the player starts on the surface.
 const respawnCamp = new Map<Player, Instance>();
 
+/** Opens `layer` if it is the next one and the unlock pause is over. */
+function tryOpen(player: Player, data: ProfileData, layer: number): void {
+	const reached = reachLayer(data.deepestLayer, layer);
+	if (reached === undefined) {
+		return;
+	}
+	const wait = unlockCooldownLeft(os.clock(), lastUnlockAt.get(player) ?? 0);
+	if (wait > 0) {
+		if (waitNoticeLimiter.tryTake(player.UserId, os.clock())) {
+			notify(player, text("layers.campNotReady", { seconds: math.ceil(wait) }), "info");
+		}
+		return;
+	}
+	lastUnlockAt.set(player, os.clock());
+	data.deepestLayer = reached;
+	markDirty(player);
+	notify(player, text("layers.opened", { layer: ref(nameKeys.layer(reached)) }), "success");
+}
+
 function onCampTouched(camp: Instance, hit: BasePart): void {
 	const character = hit.FindFirstAncestorOfClass("Model");
 	const player = character === undefined ? undefined : Players.GetPlayerFromCharacter(character);
@@ -33,20 +54,7 @@ function onCampTouched(camp: Instance, hit: BasePart): void {
 	if (data === undefined || !typeIs(layer, "number")) {
 		return;
 	}
-	const reached = reachLayer(data.deepestLayer, layer);
-	if (reached !== undefined) {
-		const wait = unlockCooldownLeft(os.clock(), lastUnlockAt.get(player) ?? 0);
-		if (wait > 0) {
-			if (waitNoticeLimiter.tryTake(player.UserId, os.clock())) {
-				notify(player, text("layers.campNotReady", { seconds: math.ceil(wait) }), "info");
-			}
-			return;
-		}
-		lastUnlockAt.set(player, os.clock());
-		data.deepestLayer = reached;
-		markDirty(player);
-		notify(player, text("layers.opened", { layer: ref(nameKeys.layer(reached)) }), "success");
-	}
+	tryOpen(player, data, layer);
 	// Only an opened camp becomes the respawn point: a locked one would be a free teleport down.
 	if (layer <= data.deepestLayer) {
 		respawnCamp.set(player, camp);
@@ -93,6 +101,42 @@ function setupCamp(camp: Instance): void {
 	}
 }
 
+/**
+ * The map author's open pit has no camps (decision 041): a layer opens when the player walks up to its ore. Spawn
+ * points of each layer (Map/Mine/OreSpawns/Tier<N>) are read once. Only honest positions count (they passed the
+ * movement check), so a teleport cannot open a layer.
+ */
+function readLayerZones(): Map<number, Vector3[]> {
+	const zones = new Map<number, Vector3[]>();
+	const spawns = Workspace.FindFirstChild(PLOTS.MapFolder)
+		?.FindFirstChild(ORE_SPAWNS.Mine)
+		?.FindFirstChild(ORE_SPAWNS.Spawns);
+	for (const folder of spawns?.GetChildren() ?? []) {
+		const tier = tierOf(folder.Name);
+		if (tier === undefined) {
+			continue;
+		}
+		const points = folder
+			.GetChildren()
+			.filter((child): child is BasePart => child.IsA("BasePart"))
+			.map((part) => part.Position);
+		zones.set(tier, points);
+	}
+	return zones;
+}
+
+function onHonestPosition(zones: Map<number, Vector3[]>, player: Player, position: Vector3): void {
+	const data = getProfileData(player);
+	if (data === undefined) {
+		return;
+	}
+	// One step at a time: only the next layer is checked.
+	const points = zones.get(data.deepestLayer + 1);
+	if (points?.some((point) => point.sub(position).Magnitude <= LAYER_ZONE_RADIUS) === true) {
+		tryOpen(player, data, data.deepestLayer + 1);
+	}
+}
+
 function trackPlayer(player: Player): void {
 	lastUnlockAt.set(player, os.clock());
 	player.CharacterAdded.Connect((character) => onCharacterAdded(player, character));
@@ -101,6 +145,8 @@ function trackPlayer(player: Player): void {
 export function startLayersService(): void {
 	CollectionService.GetTagged(TAGS.CampSpawn).forEach(setupCamp);
 	CollectionService.GetInstanceAddedSignal(TAGS.CampSpawn).Connect(setupCamp);
+	const zones = readLayerZones();
+	onHonestSample((player, position) => onHonestPosition(zones, player, position));
 	Players.PlayerAdded.Connect(trackPlayer);
 	Players.GetPlayers().forEach(trackPlayer);
 	Players.PlayerRemoving.Connect((player) => {
