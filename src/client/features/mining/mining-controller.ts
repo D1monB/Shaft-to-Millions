@@ -121,7 +121,7 @@ const HIT_TWEEN = new TweenInfo(0.12, Enum.EasingStyle.Quad, Enum.EasingDirectio
 
 const bars = new Map<Instance, { gui: BillboardGui; fill: Frame; hideAt: number }>();
 
-function showProgress(node: Instance, damage: number, hardness: number): void {
+function showProgress(node: Instance, left: number, total: number): void {
 	const part = anchorPart(node);
 	if (part === undefined) {
 		return;
@@ -153,7 +153,7 @@ function showProgress(node: Instance, damage: number, hardness: number): void {
 		bar = { gui, fill, hideAt: 0 };
 		bars.set(node, bar);
 	}
-	const progress = hardness > 0 ? math.clamp(damage / hardness, 0, 1) : 0;
+	const progress = total > 0 ? math.clamp(left / total, 0, 1) : 0;
 	// A short tween makes each hit feel like it bites into the block.
 	TweenService.Create(bar.fill, HIT_TWEEN, { Size: new UDim2(progress, 0, 1, 0) }).Play();
 	bar.gui.Enabled = true;
@@ -254,14 +254,22 @@ export function startMiningController(): void {
 		bars.delete(node);
 	});
 
-	onServerMessage(MINE_PROGRESS_REMOTE, (node, damage, hardness, crit) => {
-		if (typeIs(node, "Instance") && typeIs(damage, "number") && typeIs(hardness, "number")) {
-			showProgress(node, damage, hardness);
-			// The hit sound plays on the swing itself (pickaxe-swing), not here: waiting for the server made it late.
-			const part = anchorPart(node);
-			if (crit === true && part !== undefined) {
-				showPopup(part, t("mining.crit"));
-			}
+	onServerMessage(MINE_PROGRESS_REMOTE, (node, taken, total, crit, oreId, amount) => {
+		if (!typeIs(node, "Instance") || !typeIs(taken, "number") || !typeIs(total, "number")) {
+			return;
+		}
+		// The bar shows what is still in the block: it shrinks with every chip (decision 052).
+		showProgress(node, total - taken, total);
+		// The hit sound plays on the swing itself (pickaxe-swing), not here: waiting for the server made it late.
+		const part = anchorPart(node);
+		if (part === undefined) {
+			return;
+		}
+		const critText = crit === true ? `${t("mining.crit")} ` : "";
+		if (isOreId(oreId) && typeIs(amount, "number") && amount > 0) {
+			showPopup(part, `${critText}+${amount} ${t(nameKeys.ore(oreId))}`);
+		} else if (crit === true) {
+			showPopup(part, t("mining.crit"));
 		}
 	});
 	onServerMessage(NODE_BROKEN_REMOTE, (node, respawnSeconds, oreId, amount, crit) => {

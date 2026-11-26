@@ -7,7 +7,7 @@ export {
 	getPickaxe,
 	hitsRequired,
 	rollCrystals,
-	rollYield,
+	scaleYield,
 	treasureReward,
 	veinYield,
 } from "./mining";

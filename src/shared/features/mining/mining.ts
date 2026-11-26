@@ -18,7 +18,7 @@ export function canMineTier(ore: OreDef, pickaxe: PickaxeDef): boolean {
 	return pickaxe.tier >= ore.requiredTier;
 }
 
-/** How many hits a node takes. Always at least 1. A pickaxe without power can never break anything. */
+/** How many hits one piece of ore takes. Always at least 1. A pickaxe without power can never break anything. */
 export function hitsRequired(hardness: number, power: number): number {
 	if (!(power > 0) || !(hardness > 0)) {
 		return power > 0 ? 1 : math.huge;
@@ -27,32 +27,45 @@ export function hitsRequired(hardness: number, power: number): number {
 }
 
 /**
- * Pieces of ore from one broken node. `bonus` (e.g. 0.3 = +30% from a pickaxe aura) is turned into a whole
- * number with a dice roll: 1.3 means "1 piece, plus 1 more with 30% chance". `roll` is in [0, 1).
- * Taking the roll as a parameter keeps this function pure and testable.
+ * Pieces after a pickaxe-aura bonus (e.g. 0.3 = +30%): `pieces` x (1 + bonus), the fraction turned into one more
+ * piece with a dice roll. 0 pieces stay 0, so a bonus never makes ore out of a hit that chipped nothing.
  */
-export function rollYield(bonus: number, roll: number): number {
+export function scaleYield(pieces: number, bonus: number, roll: number): number {
+	if (!(pieces > 0) || pieces === math.huge) {
+		return 0;
+	}
 	const safeBonus = bonus === bonus && bonus > 0 ? math.min(bonus, 10) : 0;
-	const whole = math.floor(safeBonus);
-	const fraction = safeBonus - whole;
-	return 1 + whole + (roll < fraction ? 1 : 0);
+	const exact = math.floor(pieces) * (1 + safeBonus);
+	const whole = math.floor(exact);
+	return whole + (roll < exact - whole ? 1 : 0);
 }
 
 export type HitResult =
 	| { readonly kind: "locked"; readonly requiredTier: number }
 	| { readonly kind: "cooldown" }
 	| { readonly kind: "depleted"; readonly secondsLeft: number }
-	| { readonly kind: "progress"; readonly damage: number; readonly hardness: number }
-	| { readonly kind: "broken"; readonly respawnSeconds: number };
+	/** The block took the hit. `pieces` (may be 0) came off; `taken` of `total` pieces are gone. */
+	| { readonly kind: "chip"; readonly pieces: number; readonly taken: number; readonly total: number }
+	/** The last pieces came off: the block is gone for this player for `respawnSeconds`. */
+	| { readonly kind: "broken"; readonly pieces: number; readonly respawnSeconds: number };
 
 interface NodeState {
+	/** Damage that did not add up to a whole piece yet; it carries over to the next hit. */
 	damage: number;
+	/** Pieces already taken from this block. */
+	taken: number;
 	depletedUntil: number;
 }
 
+/** Pieces in one block; a broken config still gives a block of one piece. */
+function piecesOf(ore: OreDef): number {
+	return ore.pieces >= 1 && ore.pieces < math.huge ? math.floor(ore.pieces) : 1;
+}
+
 /**
- * One player's mining state: damage dealt to each node, which nodes are depleted for them, and when they
+ * One player's mining state: what each node still holds, which nodes are depleted for them, and when they
  * last swung. Nodes are per player, so two players never fight over the same block.
+ * Every hit chips ore off a block (decision 052): `hardness` damage is one piece, a block holds `pieces` pieces.
  * `K` is the node key (an Instance on the server, a string in tests).
  */
 export class MiningSession<K> {
@@ -71,7 +84,7 @@ export class MiningSession<K> {
 
 		let state = this.nodes.get(node);
 		if (state === undefined) {
-			state = { damage: 0, depletedUntil: -math.huge };
+			state = { damage: 0, taken: 0, depletedUntil: -math.huge };
 			this.nodes.set(node, state);
 		}
 		if (now < state.depletedUntil) {
@@ -83,13 +96,20 @@ export class MiningSession<K> {
 			damageMultiplier === damageMultiplier && damageMultiplier >= 1 && damageMultiplier < math.huge
 				? damageMultiplier
 				: 1;
-		state.damage += pickaxe.power * multiplier;
-		if (state.damage >= ore.hardness) {
+		const total = piecesOf(ore);
+		// A config without hardness breaks one piece per hit instead of dividing by zero.
+		const hardness = ore.hardness > 0 ? ore.hardness : pickaxe.power;
+		const damage = state.damage + pickaxe.power * multiplier;
+		const chipped = math.min(math.floor(damage / hardness), total - state.taken);
+		state.damage = damage - chipped * hardness;
+		state.taken += chipped;
+		if (state.taken >= total) {
 			state.damage = 0;
+			state.taken = 0;
 			state.depletedUntil = now + ore.respawnSeconds;
-			return { kind: "broken", respawnSeconds: ore.respawnSeconds };
+			return { kind: "broken", pieces: chipped, respawnSeconds: ore.respawnSeconds };
 		}
-		return { kind: "progress", damage: state.damage, hardness: ore.hardness };
+		return { kind: "chip", pieces: chipped, taken: state.taken, total };
 	}
 
 	/** True while the node is depleted for this player. */

@@ -1,4 +1,4 @@
-import { nameKeys, ref, text } from "shared/features/i18n";
+﻿import { nameKeys, ref, text } from "shared/features/i18n";
 import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, OreId, isOreId } from "shared/config/ores";
@@ -16,7 +16,7 @@ import {
 	NODE_BROKEN_REMOTE,
 	getPickaxe,
 	rollCrystals,
-	rollYield,
+	scaleYield,
 	treasureReward,
 	veinYield,
 } from "shared/features/mining";
@@ -24,6 +24,7 @@ import { isLayerOpen } from "shared/features/layers";
 import { formatMoney } from "shared/lib/format";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { MAX_COUNTER } from "shared/lib/repair";
+import { ProfileData } from "shared/features/profile";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
@@ -108,9 +109,18 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 				"error",
 			);
 		}
-	} else if (result.kind === "progress") {
-		fireClient(MINE_PROGRESS_REMOTE, player, node, result.damage, result.hardness, crit);
-	} else if (result.kind === "broken" && node.GetAttribute(ATTRIBUTES.Treasure) === true) {
+		return;
+	}
+	if (result.kind !== "chip" && result.kind !== "broken") {
+		// "cooldown" and "depleted" are normal while clicking fast: silently ignored.
+		return;
+	}
+	const treasure = node.GetAttribute(ATTRIBUTES.Treasure) === true;
+	// Every hit chips ore off the block (decision 052). A treasure crate gives nothing until it is broken.
+	const added = treasure ? 0 : bagChips(player, data, node, oreId, result.pieces, capacity);
+	if (result.kind === "chip") {
+		fireClient(MINE_PROGRESS_REMOTE, player, node, result.taken, result.total, crit, oreId, added);
+	} else if (treasure) {
 		// A treasure crate (decision 050): the first player to break it takes it, then it is gone for everyone.
 		// Paid and removed in the same frame, so nobody else can break it after the reward.
 		const reward = treasureReward(ore.price, random.NextNumber());
@@ -129,24 +139,39 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 				notify(other, text("mining.treasureFound", { name: player.DisplayName }), "info");
 			}
 		}
-	} else if (result.kind === "broken") {
-		// A rich vein (decision 046) is marked by the server when it places the block; clients cannot set it.
-		const amount = veinYield(
-			rollYield(yieldBonusOf(player), random.NextNumber()),
-			node.GetAttribute(ATTRIBUTES.Rich) === true,
-		);
-		const added = addToBag(data.bag, oreId, amount, capacity);
-		data.stats.oresMined += added;
-		// A rare crystal (decision 043), rolled here with the server Random like the yield.
-		const crystals = added > 0 ? rollCrystals(ore.crystalChance, random.NextNumber()) : 0;
+	} else {
+		// A rare crystal (decision 043) for emptying a block, rolled here with the server Random like the yield.
+		const crystals = rollCrystals(ore.crystalChance, random.NextNumber());
 		if (crystals > 0) {
-			data.crystals += crystals;
+			data.crystals = math.min(data.crystals + crystals, MAX_COUNTER);
+			markDirty(player);
 			notify(player, text("mining.crystal", { count: crystals }), "success");
 		}
-		markDirty(player);
 		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added, crit);
 	}
-	// "cooldown" and "depleted" are normal while clicking fast: silently ignored.
+}
+
+/** Puts the pieces one hit chipped off into the bag (pickaxe aura and rich vein applied). Returns what fit. */
+function bagChips(
+	player: Player,
+	data: ProfileData,
+	node: Instance,
+	oreId: OreId,
+	pieces: number,
+	capacity: number,
+): number {
+	if (pieces <= 0) {
+		return 0;
+	}
+	// A rich vein (decision 046) is marked by the server when it places the block; clients cannot set it.
+	const amount = veinYield(
+		scaleYield(pieces, yieldBonusOf(player), random.NextNumber()),
+		node.GetAttribute(ATTRIBUTES.Rich) === true,
+	);
+	const added = addToBag(data.bag, oreId, amount, capacity);
+	data.stats.oresMined = math.min(data.stats.oresMined + added, MAX_COUNTER);
+	markDirty(player);
+	return added;
 }
 
 const warnedNodes = new Set<Instance>();
