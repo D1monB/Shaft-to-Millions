@@ -5,6 +5,7 @@ import { ITEMS, ItemId } from "shared/config/items";
 import { nameKeys } from "shared/features/i18n";
 import { t } from "./i18n";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText } from "./item-display";
+import { ModelIcon, petTemplate } from "./model-icon";
 import { COLORS, FONTS, RADIUS, Ramp, STROKE, Sunburst, TEXT_SIZES, rampSequence } from "./ui-kit";
 
 /** Height of the card without a footer. */
@@ -43,6 +44,8 @@ export interface RarityCardProps extends CardDecor {
 	/** Text colour of the middle pill. */
 	readonly light: Color3;
 	readonly icon: string;
+	/** The map author's 3D model, drawn instead of the emoji `icon` when given. */
+	readonly model?: Instance;
 	readonly name: string;
 	/** Middle pill, e.g. "LEGENDARY" or "LEVEL 3". */
 	readonly pill: string;
@@ -85,15 +88,25 @@ function Content(props: RarityCardProps) {
 		<>
 			{props.topLeft !== undefined && <Pill pill={props.topLeft} left={true} />}
 			{props.topRight !== undefined && <Pill pill={props.topRight} left={false} />}
-			<textlabel
-				AnchorPoint={new Vector2(0.5, 0)}
-				BackgroundTransparency={1}
-				Position={new UDim2(0.5, 0, 0, 22)}
-				Size={new UDim2(0, 70, 0, 50)}
-				Text={props.icon}
-				TextSize={40}
-				ZIndex={3}
-			/>
+			{props.model !== undefined ? (
+				<ModelIcon
+					template={props.model}
+					anchor={new Vector2(0.5, 0)}
+					position={new UDim2(0.5, 0, 0, 18)}
+					size={new UDim2(0, 64, 0, 56)}
+					zIndex={3}
+				/>
+			) : (
+				<textlabel
+					AnchorPoint={new Vector2(0.5, 0)}
+					BackgroundTransparency={1}
+					Position={new UDim2(0.5, 0, 0, 22)}
+					Size={new UDim2(0, 70, 0, 50)}
+					Text={props.icon}
+					TextSize={40}
+					ZIndex={3}
+				/>
+			)}
 			<textlabel
 				BackgroundTransparency={1}
 				Position={new UDim2(0, 6, 0, 74)}
@@ -244,6 +257,7 @@ export function ItemCard(props: ItemCardProps) {
 			ramp={RARITY_RAMPS[def.rarity]}
 			light={RARITY_LIGHT[def.rarity]}
 			icon={KIND_ICONS[def.kind]}
+			model={def.kind === "pet" ? petTemplate(props.item) : undefined}
 			name={t(nameKeys.item(props.item))}
 			pill={t(nameKeys.rarity(def.rarity))}
 			effect={effectText(def.kind, def.bonus)}

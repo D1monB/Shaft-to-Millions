@@ -24,6 +24,7 @@ import { formatPercent } from "shared/lib/format";
 import { useView } from "client/features/profile";
 import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, RarityCard } from "client/lib/item-card";
 import { RARITY_LIGHT, RARITY_RAMPS } from "client/lib/item-display";
+import { pickaxeTemplate } from "client/lib/model-icon";
 import { openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { sendToServer } from "client/lib/remotes";
@@ -133,6 +134,12 @@ function footerOf(def: GearBase, view: PlayerView): React.Element {
 	return <ForSaleFooter def={def} view={view} />;
 }
 
+/** Pickaxes have the map author's 3D models; bags and shoes keep their emoji. */
+function modelOf(id: string): Instance | undefined {
+	const pickaxe = PICKAXES.find((def) => def.id === id);
+	return pickaxe !== undefined ? pickaxeTemplate(pickaxe.tool) : undefined;
+}
+
 function GearCard(props: { slot: GearSlot; icon: string; index: number; view: PlayerView }) {
 	const items = GEAR_BY_SLOT[props.slot];
 	const def = items[props.index];
@@ -144,6 +151,7 @@ function GearCard(props: { slot: GearSlot; icon: string; index: number; view: Pl
 			ramp={RARITY_RAMPS[colour]}
 			light={RARITY_LIGHT[colour]}
 			icon={props.icon}
+			model={modelOf(def.id)}
 			name={t(nameKeys.gear(def.id))}
 			pill={stats.pill}
 			effect={stats.effect}

@@ -3,6 +3,7 @@
 import React from "@rbxts/react";
 import { ORES, OreId } from "shared/config/ores";
 import { COLORS, FONTS, RADIUS, STROKE, rampSequence } from "./ui-kit";
+import { ModelIcon, oreTemplate } from "./model-icon";
 
 // Each ore has its own glyph, not only its own colour. Only emoji from old Unicode versions: newer ones (e.g. the
 // rock, Unicode 13) are missing from the Roblox emoji font and draw an empty square.
@@ -45,6 +46,8 @@ export function ResourceTile(props: ResourceTileProps) {
 	const color = colorOf(props.id);
 	const ramp = { top: color.Lerp(COLORS.white, 0.35), mid: color, bottom: color.Lerp(COLORS.black, 0.4) };
 	const captionHeight = props.caption !== undefined ? 20 : 0;
+	// The map author's ore model when it exists, else the emoji.
+	const model = oreTemplate(props.id);
 	return (
 		<frame
 			BackgroundTransparency={1}
@@ -68,20 +71,30 @@ export function ResourceTile(props: ResourceTileProps) {
 						<uicorner CornerRadius={RADIUS.medium} />
 					</frame>
 				)}
-				<textlabel
-					BackgroundTransparency={1}
-					Size={UDim2.fromScale(1, 1)}
-					Text={resourceIcon(props.id)}
-					TextScaled={true}
-					ZIndex={3}
-				>
-					<uipadding
-						PaddingTop={new UDim(0.18, 0)}
-						PaddingBottom={new UDim(0.18, 0)}
-						PaddingLeft={new UDim(0.18, 0)}
-						PaddingRight={new UDim(0.18, 0)}
+				{model !== undefined ? (
+					<ModelIcon
+						template={model}
+						size={UDim2.fromScale(0.86, 0.86)}
+						position={UDim2.fromScale(0.5, 0.5)}
+						anchor={new Vector2(0.5, 0.5)}
+						zIndex={3}
 					/>
-				</textlabel>
+				) : (
+					<textlabel
+						BackgroundTransparency={1}
+						Size={UDim2.fromScale(1, 1)}
+						Text={resourceIcon(props.id)}
+						TextScaled={true}
+						ZIndex={3}
+					>
+						<uipadding
+							PaddingTop={new UDim(0.18, 0)}
+							PaddingBottom={new UDim(0.18, 0)}
+							PaddingLeft={new UDim(0.18, 0)}
+							PaddingRight={new UDim(0.18, 0)}
+						/>
+					</textlabel>
+				)}
 				{props.badge !== undefined && (
 					<textlabel
 						AnchorPoint={new Vector2(1, 1)}

@@ -2,10 +2,11 @@
 // Roblox's default backpack bar. A tap or keys 1..9, 0 pick a pickaxe (the server equips it and puts it in the hand);
 // picking the one already chosen puts it away or takes it out again.
 import React, { useEffect, useRef, useState } from "@rbxts/react";
-import { Players, ReplicatedStorage, StarterGui, UserInputService } from "@rbxts/services";
+import { Players, StarterGui, UserInputService } from "@rbxts/services";
 import { PICKAXES, PickaxeDef } from "shared/config/pickaxes";
 import { nameKeys } from "shared/features/i18n";
-import { EQUIP_GEAR_REMOTE, PICKAXE_ID_ATTRIBUTE, PICKAXE_TEMPLATES_FOLDER } from "shared/features/upgrades";
+import { EQUIP_GEAR_REMOTE, PICKAXE_ID_ATTRIBUTE } from "shared/features/upgrades";
+import { ModelIcon, pickaxeTemplate } from "client/lib/model-icon";
 import { useView } from "client/features/profile";
 import { t } from "client/lib/i18n";
 import { sendToServer } from "client/lib/remotes";
@@ -82,44 +83,11 @@ function choose(def: PickaxeDef, equipped: string): void {
 	}
 }
 
-/** The map author's pickaxe model, turned to show its head, in a ViewportFrame (no image assets needed). */
+/** The map author's pickaxe model in a ViewportFrame (no image assets needed). */
 function PickaxeModel(props: { tool: string }) {
-	const frame = useRef<ViewportFrame>();
-	useEffect(() => {
-		const viewport = frame.current;
-		const template = ReplicatedStorage.FindFirstChild(PICKAXE_TEMPLATES_FOLDER)?.FindFirstChild(props.tool);
-		if (viewport === undefined || template === undefined) {
-			return;
-		}
-		const model = new Instance("Model");
-		for (const child of template.GetChildren()) {
-			if (child.IsA("BasePart")) {
-				child.Clone().Parent = model;
-			}
-		}
-		const [box, size] = model.GetBoundingBox();
-		const camera = new Instance("Camera");
-		camera.FieldOfView = 30;
-		const distance = math.max(size.X, size.Y, size.Z) * 2.1;
-		const eye = box.Position.add(new Vector3(distance * 0.55, distance * 0.25, distance));
-		camera.CFrame = CFrame.lookAt(eye, box.Position);
-		camera.Parent = viewport;
-		viewport.CurrentCamera = camera;
-		model.Parent = viewport;
-		return () => {
-			model.Destroy();
-			camera.Destroy();
-		};
-	}, [props.tool]);
-	return (
-		<viewportframe
-			ref={frame}
-			BackgroundTransparency={1}
-			Size={new UDim2(1, -8, 1, -8)}
-			Position={new UDim2(0, 4, 0, 4)}
-			Ambient={Color3.fromRGB(200, 200, 210)}
-			LightColor={Color3.fromRGB(255, 255, 255)}
-		/>
+	const template = pickaxeTemplate(props.tool);
+	return template === undefined ? undefined : (
+		<ModelIcon template={template} size={new UDim2(1, -8, 1, -8)} position={new UDim2(0, 4, 0, 4)} />
 	);
 }
 
