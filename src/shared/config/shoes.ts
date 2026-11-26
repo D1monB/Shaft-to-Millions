@@ -11,12 +11,12 @@ export const SHOES: ReadonlyArray<ShoesDef> = [
 	{ id: "shoes_old", walkSpeed: 20, price: 0 },
 	{ id: "shoes_miner", walkSpeed: 23, price: 250 },
 	{ id: "shoes_light", walkSpeed: 26, price: 2_000 },
-	{ id: "shoes_riveted", walkSpeed: 29, price: 12_000 },
-	{ id: "shoes_spring", walkSpeed: 32, price: 75_000 },
-	{ id: "shoes_silver", walkSpeed: 36, price: 500_000 },
-	{ id: "shoes_jet", walkSpeed: 40, price: 3_500_000 },
-	{ id: "shoes_gold", walkSpeed: 45, price: 25_000_000 },
-	{ id: "shoes_gravity", walkSpeed: 50, price: 180_000_000 },
+	{ id: "shoes_riveted", walkSpeed: 29, price: 6_000 },
+	{ id: "shoes_spring", walkSpeed: 32, price: 30_000 },
+	{ id: "shoes_silver", walkSpeed: 36, price: 200_000 },
+	{ id: "shoes_jet", walkSpeed: 40, price: 1_500_000 },
+	{ id: "shoes_gold", walkSpeed: 45, price: 10_000_000 },
+	{ id: "shoes_gravity", walkSpeed: 50, price: 60_000_000 },
 ];
 
 /** Hard cap after all bonuses: the best shoes (50) with the strongest speed aura (+30%). Keeps platforming sane. */

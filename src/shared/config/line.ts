@@ -13,7 +13,7 @@ export interface LineMachineDef {
 }
 
 export const LINE_MACHINES: ReadonlyArray<LineMachineDef> = [
-	{ id: "M01", price: 500, seconds: 1.5 },
+	{ id: "M01", price: 400, seconds: 1.5 },
 	{ id: "M02", price: 2_000, seconds: 1.5 },
 	{ id: "M03", price: 6_000, seconds: 2 },
 	{ id: "M04", price: 18_000, seconds: 2 },
@@ -91,10 +91,10 @@ export interface BeltLevel {
 export const BELT_LEVELS: ReadonlyArray<BeltLevel> = [
 	{ price: 0, speed: 1 },
 	{ price: 15_000, speed: 1.15 },
-	{ price: 150_000, speed: 1.3 },
-	{ price: 1_500_000, speed: 1.5 },
-	{ price: 15_000_000, speed: 1.75 },
-	{ price: 150_000_000, speed: 2 },
+	{ price: 100_000, speed: 1.3 },
+	{ price: 1_000_000, speed: 1.5 },
+	{ price: 8_000_000, speed: 1.75 },
+	{ price: 60_000_000, speed: 2 },
 ];
 
 /** Items the start of the belt (intake) holds: a full bag fits. */
