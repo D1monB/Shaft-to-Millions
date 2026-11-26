@@ -6,7 +6,8 @@ import { ORES, ORE_IDS, isOreId } from "shared/config/ores";
 import {
 	BELT_LEVELS,
 	BELT_SECONDS_PER_ITEM,
-	HOPPER_CAPACITY,
+	POLISH_LEVELS,
+	SILO_LEVELS,
 	LINE_MACHINES,
 	LINE_UPGRADES,
 	LINE_UPGRADE_TRACKS,
@@ -142,7 +143,10 @@ const MAX_TIMESTAMP = 4_102_444_800;
  */
 function repairLine(data: PlainTable, repairs: string[]): void {
 	const line = repairTable(data, "line", "line", repairs);
-	line.intake = repairOreList(line.intake, HOPPER_CAPACITY, "line.intake", repairs);
+	repairInteger(line, "siloLevel", 1, SILO_LEVELS.size(), 1, "line.siloLevel", repairs);
+	repairInteger(line, "polishLevel", 1, POLISH_LEVELS.size(), 1, "line.polishLevel", repairs);
+	const hopper = SILO_LEVELS[(line.siloLevel as number) - 1].value;
+	line.intake = repairOreList(line.intake, hopper, "line.intake", repairs);
 	repairNumber(line, "beltProgress", 0, BELT_SECONDS_PER_ITEM, 0, "line.beltProgress", repairs);
 	repairInteger(line, "beltLevel", 1, BELT_LEVELS.size(), 1, "line.beltLevel", repairs);
 	const raw = line.machines;

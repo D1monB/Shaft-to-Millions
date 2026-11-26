@@ -1,9 +1,8 @@
 // The map author's silo on the belt (decision 047) is the line's intake: the player hands in ore at its SiloIntake,
 // the ore waits inside (the line's intake queue, which already existed) and rides out of SiloOutlet to machine 1.
 // The silo only shows it: the gauge glows brighter the fuller it is, dust puffs while ore leaves, a label counts.
-import { HOPPER_CAPACITY } from "shared/config/line";
 import { SILO } from "shared/config/map-contract";
-import { LineState } from "shared/features/line";
+import { LineState, hopperCapacity } from "shared/features/line";
 
 /** Gauge transparency when empty and when full. */
 const GAUGE_EMPTY = 0.85;
@@ -59,7 +58,8 @@ export function findSilo(built: Instance): Silo | undefined {
 
 /** Shows how full the silo is. Cheap; called every line tick (properties are set only when they change). */
 export function refreshSilo(silo: Silo, line: LineState): void {
-	const fill = math.clamp(line.intake.size() / HOPPER_CAPACITY, 0, 1);
+	const capacity = hopperCapacity(line);
+	const fill = math.clamp(line.intake.size() / capacity, 0, 1);
 	const gauge = silo.model.FindFirstChild(SILO.Gauge, true);
 	if (gauge !== undefined && gauge.IsA("BasePart")) {
 		const transparency = GAUGE_EMPTY + (GAUGE_FULL - GAUGE_EMPTY) * fill;
@@ -74,7 +74,7 @@ export function refreshSilo(silo: Silo, line: LineState): void {
 		}
 	}
 	const label = silo.model.FindFirstChild(COUNTER_NAME, true)?.FindFirstChild("Count");
-	const text = `${line.intake.size()} / ${HOPPER_CAPACITY}`;
+	const text = `${line.intake.size()} / ${capacity}`;
 	if (label !== undefined && label.IsA("TextLabel") && label.Text !== text) {
 		label.Text = text;
 	}

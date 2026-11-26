@@ -6,8 +6,10 @@
 import {
 	BELT_LEVELS,
 	BELT_SECONDS_PER_ITEM,
-	BeltLevel,
-	HOPPER_CAPACITY,
+	BeltTrack,
+	BeltTrackLevel,
+	POLISH_LEVELS,
+	SILO_LEVELS,
 	LINE_MACHINES,
 	LINE_MAX_STEP,
 	LINE_UPGRADES,
@@ -40,6 +42,10 @@ export interface LineState {
 	machines: LineMachineState[];
 	/** Conveyor level, 1-based (decision 054): speeds up the whole line. */
 	beltLevel: number;
+	/** Silo level, 1-based (decision 069): how much ore may wait at the start of the belt. */
+	siloLevel: number;
+	/** Polish level, 1-based (decision 069): money bonus of what the line sells. */
+	polishLevel: number;
 }
 
 /** Base value of a raw ore, or undefined for an unknown id (that item is dropped, never sold). */
@@ -49,7 +55,7 @@ export type OreValueOf = (ore: string) => number | undefined;
 export type RandomFn = () => number;
 
 export function newLineState(): LineState {
-	return { intake: [], beltProgress: 0, machines: [], beltLevel: 1 };
+	return { intake: [], beltProgress: 0, machines: [], beltLevel: 1, siloLevel: 1, polishLevel: 1 };
 }
 
 function newMachine(): LineMachineState {
@@ -155,20 +161,47 @@ export function beltSpeed(level: number): number {
 	return BELT_LEVELS[index].speed;
 }
 
-/** The next conveyor level and its price, or undefined at the top. */
-export function nextBeltLevel(state: LineState): (BeltLevel & { readonly level: number }) | undefined {
-	const current = isFiniteNumber(state.beltLevel) ? math.max(math.floor(state.beltLevel), 1) : 1;
-	const step = BELT_LEVELS[current];
-	return step === undefined ? undefined : { level: current + 1, price: step.price, speed: step.speed };
+/** The levels of one belt track as {price, value}. */
+export function beltTrackLevels(track: BeltTrack): ReadonlyArray<BeltTrackLevel> {
+	if (track === "capacity") {
+		return SILO_LEVELS;
+	}
+	return track === "polish" ? POLISH_LEVELS : BELT_LEVELS.map((step) => ({ price: step.price, value: step.speed }));
+}
+
+/** The state field a belt track is saved in. */
+export const BELT_TRACK_FIELD = { speed: "beltLevel", capacity: "siloLevel", polish: "polishLevel" } as const;
+
+/** The current level (1-based, clamped) and value of a belt track. */
+export function beltTrackNow(state: LineState, track: BeltTrack): { level: number; value: number } {
+	const levels = beltTrackLevels(track);
+	const raw = state[BELT_TRACK_FIELD[track]];
+	const level = math.clamp(isFiniteNumber(raw) ? math.floor(raw) : 1, 1, levels.size());
+	return { level, value: levels[level - 1].value };
+}
+
+/** The next level of a belt track and its price, or undefined at the top. */
+export function nextBeltLevel(
+	state: LineState,
+	track: BeltTrack = "speed",
+): (BeltTrackLevel & { readonly level: number }) | undefined {
+	const current = beltTrackNow(state, track).level;
+	const step = beltTrackLevels(track)[current];
+	return step === undefined ? undefined : { level: current + 1, price: step.price, value: step.value };
+}
+
+/** How many items may wait at the start of the belt. */
+export function hopperCapacity(state: LineState): number {
+	return beltTrackNow(state, "capacity").value;
 }
 
 export type BeltUpgradeResult =
 	| { readonly ok: true; readonly level: number; readonly money: number }
 	| { readonly ok: false; readonly reason: "maxed" | "not-enough-money" };
 
-/** Decides a conveyor upgrade. Does not change anything; the caller sets the level and the money together. */
-export function tryBeltUpgrade(state: LineState, money: number): BeltUpgradeResult {
-	const step = nextBeltLevel(state);
+/** Decides a belt upgrade. Does not change anything; the caller sets the level and the money together. */
+export function tryBeltUpgrade(state: LineState, money: number, track: BeltTrack = "speed"): BeltUpgradeResult {
+	const step = nextBeltLevel(state, track);
 	if (step === undefined) {
 		return { ok: false, reason: "maxed" };
 	}
@@ -188,7 +221,7 @@ export function queueLimit(state: LineState, index: number): number {
 
 /** Free room at the start of the belt. */
 export function intakeRoom(state: LineState): number {
-	return math.max(HOPPER_CAPACITY - state.intake.size(), 0);
+	return math.max(hopperCapacity(state) - state.intake.size(), 0);
 }
 
 /**
@@ -237,7 +270,7 @@ export function itemValue(state: LineState, ore: string, lastIndex: number, valu
 			bonus += upgradeValue("quality", machine.quality);
 		}
 	}
-	return base * stage * (1 + bonus);
+	return base * stage * (1 + bonus) * (1 + beltTrackNow(state, "polish").value);
 }
 
 // ---- processing ----

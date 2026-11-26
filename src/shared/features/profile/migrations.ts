@@ -498,6 +498,22 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
 			}
 		},
 	},
+	{
+		// Version 9 (decision 069): silo and polish levels. A bigger silo raises the intake cap, so the bump stops an
+		// older server from cutting the waiting ore.
+		from: 8,
+		apply: (data) => {
+			if (typeIs(data.line, "table")) {
+				const line = data.line as PlainTable;
+				if (line.siloLevel === undefined) {
+					line.siloLevel = 1;
+				}
+				if (line.polishLevel === undefined) {
+					line.polishLevel = 1;
+				}
+			}
+		},
+	},
 ];
 
 export type MigrationFailure = "invalid-version" | "future-version" | "migration-failed";

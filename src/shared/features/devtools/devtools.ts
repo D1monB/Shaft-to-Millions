@@ -79,15 +79,25 @@ export function applyDevCommand(data: ProfileData, command: DevCommand): void {
 	}
 }
 
-/** Fields a reset keeps: the version (the data is still this version) and Robux receipts (already granted, see below). */
-const KEPT_ON_RESET: ReadonlyArray<string> = ["schemaVersion", "purchaseIds"];
+/**
+ * Fields a reset keeps: the version, Robux receipts (already granted, see below), used promo codes (or they would pay
+ * again), the developer role and the player's settings.
+ */
+const KEPT_ON_RESET: ReadonlyArray<string> = [
+	"schemaVersion",
+	"purchaseIds",
+	"redeemedCodes",
+	"devRole",
+	"language",
+	"soundOn",
+];
 
 /**
  * Puts the profile back to a brand-new player, in place (the live table must stay the same object, the session
  * saves it). Granted Robux receipt ids are KEPT: a purchase that was paid and granted must never be granted twice,
- * and a test reset is no reason to forget it. Studio only, like every dev command.
+ * and a reset is no reason to forget it. Used by the Studio dev command and the owner's panel.
  */
-function resetProfile(data: ProfileData): void {
+export function resetProfile(data: ProfileData): void {
 	const fresh = createDefaultProfileData() as unknown as PlainTable;
 	const target = data as unknown as PlainTable;
 	for (const [key, value] of pairs(fresh)) {

@@ -106,7 +106,39 @@ export const LINE_BASE_SPEED = 0.6;
 /** How fast the belt itself visibly moves (studs per second) at conveyor level 1; grows with the level. */
 export const BELT_VISUAL_SPEED = 1.5;
 
-/** Items the start of the belt (intake) holds: a full bag fits. */
+/** The three upgrades of the belt itself, opened by a prompt anywhere on the conveyor (decision 069). */
+export type BeltTrack = "speed" | "capacity" | "polish";
+
+export const BELT_TRACKS: ReadonlyArray<BeltTrack> = ["speed", "capacity", "polish"];
+
+export interface BeltTrackLevel {
+	readonly price: number;
+	readonly value: number;
+}
+
+/** Items waiting at the start of the belt (the silo). Level 1 is free. */
+export const SILO_LEVELS: ReadonlyArray<BeltTrackLevel> = [
+	{ price: 0, value: 500 },
+	{ price: 4_000, value: 750 },
+	{ price: 40_000, value: 1_100 },
+	{ price: 600_000, value: 1_600 },
+	{ price: 9_000_000, value: 2_500 },
+];
+
+/** Polishing on the way: money bonus of everything the line sells (0.03 = +3%). */
+export const POLISH_LEVELS: ReadonlyArray<BeltTrackLevel> = [
+	{ price: 0, value: 0 },
+	{ price: 7_000, value: 0.03 },
+	{ price: 80_000, value: 0.06 },
+	{ price: 1_200_000, value: 0.1 },
+	{ price: 20_000_000, value: 0.15 },
+];
+
+export function isBeltTrack(value: unknown): value is BeltTrack {
+	return value === "speed" || value === "capacity" || value === "polish";
+}
+
+/** Items the start of the belt (intake) holds at silo level 1: a full bag fits. */
 export const HOPPER_CAPACITY = 500;
 
 /** Seconds the belt needs per raw ore while no machine is bought (it rides straight to the SellStation). */
