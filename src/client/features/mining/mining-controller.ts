@@ -266,19 +266,23 @@ export function startMiningController(): void {
 		bars.delete(node);
 	});
 
-	onServerMessage(MINE_PROGRESS_REMOTE, (node, damage, hardness) => {
+	onServerMessage(MINE_PROGRESS_REMOTE, (node, damage, hardness, crit) => {
 		if (typeIs(node, "Instance") && typeIs(damage, "number") && typeIs(hardness, "number")) {
 			showProgress(node, damage, hardness);
+			const part = anchorPart(node);
+			if (crit === true && part !== undefined) {
+				showPopup(part, t("mining.crit"));
+			}
 			playSound("hit");
 		}
 	});
-	onServerMessage(NODE_BROKEN_REMOTE, (node, respawnSeconds, oreId, amount) => {
+	onServerMessage(NODE_BROKEN_REMOTE, (node, respawnSeconds, oreId, amount, crit) => {
 		if (!typeIs(node, "Instance") || !typeIs(respawnSeconds, "number") || !isOreId(oreId)) {
 			return;
 		}
 		const part = anchorPart(node);
 		if (part !== undefined && typeIs(amount, "number") && amount > 0) {
-			showPopup(part, `+${amount} ${t(nameKeys.ore(oreId))}`);
+			showPopup(part, `${crit === true ? `${t("mining.crit")} ` : ""}+${amount} ${t(nameKeys.ore(oreId))}`);
 		}
 		playOreBreak(oreId);
 		bars.get(node)?.gui.Destroy();

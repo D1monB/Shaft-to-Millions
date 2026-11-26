@@ -21,6 +21,9 @@ export const EN = {
 	"common.notEnoughMoney": "Not enough money.",
 	"common.notEnoughCrystals": "Not enough crystals.",
 	"mining.crystal": "+{count} 💎 crystal!",
+	"mining.crit": "CRIT!",
+	"mining.rushStart": "⛏️ Ore rush! For {seconds} s many blocks in the pit are rich veins.",
+	"mining.rushEnd": "The ore rush is over.",
 	"common.buyFor": "{verb} for {price}",
 	"common.short": "{price} · need {missing}",
 

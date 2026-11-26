@@ -21,6 +21,9 @@ export const UK: Strings = {
 	"common.notEnoughMoney": "Не вистачає грошей.",
 	"common.notEnoughCrystals": "Не вистачає кристалів.",
 	"mining.crystal": "+{count} 💎 кристал!",
+	"mining.crit": "КРИТ!",
+	"mining.rushStart": "⛏️ Рудна лихоманка! {seconds} с у кар'єрі багато багатих жил.",
+	"mining.rushEnd": "Рудна лихоманка скінчилася.",
 	"common.buyFor": "{verb} за {price}",
 	"common.short": "{price} · бракує {missing}",
 

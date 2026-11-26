@@ -33,3 +33,18 @@ export const RICH_ORE_CHANCE = 0.08;
 
 /** Ore from a rich vein = normal yield times this. */
 export const RICH_YIELD_MULTIPLIER = 3;
+
+/** Chance that one swing is a critical hit (decision 048). */
+export const CRIT_CHANCE = 0.12;
+
+/** A critical hit deals this many times the pickaxe power. */
+export const CRIT_MULTIPLIER = 3;
+
+/** An ore rush (decision 048) starts every this many seconds ... */
+export const ORE_RUSH_EVERY_SECONDS = 480;
+
+/** ... lasts this long ... */
+export const ORE_RUSH_SECONDS = 60;
+
+/** ... and makes this share of the blocks no one stands at rich for its duration. */
+export const ORE_RUSH_RICH_SHARE = 0.35;

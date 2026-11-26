@@ -21,6 +21,9 @@ export const PL: Strings = {
 	"common.notEnoughMoney": "Za mało pieniędzy.",
 	"common.notEnoughCrystals": "Za mało kryształów.",
 	"mining.crystal": "+{count} 💎 kryształ!",
+	"mining.crit": "KRYT!",
+	"mining.rushStart": "⛏️ Gorączka rudy! Przez {seconds} s w kopalni jest wiele bogatych żył.",
+	"mining.rushEnd": "Gorączka rudy się skończyła.",
 	"common.buyFor": "{verb} za {price}",
 	"common.short": "{price} · brakuje {missing}",
 

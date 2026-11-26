@@ -7,11 +7,15 @@
 import { CollectionService, Players, ServerStorage, Workspace } from "@rbxts/services";
 import { ATTRIBUTES, ORE_SPAWNS, PLOTS, PLOT_ATTRIBUTES, TAGS } from "shared/config/map-contract";
 import { ORES, OreId } from "shared/config/ores";
+import { text } from "shared/features/i18n";
 import { ITEM_TEMPLATES_FOLDER } from "shared/features/line";
 import {
 	ORE_FILL_FRACTION,
 	ORE_SHUFFLE_CLEAR_RADIUS,
 	ORE_SHUFFLE_FRACTION,
+	ORE_RUSH_EVERY_SECONDS,
+	ORE_RUSH_RICH_SHARE,
+	ORE_RUSH_SECONDS,
 	ORE_SHUFFLE_SECONDS,
 	RICH_ORE_CHANCE,
 	activeCount,
@@ -19,6 +23,7 @@ import {
 	pickRandom,
 	tierOf,
 } from "shared/features/mining";
+import { notify } from "server/lib/notify";
 
 /** Size of one ore block (studs, its longest side). 8 = the map author's choice (their OreNodeScale script did the same). */
 const NODE_SIZE = 8;
@@ -37,6 +42,7 @@ interface Layer {
 const random = new Random();
 const nextNumber = () => random.NextNumber();
 const templates = new Map<OreId, Model | false>();
+const SPARKLES_NAME = "RichSparkles";
 
 function flatDistance(a: Vector3, b: Vector3): number {
 	return new Vector2(a.X - b.X, a.Z - b.Z).Magnitude;
@@ -88,14 +94,55 @@ function modelBlock(template: Model): Model {
 }
 
 /** A rich vein (decision 046): sparkles in the ore's colour and a server-set attribute the mining service reads. */
-function makeRich(block: PVInstance, oreId: OreId): void {
+function makeRich(block: Instance, oreId: OreId): void {
 	block.SetAttribute(ATTRIBUTES.Rich, true);
 	const part = block.IsA("BasePart") ? block : block.FindFirstChildWhichIsA("BasePart", true);
 	if (part !== undefined) {
 		const [r, g, b] = ORES[oreId].color;
 		const sparkles = new Instance("Sparkles");
+		sparkles.Name = SPARKLES_NAME;
 		sparkles.SparkleColor = Color3.fromRGB(r, g, b);
 		sparkles.Parent = part;
+	}
+}
+
+function makePlain(block: Instance): void {
+	block.SetAttribute(ATTRIBUTES.Rich, undefined);
+	block.FindFirstChild(SPARKLES_NAME, true)?.Destroy();
+}
+
+/**
+ * An ore rush (decision 048): for a minute a share of the plain blocks nobody stands at turn rich, announced to
+ * everyone. Afterwards exactly those blocks turn plain again (blocks moved by a shuffle meanwhile are simply gone).
+ */
+function oreRush(layers: ReadonlyArray<Layer>): void {
+	const enriched = new Array<Instance>();
+	for (const layer of layers) {
+		const plain = new Array<SpawnPoint>();
+		for (const [point, block] of layer.blocks) {
+			if (block.GetAttribute(ATTRIBUTES.Rich) !== true && !playerNear(point.spawn.Position)) {
+				plain.push(point);
+			}
+		}
+		for (const point of pickRandom(plain, activeCount(plain.size(), ORE_RUSH_RICH_SHARE), nextNumber)) {
+			const block = layer.blocks.get(point);
+			if (block !== undefined) {
+				makeRich(block, point.oreId);
+				enriched.push(block);
+			}
+		}
+	}
+	for (const player of Players.GetPlayers()) {
+		notify(player, text("mining.rushStart", { seconds: ORE_RUSH_SECONDS }), "success");
+	}
+	task.wait(ORE_RUSH_SECONDS);
+	for (const block of enriched) {
+		if (block.Parent !== undefined) {
+			makePlain(block);
+		}
+	}
+	for (const player of Players.GetPlayers()) {
+		notify(player, text("mining.rushEnd"), "info");
 	}
 }
 
@@ -199,6 +246,16 @@ export function spawnMapOre(): number {
 		}
 	}
 	folder.Parent = Workspace;
+	task.spawn(() => {
+		for (;;) {
+			task.wait(ORE_RUSH_EVERY_SECONDS);
+			// pcall: a failed rush must not end the loop (no rush ever again).
+			const [ok, err] = pcall(oreRush, layers);
+			if (!ok) {
+				warn(`[ore] rush failed: ${err}`);
+			}
+		}
+	});
 	task.spawn(() => {
 		for (;;) {
 			task.wait(ORE_SHUFFLE_SECONDS);

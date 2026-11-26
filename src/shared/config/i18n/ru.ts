@@ -21,6 +21,9 @@ export const RU: Strings = {
 	"common.notEnoughMoney": "Не хватает денег.",
 	"common.notEnoughCrystals": "Не хватает кристаллов.",
 	"mining.crystal": "+{count} 💎 кристалл!",
+	"mining.crit": "КРИТ!",
+	"mining.rushStart": "⛏️ Рудная лихорадка! {seconds} с в карьере много богатых жил.",
+	"mining.rushEnd": "Рудная лихорадка закончилась.",
 	"common.buyFor": "{verb} за {price}",
 	"common.short": "{price} · не хватает {missing}",
 

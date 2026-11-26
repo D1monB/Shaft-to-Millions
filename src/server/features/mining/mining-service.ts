@@ -6,6 +6,8 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { addToBag, bagCapacity, bagFreeSpace } from "shared/features/bag";
 import {
 	CLICK_DISTANCE,
+	CRIT_CHANCE,
+	CRIT_MULTIPLIER,
 	MAX_MINING_DISTANCE,
 	MINE_HIT_REMOTE,
 	parseHitRequest,
@@ -82,7 +84,15 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 	}
 
 	const ore = ORES[oreId];
-	const result = getSession(player).hit(node, ore, getPickaxe(data.gear.equipped.pickaxe), os.clock());
+	// A critical hit (decision 048) is rolled here with the server Random; the client only shows it.
+	const crit = random.NextNumber() < CRIT_CHANCE;
+	const result = getSession(player).hit(
+		node,
+		ore,
+		getPickaxe(data.gear.equipped.pickaxe),
+		os.clock(),
+		crit ? CRIT_MULTIPLIER : 1,
+	);
 
 	if (result.kind === "locked") {
 		if (noticeLimiter.tryTake(player.UserId, os.clock())) {
@@ -96,7 +106,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 			);
 		}
 	} else if (result.kind === "progress") {
-		fireClient(MINE_PROGRESS_REMOTE, player, node, result.damage, result.hardness);
+		fireClient(MINE_PROGRESS_REMOTE, player, node, result.damage, result.hardness, crit);
 	} else if (result.kind === "broken") {
 		// A rich vein (decision 046) is marked by the server when it places the block; clients cannot set it.
 		const amount = veinYield(
@@ -112,7 +122,7 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 			notify(player, text("mining.crystal", { count: crystals }), "success");
 		}
 		markDirty(player);
-		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added);
+		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added, crit);
 	}
 	// "cooldown" and "depleted" are normal while clicking fast: silently ignored.
 }

@@ -532,3 +532,11 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   the stored belt path, tested). `Silo_Glow` grows brighter with the fill, `FX_Dust` puffs while ore leaves, a
   counter "N / 500" floats over the silo. Economy unchanged.
 - **Why:** the map author built the silo for exactly this; before, ore passed through it without stopping.
+
+## 048. Critical hits and ore rush (2026-11-26)
+
+- **What:** 12% of counted swings are critical hits (3× pickaxe power), rolled on the server and shown on the client
+  as "CRIT!". Every 8 minutes an ore rush: for 60 s, 35% of the plain blocks nobody stands at become rich veins
+  (decision 046), announced to everyone; afterwards exactly those turn plain again. Numbers in `mining/tuning.ts`.
+- **Why:** the developer found mining a bit dull. Crits make each swing a small gamble; the rush gives the pit a
+  rhythm and a reason to go down now.

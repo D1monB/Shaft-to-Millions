@@ -53,7 +53,8 @@ export class MiningSession<K> {
 	private readonly nodes = new Map<K, NodeState>();
 	private lastHitAt = -math.huge;
 
-	public hit(node: K, ore: OreDef, pickaxe: PickaxeDef, now: number): HitResult {
+	/** `damageMultiplier` > 1 is a critical hit (decision 048); anything not finite or below 1 counts as 1. */
+	public hit(node: K, ore: OreDef, pickaxe: PickaxeDef, now: number, damageMultiplier = 1): HitResult {
 		if (!canMineTier(ore, pickaxe)) {
 			return { kind: "locked", requiredTier: ore.requiredTier };
 		}
@@ -72,7 +73,11 @@ export class MiningSession<K> {
 		}
 
 		this.lastHitAt = now;
-		state.damage += pickaxe.power;
+		const multiplier =
+			damageMultiplier === damageMultiplier && damageMultiplier >= 1 && damageMultiplier < math.huge
+				? damageMultiplier
+				: 1;
+		state.damage += pickaxe.power * multiplier;
 		if (state.damage >= ore.hardness) {
 			state.damage = 0;
 			state.depletedUntil = now + ore.respawnSeconds;
