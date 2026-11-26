@@ -153,6 +153,11 @@ export const UK: Strings = {
 	"travel.campsHint": "Табори відкриваються, коли торкнешся їх у шахті.",
 	"travel.notReady": "Подорож ще не готова: зачекай {seconds} с.",
 	"travel.placeMissing": "Це місце ще не готове на карті.",
+	"lift.name": "Ліфт",
+	"lift.ride": "Їхати",
+	"lift.call": "Викликати ліфт",
+	"lift.busy": "Ліфт їде, зачекайте трохи.",
+	"lift.locked": "Спершу відкрийте шар {layer}, щоб спуститися.",
 	"layers.campNotReady": "Табір ще не готовий: зачекай {seconds} с і торкнись знову.",
 	"layers.opened": "Відкрито новий шар: {layer}!",
 

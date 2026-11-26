@@ -68,6 +68,21 @@ export const INTAKE_BOOTH = {
 	Model: "IntakeBooth",
 } as const;
 
+/**
+ * The lift (decision 040): Workspace/Map/Mine/Decor/LiftTower holds the cage Model and the tower Model. Optional
+ * BaseParts LiftTop / LiftBottom in the same folder mark where the cage's floor stops (LiftBottom may carry a number
+ * attribute Layer: riding down needs that layer opened). Without them the cage rides from where it stands to the top
+ * of the tower.
+ */
+export const LIFT = {
+	Path: ["Map", "Mine", "Decor", "LiftTower"],
+	Cage: "Lift_Cage",
+	Tower: "Lift_Tower",
+	Top: "LiftTop",
+	Bottom: "LiftBottom",
+	LayerAttribute: "Layer",
+} as const;
+
 export const PLOT_ATTRIBUTES = {
 	/** On the plot: UserId of the owner, 0 = free. Set by the server. */
 	Owner: "Owner",

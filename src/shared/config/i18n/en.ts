@@ -154,6 +154,11 @@ export const EN = {
 	"travel.campsHint": "Camps open when you touch them in the mine.",
 	"travel.notReady": "Travel is not ready yet: wait {seconds} s.",
 	"travel.placeMissing": "This place is not ready on the map yet.",
+	"lift.name": "Lift",
+	"lift.ride": "Ride",
+	"lift.call": "Call the lift",
+	"lift.busy": "The lift is moving, wait a moment.",
+	"lift.locked": "Open layer {layer} first to ride down.",
 	"layers.campNotReady": "The camp is not ready yet: wait {seconds} s and touch it again.",
 	"layers.opened": "New layer unlocked: {layer}!",
 

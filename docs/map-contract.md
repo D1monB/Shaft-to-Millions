@@ -125,3 +125,10 @@ Workspace
 - `ServerStorage/LineTemplates/IntakeBooth` (Model, optional). Its **pivot** is where the belt starts, and its front
   (LookVector, -Z) faces the way items ride. The server puts a copy at the start of every owned plot's belt, with the
   "Drop ore" prompt (E) at its middle. Without the model a plain wooden box stands in for it.
+
+## Lift (decision 040)
+
+- `Workspace/Map/Mine/Decor/LiftTower/Lift_Cage` (Model) rides, `Lift_Tower` (Model) is the shaft.
+- Optional BaseParts in the same folder: `LiftBottom` and `LiftTop` mark where the cage's floor stops; `LiftBottom`
+  may have a number attribute `Layer` (riding down needs that layer opened). Without them the cage rides from where
+  it stands to the top of the tower.

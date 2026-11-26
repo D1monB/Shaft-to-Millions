@@ -461,3 +461,13 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   map author's `ServerStorage.LineTemplates.IntakeBooth` (pivot = belt start, facing the way items ride); while it
   is missing, a plain wooden box stands behind the belt start. Economy unchanged.
 - **Why:** the developer's design: resources come out of a booth and travel the belt.
+
+## 040. The lift between the mine and the surface (2026-11-26)
+
+- **What:** the map author's `Lift_Cage` rides the `Lift_Tower` (`Map/Mine/Decor/LiftTower`). "Ride" (inside the
+  cage) carries everyone standing in it to the other stop; "Call the lift" at a stop brings the empty cage. The server
+  moves the cage and the riders (anchored), pauses the movement check for them (`holdCharacter`) and puts them down
+  with `teleportCharacter`. Riding down needs the bottom stop's layer opened for everyone aboard; riding up is always
+  allowed. Stops: optional parts `LiftBottom` (attribute `Layer`) and `LiftTop`; without them the cage rides from
+  where it stands to the top of the tower. Speed 14 studs/s, 3–12 s per ride (`lift/tuning.ts`).
+- **Why:** climbing out must not be a punishment (CLAUDE.md), and a lift skipping the descent would break layers.

@@ -154,6 +154,11 @@ export const PL: Strings = {
 	"travel.campsHint": "Obozy otwierają się, gdy dotkniesz ich w kopalni.",
 	"travel.notReady": "Podróż jeszcze niegotowa: poczekaj {seconds} s.",
 	"travel.placeMissing": "To miejsce nie jest jeszcze gotowe na mapie.",
+	"lift.name": "Winda",
+	"lift.ride": "Jedź",
+	"lift.call": "Wezwij windę",
+	"lift.busy": "Winda jedzie, poczekaj chwilę.",
+	"lift.locked": "Najpierw otwórz warstwę {layer}, aby zjechać.",
 	"layers.campNotReady": "Obóz jeszcze niegotowy: poczekaj {seconds} s i dotknij go znowu.",
 	"layers.opened": "Odblokowano nową warstwę: {layer}!",
 

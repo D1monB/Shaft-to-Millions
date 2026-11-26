@@ -153,6 +153,11 @@ export const RU: Strings = {
 	"travel.campsHint": "Лагеря открываются, когда коснёшься их в шахте.",
 	"travel.notReady": "Путешествие ещё не готово: подожди {seconds} с.",
 	"travel.placeMissing": "Это место ещё не готово на карте.",
+	"lift.name": "Лифт",
+	"lift.ride": "Ехать",
+	"lift.call": "Вызвать лифт",
+	"lift.busy": "Лифт едет, подождите немного.",
+	"lift.locked": "Сначала откройте слой {layer}, чтобы спуститься.",
 	"layers.campNotReady": "Лагерь ещё не готов: подожди {seconds} с и коснись снова.",
 	"layers.opened": "Открыт новый слой: {layer}!",
 
