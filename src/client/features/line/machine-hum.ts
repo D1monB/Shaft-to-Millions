@@ -8,9 +8,9 @@ import { MACHINE_SOUNDS } from "shared/config/sounds";
 
 const HUM_NAME = "MachineHum";
 /** Machines closer than this to the camera hum (studs). */
-const HUM_DISTANCE = 90;
+const HUM_DISTANCE = 160;
 /** The hum fades out over this distance from the machine (studs). */
-const HUM_ROLLOFF = 60;
+const HUM_ROLLOFF = 130;
 const CHECK_SECONDS = 1;
 
 function machineModels(): Array<Model> {
@@ -44,7 +44,7 @@ function addHum(machine: Model, part: BasePart): void {
 	sound.PlaybackSpeed = def.loop.speed ?? 1;
 	sound.Looped = true;
 	sound.RollOffMaxDistance = HUM_ROLLOFF;
-	sound.RollOffMinDistance = 8;
+	sound.RollOffMinDistance = 15;
 	// A random start, so neighbouring machines with the same loop do not play in step.
 	sound.TimePosition = math.random() * 20;
 	sound.Parent = part;

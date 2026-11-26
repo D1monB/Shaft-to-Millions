@@ -60,7 +60,7 @@ const POSITIONAL_POOL_SIZE = 6;
 const positional = new Map<string, Attachment[]>();
 
 /** Sounds this loud this far away (studs) fade out: machines are heard on your plot, not across the map. */
-const POSITIONAL_MAX_DISTANCE = 90;
+const POSITIONAL_MAX_DISTANCE = 160;
 
 /**
  * Plays a sound at a place in the world (a machine on the belt). `key` throttles per source, so twelve machines
@@ -88,6 +88,7 @@ export function playDefAt(def: SoundDef, position: Vector3, throttleKey: string)
 			sound.SoundId = def.assetId;
 			sound.Volume = def.volume;
 			sound.PlaybackSpeed = def.speed ?? 1;
+			sound.RollOffMinDistance = 15;
 			sound.RollOffMaxDistance = POSITIONAL_MAX_DISTANCE;
 			sound.Parent = attachment;
 			attachment.Parent = game.Workspace.Terrain;

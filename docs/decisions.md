@@ -561,7 +561,7 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 ## 051. Each machine has its own sound, also when idle (2026-11-26)
 
 - **What:** `MACHINE_SOUNDS` in `config/sounds.ts`: every line machine has a quiet loop (always on once bought, heard
-  within ~60 studs, added only to machines within 90 studs of the camera) and its own "work" sound when it lets an
+  within ~130 studs, added only to machines within 160 studs of the camera) and its own "work" sound when it lets an
   item go (replaces the shared one of decision 049). Built from three licensed ProSoundEffects factory loops ("Oil
   Refinery Ambience") at different pitches and licensed one-shots (clang, metal hits, whoosh, electric arc, robot
   buzz); a test checks that no two machines sound the same.
