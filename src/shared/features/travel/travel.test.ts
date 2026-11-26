@@ -1,6 +1,14 @@
 import { Assert, Test } from "@rbxts/lunit";
 import { LAYER_COUNT } from "shared/config/layers";
-import { HOME, SURFACE, canTravelTo, isTravelDestination, travelCooldownLeft, travelDestinations } from "./travel";
+import {
+	HOME,
+	SHOP_DISTRICT,
+	SURFACE,
+	canTravelTo,
+	isTravelDestination,
+	travelCooldownLeft,
+	travelDestinations,
+} from "./travel";
 import { TRAVEL_COOLDOWN } from "./tuning";
 
 class TravelTests {
@@ -9,7 +17,8 @@ class TravelTests {
 		Assert.true(isTravelDestination(SURFACE));
 		Assert.true(isTravelDestination(LAYER_COUNT));
 		Assert.true(isTravelDestination(HOME));
-		Assert.false(isTravelDestination(HOME - 1));
+		Assert.true(isTravelDestination(SHOP_DISTRICT));
+		Assert.false(isTravelDestination(SHOP_DISTRICT - 1));
 		Assert.false(isTravelDestination(LAYER_COUNT + 1));
 		Assert.false(isTravelDestination(1.5));
 		Assert.false(isTravelDestination(0 / 0));
@@ -56,15 +65,15 @@ class TravelTests {
 	public destinationsListMatchesWhatIsAllowed() {
 		for (let deepest = 0; deepest <= LAYER_COUNT; deepest++) {
 			const list = travelDestinations(deepest);
-			Assert.equal(list.size(), deepest + 2);
+			Assert.equal(list.size(), deepest + 3);
 			Assert.equal(list[0], HOME);
-			Assert.equal(list[1], SURFACE);
+			Assert.equal(list[2], SURFACE);
 			for (const destination of list) {
 				Assert.true(canTravelTo(destination, deepest));
 			}
 		}
-		Assert.equal(travelDestinations(0 / 0).size(), 2);
-		Assert.equal(travelDestinations(999).size(), LAYER_COUNT + 2);
+		Assert.equal(travelDestinations(0 / 0).size(), 3);
+		Assert.equal(travelDestinations(999).size(), LAYER_COUNT + 3);
 	}
 
 	@Test

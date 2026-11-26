@@ -101,6 +101,10 @@ export function buildOreRow(origin: Vector3, ores: ReadonlyArray<[OreId, number]
 	}
 }
 
+function hasMapPlots(): boolean {
+	return Workspace.FindFirstChild(PLOTS.MapFolder)?.FindFirstChild(PLOTS.PlotsFolder) !== undefined;
+}
+
 /** Builds the surface + layer 1 test area. Called once on server start. */
 export function buildBasePlaceholders(): void {
 	if (needsPlaceholders(TAGS.OreNode)) {
@@ -123,17 +127,9 @@ export function buildBasePlaceholders(): void {
 			label: "Surface (fast travel)",
 		});
 	}
-	if (needsPlaceholders(TAGS.Shop)) {
-		makePlaceholder({
-			name: "Shop",
-			size: new Vector3(8, 8, 2),
-			position: new Vector3(-10, 4, -20),
-			color: Color3.fromRGB(240, 180, 60),
-			tag: TAGS.Shop,
-			label: "Gear Shop",
-		});
-	}
-	if (needsPlaceholders(TAGS.SellZone)) {
+	// No shop placeholder: the upgrades feature builds the three real gear shops (decision 061).
+	// A map with plots sells at each plot's SellStation (tagged later by the line feature): no test sell zone there.
+	if (needsPlaceholders(TAGS.SellZone) && !hasMapPlots()) {
 		makePlaceholder({
 			name: "SellZone",
 			size: new Vector3(10, 6, 10),
