@@ -62,7 +62,9 @@ export const DAILY_COUNT = 3;
 /** Each layer deeper multiplies daily targets by this ... */
 export const DAILY_TARGET_GROWTH = 1.6;
 /** ... and daily money by this (deeper ore is worth more). */
-export const DAILY_MONEY_GROWTH = 5;
+export const DAILY_MONEY_GROWTH = 4;
+/** A bag sale counts for "sell your bag" quests only with at least this many pieces in it. */
+export const SELL_QUEST_MIN_ITEMS = 10;
 /** Bonus for finishing all daily quests of a day. */
 export const DAILY_ALL_DONE_REWARD: QuestReward = { crystals: 8 };
 

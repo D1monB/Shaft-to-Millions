@@ -2,6 +2,7 @@
 // game. Features register what a product grants (chests register their chest products); the store applies the
 // exactly-once rules of receipt.ts to all of them.
 import { MarketplaceService, Players } from "@rbxts/services";
+import { BOOSTERS, BOOSTER_IDS, CRYSTAL_PORTION_SECONDS } from "shared/config/boosters";
 import { STORE_PRODUCTS, StoreProduct } from "shared/config/store";
 import { ROBUX_CHESTS_ALLOWED_ATTRIBUTE } from "shared/features/chests";
 import { text } from "shared/features/i18n";
@@ -22,6 +23,8 @@ export interface ProductHandler {
 }
 
 const handlers = new Map<number, ProductHandler>();
+/** Crystal value of one portion of the cheapest booster: what capped boost time is refunded at. */
+const CHEAPEST_BOOST_CRYSTALS = math.min(...BOOSTER_IDS.map((id) => BOOSTERS[id].crystalPrice));
 const SAVE_TIMEOUT_SECONDS = 15;
 
 /** Registers what a Developer Product grants. A second registration of the same id is a bug and is ignored. */
@@ -64,9 +67,12 @@ function grantProduct(product: StoreProduct, player: Player, data: ProfileData):
 		for (const id of grant.boosters) {
 			added += grantBoost(player, data, id, grant.seconds);
 		}
-		// Every booster at its 24 h cap: nothing to give now; the receipt stays open and Roblox retries later.
-		if (added <= 0) {
-			return false;
+		if (added < grant.seconds * grant.boosters.size()) {
+			// Boosters at their 24 h cap: the time that did not fit is paid back in crystals, never lost.
+			const missing = grant.seconds * grant.boosters.size() - added;
+			const refund = math.max(1, math.ceil((missing / CRYSTAL_PORTION_SECONDS) * CHEAPEST_BOOST_CRYSTALS));
+			data.crystals = math.min(data.crystals + refund, MAX_COUNTER);
+			notify(player, text("store.boostRefund", { count: refund }), "info");
 		}
 		notify(player, text("store.boostGranted"), "success");
 	} else if (grant.kind === "crystals") {

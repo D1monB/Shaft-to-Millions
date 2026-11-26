@@ -99,12 +99,18 @@ function buildStand(parent: Instance, def: StandDef, at: Vector3): void {
 	CollectionService.AddTag(model, TAGS.Shop);
 }
 
-/** Builds the three fallback stands when the map has no Shop of its own. */
+/** Builds the three fallback stands when the map has no Shop of its own; removes them once a real one appears. */
 export function ensureGearShops(): void {
 	if (realShopExists()) {
 		return;
 	}
 	const folder = new Instance("Folder");
+	const connection = CollectionService.GetInstanceAddedSignal(TAGS.Shop).Connect((shop) => {
+		if (!shop.IsDescendantOf(folder) && shop.IsDescendantOf(Workspace)) {
+			connection.Disconnect();
+			folder.Destroy();
+		}
+	});
 	folder.Name = "GearShops";
 	folder.Parent = Workspace;
 	const centre = standCentre();

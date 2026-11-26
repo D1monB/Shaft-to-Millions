@@ -8,18 +8,21 @@ import {
 	BUY_DRILL_REMOTE,
 	DRILL_DISTANCE,
 	SELECT_DRILL_ORE_REMOTE,
+	UPGRADE_DRILL_REMOTE,
 	advanceDrill,
 	canDrillOre,
 	deliverDrill,
 	isDrillUnlocked,
 	newDrillState,
 	selectDrillOre,
+	tryUpgradeDrill,
 } from "shared/features/drill";
 import { getPickaxe } from "shared/features/mining";
 import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { isIntegerInRange } from "shared/lib/validate";
 import { getLoadedPlayers, getProfileData, markDirty, onProfileLoaded } from "server/features/profile";
+import { trackQuest } from "server/features/quests";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
 import { logAbuse, onClientRequest } from "server/lib/remotes";
@@ -113,7 +116,39 @@ function handleSelect(player: Player, args: Array<unknown>): void {
 	}
 }
 
+function handleUpgrade(player: Player, args: Array<unknown>): void {
+	const [layer] = args;
+	if (args.size() !== 1 || !isIntegerInRange(layer, 1, LAYER_COUNT)) {
+		logAbuse(player, "bad UpgradeDrill arguments");
+		return;
+	}
+	const data = getProfileData(player);
+	const state = data?.drills[drillKey(layer)];
+	if (data === undefined || state === undefined) {
+		return;
+	}
+	if (!nearDrillSite(player, layer)) {
+		logAbuse(player, "UpgradeDrill away from the drill site");
+		return;
+	}
+	// Count production at the old speed first, so the new level never applies to time already passed.
+	tickDrills(data);
+	const result = tryUpgradeDrill(state, layer, data.money);
+	if (!result.ok) {
+		if (result.reason === "not-enough-money") {
+			notify(player, text("common.notEnoughMoney"), "error");
+		}
+		return;
+	}
+	data.money = result.money;
+	state.level = result.level;
+	markDirty(player);
+	trackQuest(player, "upgradeMachine", 1);
+	notify(player, text("drill.upgraded", { level: result.level }), "success");
+}
+
 export function startDrillService(): void {
+	onClientRequest(UPGRADE_DRILL_REMOTE, new RateLimiter(4, 2), handleUpgrade);
 	onClientRequest(BUY_DRILL_REMOTE, new RateLimiter(3, 1), handleBuy);
 	onClientRequest(SELECT_DRILL_ORE_REMOTE, new RateLimiter(6, 2), handleSelect);
 
