@@ -221,8 +221,8 @@ export function depositOre(
 
 /**
  * Sale value of one item of `ore` that left machine `lastIndex` (so its stage is lastIndex + 1; -1 = raw ore straight
- * off the belt): base value x stage multiplier x the quality bonus of every machine it passed. Undefined for an
- * unknown ore.
+ * off the belt): base value x stage multiplier x (1 + the quality bonuses of every machine it passed, ADDED, decision
+ * 056). Undefined for an unknown ore.
  */
 export function itemValue(state: LineState, ore: string, lastIndex: number, valueOf: OreValueOf): number | undefined {
 	const base = valueOf(ore);
@@ -230,14 +230,14 @@ export function itemValue(state: LineState, ore: string, lastIndex: number, valu
 	if (base === undefined || !isFiniteNumber(base) || base < 0 || stage === undefined) {
 		return undefined;
 	}
-	let value = base * stage;
+	let bonus = 0;
 	for (let i = 0; i <= lastIndex; i++) {
 		const machine = state.machines[i];
 		if (machine !== undefined) {
-			value *= upgradeValue("quality", machine.quality);
+			bonus += upgradeValue("quality", machine.quality);
 		}
 	}
-	return value;
+	return base * stage * (1 + bonus);
 }
 
 // ---- processing ----

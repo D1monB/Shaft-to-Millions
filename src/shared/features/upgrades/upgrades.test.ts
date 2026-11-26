@@ -86,8 +86,8 @@ class UpgradesTests {
 	@Test
 	public buysForMoneyAndEquips() {
 		const gear = createStarterGear();
-		const money = apply(STONE.id, 1000, gear);
-		Assert.equal(money, 1000 - STONE.price);
+		const money = apply(STONE.id, STONE.price + 1000, gear);
+		Assert.equal(money, 1000);
 		Assert.true(gear.owned.includes(STONE.id));
 		Assert.equal(gear.equipped.pickaxe, STONE.id);
 	}
@@ -109,7 +109,7 @@ class UpgradesTests {
 	@Test
 	public secondPurchaseOfTheSameItemIsRefused() {
 		const gear = createStarterGear();
-		const money = apply(STONE.id, 1000, gear);
+		const money = apply(STONE.id, STONE.price * 3, gear);
 		const again = tryBuyGear(STONE.id, money, gear);
 		Assert.true(!again.ok && again.reason === "owned");
 		Assert.true(!tryBuyGear(PICKAXES[0].id, 1000, gear).ok);
@@ -132,7 +132,7 @@ class UpgradesTests {
 		const gear = createStarterGear();
 		const notOwned = tryEquipGear(STONE.id, gear);
 		Assert.true(!notOwned.ok && notOwned.reason === "not-owned");
-		apply(STONE.id, 1000, gear);
+		apply(STONE.id, STONE.price, gear);
 		const already = tryEquipGear(STONE.id, gear);
 		Assert.true(!already.ok && already.reason === "already");
 		const back = tryEquipGear(PICKAXES[0].id, gear);
@@ -148,7 +148,7 @@ class UpgradesTests {
 		const gear = createStarterGear();
 		Assert.equal(gearCardState(PICKAXES[0].id, gear), "equipped");
 		Assert.equal(gearCardState(STONE.id, gear), "for-sale");
-		apply(STONE.id, 1000, gear);
+		apply(STONE.id, STONE.price, gear);
 		Assert.equal(gearCardState(PICKAXES[0].id, gear), "owned");
 		Assert.equal(gearCardState(STONE.id, gear), "equipped");
 	}

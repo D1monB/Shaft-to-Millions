@@ -29,10 +29,13 @@ export function upgradeRows(state: LineState, index: number): UpgradeRow[] {
 	}));
 }
 
-/** A track value as the player reads it: "×1.25" for speed and quality, "5%" for double output, "20" for capacity. */
+/** A track value as the player reads it: "×1.25" for speed, "+5%" for quality, "5%" for double output, "20" for capacity. */
 export function formatUpgradeValue(track: LineUpgradeTrack, value: number): string {
 	if (track === "duplicate") {
 		return formatPercent(value);
+	}
+	if (track === "quality") {
+		return `+${formatPercent(value)}`;
 	}
 	return track === "capacity" ? `${value}` : `×${value}`;
 }

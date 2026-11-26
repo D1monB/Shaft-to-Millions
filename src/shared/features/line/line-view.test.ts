@@ -47,7 +47,7 @@ class LineViewTests {
 	@Test
 	public valuesReadLikeThePlayerExpects() {
 		Assert.equal("×1.25", formatUpgradeValue("speed", 1.25));
-		Assert.equal("×1.05", formatUpgradeValue("quality", 1.05));
+		Assert.equal("+5%", formatUpgradeValue("quality", 0.05));
 		Assert.equal("5%", formatUpgradeValue("duplicate", 0.05));
 		Assert.equal("20", formatUpgradeValue("capacity", 20));
 	}

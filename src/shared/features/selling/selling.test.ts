@@ -25,8 +25,9 @@ class SellingTests {
 
 	@Test
 	public multiplierAppliesAndRoundsDown() {
-		// 3 copper = $15, x1.25 = 18.75 -> 18. Rounding down never creates money from nothing.
-		const preview = previewSale({ copper: 3 }, ORE_IDS, PRICES, 1.25);
+		// x1.25 of a base that is not a multiple of 4 has a fraction; rounding down never creates money from nothing.
+		const prices = { copper: { price: 5 } };
+		const preview = previewSale({ copper: 3 }, ["copper"], prices, 1.25);
 		Assert.equal(preview.total, 18);
 	}
 

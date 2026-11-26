@@ -53,7 +53,7 @@ export const ORE_RUSH_RICH_SHARE = 0.35;
 export const TREASURE_EVERY_SECONDS = 120;
 
 /** Treasure money = the price of its layer's ore times this. */
-export const TREASURE_MONEY_MULTIPLIER = 30;
+export const TREASURE_MONEY_MULTIPLIER = 150;
 
 /** Treasure crystals: at least this many ... */
 export const TREASURE_MIN_CRYSTALS = 2;
