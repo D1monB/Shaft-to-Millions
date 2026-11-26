@@ -13,6 +13,8 @@ import {
 } from "shared/config/line";
 import { CHAIN_QUESTS, DAILY_COUNT } from "shared/config/quests";
 import { BOOSTER_IDS } from "shared/config/boosters";
+import { BUILDINGS, BUILDING_IDS, isBuildingId } from "shared/config/base";
+import { MAX_BUILDERS } from "shared/features/base";
 import { isLanguage } from "shared/features/i18n";
 import { findDaily } from "shared/features/quests";
 import { MAX_REMEMBERED_PURCHASES } from "shared/features/chests";
@@ -63,6 +65,7 @@ export function sanitize(data: PlainTable): string[] {
 		repairs.push("soundOn");
 	}
 	repairQuests(data, repairs);
+	repairBase(data, repairs);
 	const boosts = repairTable(data, "boosts", "boosts", repairs);
 	for (const id of BOOSTER_IDS) {
 		repairNumber(boosts, id, 0, MAX_TIMESTAMP, 0, `boosts.${id}`, repairs);
@@ -153,6 +156,38 @@ function repairLine(data: PlainTable, repairs: string[]): void {
 		const limit = LINE_UPGRADES.capacity[(machine.capacity as number) - 1].value;
 		machine.queue = repairOreList(machine.queue, limit, `${path}.queue`, repairs);
 	});
+}
+
+/** The base (decision 063): levels in range, at most one job per known building, 1..MAX builders. */
+function repairBase(data: PlainTable, repairs: string[]): void {
+	const base = repairTable(data, "base", "base", repairs);
+	const levels = repairTable(base, "levels", "base.levels", repairs);
+	for (const id of BUILDING_IDS) {
+		repairInteger(levels, id, 0, BUILDINGS[id].levels.size(), 0, `base.levels.${id}`, repairs);
+	}
+	repairInteger(base, "builders", 1, MAX_BUILDERS, 1, "base.builders", repairs);
+	const raw = base.jobs;
+	const jobs: PlainTable[] = [];
+	const seen = new Set<string>();
+	if (typeIs(raw, "table")) {
+		for (const entry of raw as unknown[]) {
+			if (jobs.size() >= MAX_BUILDERS || !typeIs(entry, "table")) {
+				continue;
+			}
+			const job = entry as PlainTable;
+			const id = job.id;
+			if (!isBuildingId(id) || seen.has(id) || !typeIs(job.finishAt, "number")) {
+				continue;
+			}
+			seen.add(id);
+			repairNumber(job, "finishAt", 0, MAX_TIMESTAMP, 0, "base.jobs.finishAt", repairs);
+			jobs.push(job);
+		}
+	}
+	if (!typeIs(raw, "table") || jobs.size() !== (raw as unknown[]).size()) {
+		repairs.push("base.jobs");
+	}
+	base.jobs = jobs;
 }
 
 /** A day number far in the future (year ~2300); only stops a broken save from blocking quests for ever. */

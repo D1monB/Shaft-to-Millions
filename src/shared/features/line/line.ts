@@ -13,6 +13,7 @@ import {
 	LINE_UPGRADES,
 	LineMachineDef,
 	LineUpgradeTrack,
+	OFFLINE_HARD_CAP,
 	OFFLINE_MAX_SECONDS,
 	OFFLINE_SPEED,
 	STAGE_VALUE,
@@ -380,9 +381,16 @@ export function advanceOffline(
 	elapsed: number,
 	valueOf: OreValueOf,
 	random: RandomFn,
+	/** The base's warehouse raises the cap (decision 063); broken input falls back to the default. */
+	maxSeconds = OFFLINE_MAX_SECONDS,
+	/** The base's workshop speeds the line up; broken input counts as 1. */
+	speed = 1,
 ): LineTickResult {
-	const real = isFiniteNumber(elapsed) ? math.clamp(elapsed, 0, OFFLINE_MAX_SECONDS) : 0;
-	let remaining = real * OFFLINE_SPEED;
+	const cap =
+		isFiniteNumber(maxSeconds) && maxSeconds > 0 ? math.min(maxSeconds, OFFLINE_HARD_CAP) : OFFLINE_MAX_SECONDS;
+	const factor = isFiniteNumber(speed) && speed >= 1 ? math.min(speed, 3) : 1;
+	const real = isFiniteNumber(elapsed) ? math.clamp(elapsed, 0, cap) : 0;
+	let remaining = real * OFFLINE_SPEED * factor;
 	let money = 0;
 	let sold = 0;
 	while (remaining > 0) {

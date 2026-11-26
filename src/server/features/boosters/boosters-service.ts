@@ -25,6 +25,13 @@ export function grantBoost(player: Player, data: ProfileData, id: BoosterId, sec
 	return added;
 }
 
+let portionBonusOf: (player: Player) => number = () => 0;
+
+/** The base's lab adds seconds to each crystal portion (decision 063). */
+export function setBoostPortionBonusProvider(provider: (player: Player) => number): void {
+	portionBonusOf = provider;
+}
+
 function handleBuy(player: Player, args: Array<unknown>): void {
 	const [id] = args;
 	if (args.size() !== 1 || !isBoosterId(id)) {
@@ -41,13 +48,14 @@ function handleBuy(player: Player, args: Array<unknown>): void {
 		return;
 	}
 	// Charge only for time that was really added; a full booster costs nothing. No yield between the two writes.
-	if (grantBoost(player, data, id, CRYSTAL_PORTION_SECONDS) <= 0) {
+	const portion = CRYSTAL_PORTION_SECONDS + math.max(0, portionBonusOf(player));
+	if (grantBoost(player, data, id, portion) <= 0) {
 		notify(player, text("boost.full"), "info");
 		return;
 	}
 	data.crystals -= price;
 	markDirty(player);
-	notify(player, text("boost.started", { minutes: CRYSTAL_PORTION_SECONDS / 60 }), "success");
+	notify(player, text("boost.started", { minutes: math.floor(portion / 60) }), "success");
 }
 
 export function startBoostersService(): void {
