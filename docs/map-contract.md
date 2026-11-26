@@ -119,3 +119,9 @@ Workspace
 
 Якщо змінити форму чи розмір кута, треба оновити числа в коді. Якщо маршрут зламаний, в Output з'явиться
 попередження `[line] belt path ...`.
+
+## Intake booth (decision 039)
+
+- `ServerStorage/LineTemplates/IntakeBooth` (Model, optional). Its **pivot** is where the belt starts, and its front
+  (LookVector, -Z) faces the way items ride. The server puts a copy at the start of every owned plot's belt, with the
+  "Drop ore" prompt (E) at its middle. Without the model a plain wooden box stands in for it.

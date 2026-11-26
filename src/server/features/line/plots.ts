@@ -147,6 +147,21 @@ export function slotCFrame(plot: Plot, stage: number): CFrame | undefined {
 	return template !== undefined ? plot.layout.transform.mul(template.GetPivot()) : undefined;
 }
 
+/**
+ * The start of the belt on this plot (world space), facing the way items ride; the intake booth stands here.
+ * Falls back to machine 1's place when the belt path is unknown.
+ */
+export function beltStartCFrame(plot: Plot): CFrame | undefined {
+	const points = plot.layout.path?.points;
+	if (points === undefined || points.size() < 2) {
+		return slotCFrame(plot, 1);
+	}
+	const start = plot.layout.transform.PointToWorldSpace(points[0]);
+	const along = plot.layout.transform.PointToWorldSpace(points[1]);
+	const flat = new Vector3(along.X, start.Y, along.Z);
+	return flat.sub(start).Magnitude > 0.01 ? CFrame.lookAt(start, flat) : new CFrame(start);
+}
+
 /** Where the buy sign of machine `stage` stands on this plot, or undefined if no belt was found near it. */
 export function signCFrame(plot: Plot, stage: number): CFrame | undefined {
 	const fill = plot.layout.fills.get(stage);

@@ -453,3 +453,11 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the map author's `PetVisuals` script matched balls by the Ukrainian display name and stopped working when
   pets were named by id; a block on every point looked like a ring of plain cubes. Depletion stays per player, so
   players do not fight over a block; moved blocks are new instances, so nobody keeps damage or a cooldown on them.
+
+## 039. Intake booth at the start of the belt (2026-11-26)
+
+- **What:** ore is handed in at a booth on the first point of the belt, and rides out of it to machine 1 (before,
+  the drop prompt stood on machine 1's place, so ore looked like it went straight into the washer). The booth is the
+  map author's `ServerStorage.LineTemplates.IntakeBooth` (pivot = belt start, facing the way items ride); while it
+  is missing, a plain wooden box stands behind the belt start. Economy unchanged.
+- **Why:** the developer's design: resources come out of a booth and travel the belt.

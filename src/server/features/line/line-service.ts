@@ -44,7 +44,18 @@ import { localizePrompt } from "server/lib/localized";
 import { getRootPosition } from "server/lib/proximity";
 import { declareUnreliableClientEvent, logAbuse, onClientRequest } from "server/lib/remotes";
 import { buildSign } from "./buy-signs";
-import { Plot, buildBase, clearBase, loadPlots, placeMachine, signCFrame, slotCFrame, spawnPosition } from "./plots";
+import { placeIntakeBooth } from "./intake-booth";
+import {
+	Plot,
+	beltStartCFrame,
+	buildBase,
+	clearBase,
+	loadPlots,
+	placeMachine,
+	signCFrame,
+	slotCFrame,
+	spawnPosition,
+} from "./plots";
 
 const TICK_SECONDS = 1;
 /** How close (studs) to a plot's spawn point the player must stand to claim it. */
@@ -296,9 +307,12 @@ function buildFor(plot: Plot, data: ProfileData): void {
 			part.SetAttribute(PLOT_ATTRIBUTES.ConveyorOn, true);
 		}
 	}
-	const intakeAt = slotCFrame(plot, 1);
+	// Ore is handed in at the booth on the belt start and rides out of it to machine 1 (decision 039).
+	const intakeAt = beltStartCFrame(plot);
 	if (intakeAt !== undefined) {
-		const intake = makeAnchor(built, "Intake", intakeAt);
+		const booth = placeIntakeBooth(built, intakeAt);
+		const [box, size] = booth.GetBoundingBox();
+		const intake = makeAnchor(built, "Intake", new CFrame(box.Position.sub(new Vector3(0, size.Y / 2 - 3, 0))));
 		makePrompt(intake, text("line.dropOre"), text("line.beltStart"), DROP_KEYS, (player) => dropOre(player, plot));
 	}
 	refreshSigns(plot, data.line.machines.size());
@@ -344,7 +358,8 @@ function buyNext(player: Player, plot: Plot): void {
 }
 
 function dropOre(player: Player, plot: Plot): void {
-	const data = ownData(player, plot, slotCFrame(plot, 1)?.Position);
+	const intake = plot.built?.FindFirstChild("Intake");
+	const data = ownData(player, plot, intake !== undefined && intake.IsA("BasePart") ? intake.Position : undefined);
 	if (data === undefined) {
 		return;
 	}

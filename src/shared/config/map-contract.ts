@@ -59,6 +59,15 @@ export const CHEST_TERMINALS = {
 	},
 } as const;
 
+/**
+ * The booth at the start of each plot's belt (decision 039): ServerStorage/LineTemplates/IntakeBooth, a Model whose
+ * pivot is where the belt starts, facing the way items ride. Optional: a plain booth stands in while it is missing.
+ */
+export const INTAKE_BOOTH = {
+	TemplateFolder: "LineTemplates",
+	Model: "IntakeBooth",
+} as const;
+
 export const PLOT_ATTRIBUTES = {
 	/** On the plot: UserId of the owner, 0 = free. Set by the server. */
 	Owner: "Owner",
