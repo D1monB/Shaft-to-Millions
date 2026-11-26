@@ -1,4 +1,5 @@
 // Pickaxes: the map author's 10 pickaxe tools, from weak to strong (decision 037). The first is the starter.
+// The first pickaxe of each tier is the gate to the next layer's ore, so it is the big purchase of a layer (decision 056).
 // `tier` decides WHICH ore can be mined (ores.ts requiredTier); `power` and `swingSeconds` decide HOW FAST.
 // Ids are saved in profiles and never change; some display names changed with the new ores (decisions 027).
 import type { GearBase } from "./gear";
@@ -15,13 +16,13 @@ export interface PickaxeDef extends GearBase {
 
 export const PICKAXES: ReadonlyArray<PickaxeDef> = [
 	{ id: "pickaxe_wood", tool: "WoodPickaxe", tier: 1, power: 1, swingSeconds: 0.8, price: 0 },
-	{ id: "pickaxe_copper", tool: "CopperPickaxe", tier: 2, power: 2, swingSeconds: 0.75, price: 150 },
-	{ id: "pickaxe_iron", tool: "IronPickaxe", tier: 2, power: 3, swingSeconds: 0.7, price: 800 },
-	{ id: "pickaxe_silver", tool: "SilverPickaxe", tier: 3, power: 4, swingSeconds: 0.66, price: 2_800 },
-	{ id: "pickaxe_obsidian", tool: "ObsidianPickaxe", tier: 3, power: 5, swingSeconds: 0.62, price: 8_000 },
-	{ id: "pickaxe_gold", tool: "GoldPickaxe", tier: 4, power: 7, swingSeconds: 0.58, price: 25_000 },
-	{ id: "pickaxe_lava", tool: "LavaPickaxe", tier: 4, power: 9, swingSeconds: 0.55, price: 70_000 },
-	{ id: "pickaxe_titanium", tool: "TitaniumPickaxe", tier: 5, power: 11, swingSeconds: 0.52, price: 200_000 },
-	{ id: "pickaxe_luck", tool: "LuckPickaxe", tier: 5, power: 16, swingSeconds: 0.5, price: 600_000 },
-	{ id: "pickaxe_iridium", tool: "IridiumPickaxe", tier: 5, power: 25, swingSeconds: 0.48, price: 2_000_000 },
+	{ id: "pickaxe_copper", tool: "CopperPickaxe", tier: 2, power: 2, swingSeconds: 0.75, price: 20_000 },
+	{ id: "pickaxe_iron", tool: "IronPickaxe", tier: 2, power: 3, swingSeconds: 0.7, price: 60_000 },
+	{ id: "pickaxe_silver", tool: "SilverPickaxe", tier: 3, power: 4, swingSeconds: 0.66, price: 400_000 },
+	{ id: "pickaxe_obsidian", tool: "ObsidianPickaxe", tier: 3, power: 5, swingSeconds: 0.62, price: 1_200_000 },
+	{ id: "pickaxe_gold", tool: "GoldPickaxe", tier: 4, power: 7, swingSeconds: 0.58, price: 4_000_000 },
+	{ id: "pickaxe_lava", tool: "LavaPickaxe", tier: 4, power: 9, swingSeconds: 0.55, price: 12_000_000 },
+	{ id: "pickaxe_titanium", tool: "TitaniumPickaxe", tier: 5, power: 11, swingSeconds: 0.52, price: 15_000_000 },
+	{ id: "pickaxe_luck", tool: "LuckPickaxe", tier: 5, power: 16, swingSeconds: 0.5, price: 60_000_000 },
+	{ id: "pickaxe_iridium", tool: "IridiumPickaxe", tier: 5, power: 25, swingSeconds: 0.48, price: 200_000_000 },
 ];

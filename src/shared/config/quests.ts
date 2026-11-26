@@ -62,7 +62,7 @@ export const DAILY_COUNT = 3;
 /** Each layer deeper multiplies daily targets by this ... */
 export const DAILY_TARGET_GROWTH = 1.6;
 /** ... and daily money by this (deeper ore is worth more). */
-export const DAILY_MONEY_GROWTH = 3;
+export const DAILY_MONEY_GROWTH = 5;
 /** Bonus for finishing all daily quests of a day. */
 export const DAILY_ALL_DONE_REWARD: QuestReward = { crystals: 8 };
 

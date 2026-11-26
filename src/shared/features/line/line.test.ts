@@ -59,8 +59,8 @@ class LineTests {
 		for (let i = 1; i < STAGE_VALUE.size(); i++) {
 			Assert.true(STAGE_VALUE[i] > STAGE_VALUE[i - 1], `stage ${i} must be worth more`);
 		}
-		// Friend's target: a $10 ore ends as a reactor worth more than $10 000.
-		Assert.true(10 * STAGE_VALUE[STAGE_VALUE.size() - 1] >= 10_000);
+		// Decision 056: processing helps, but at most x10 (plus quality), so deeper ore stays the main way to grow.
+		Assert.true(STAGE_VALUE[STAGE_VALUE.size() - 1] <= 10);
 	}
 
 	@Test
@@ -219,7 +219,16 @@ class LineTests {
 		near(10 * STAGE_VALUE[1], itemValue(state, "copper", 0, valueOf) as number);
 		near(10 * STAGE_VALUE[3], itemValue(state, "copper", 2, valueOf) as number);
 		applyLineUpgrade(state, 0, "quality");
-		near(10 * STAGE_VALUE[3] * LINE_UPGRADES.quality[1].value, itemValue(state, "copper", 2, valueOf) as number);
+		near(
+			10 * STAGE_VALUE[3] * (1 + LINE_UPGRADES.quality[1].value),
+			itemValue(state, "copper", 2, valueOf) as number,
+		);
+		// Bonuses add up (decision 056): two machines at level 2 give 1 + 2 x bonus, not (1 + bonus) squared.
+		applyLineUpgrade(state, 1, "quality");
+		near(
+			10 * STAGE_VALUE[3] * (1 + 2 * LINE_UPGRADES.quality[1].value),
+			itemValue(state, "copper", 2, valueOf) as number,
+		);
 		Assert.equal(undefined, itemValue(state, "mystery", 0, valueOf));
 	}
 

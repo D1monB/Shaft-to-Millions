@@ -1,6 +1,7 @@
 // Every ore in the game (decisions 031): one ore per layer of the pit, plus iridium, found only in the portal zone at
 // the bottom of layer 5. Ids match the map author's ItemTemplates/<ore> folders. A new ore is a new entry here.
-// Balance notes: price grows faster than hardness, so deeper ore is worth the trip;
+// Balance notes (decision 056, long progression): each layer's ore is worth about 3-4x the one above, so a new layer
+// is a big jump in income; price grows faster than hardness, so deeper ore is worth the trip;
 // `requiredTier` locks ore behind a better pickaxe (see pickaxes.ts) so progress is visible.
 // `price` is the raw-ore value; the tycoon line multiplies it by the stage it reaches (config/line.ts).
 
@@ -34,7 +35,7 @@ export interface OreDef {
 
 export const ORES: { readonly [K in OreId]: OreDef } = {
 	copper: {
-		price: 5,
+		price: 2,
 		hardness: 1,
 		pieces: 6,
 		requiredTier: 1,
@@ -44,7 +45,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		color: [214, 120, 52],
 	},
 	iron: {
-		price: 12,
+		price: 8,
 		hardness: 2,
 		pieces: 7,
 		requiredTier: 2,
@@ -65,7 +66,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	},
 	// Gold and titanium keep their ids; their layer and price moved (decisions 031), so old drills follow sanitize.
 	gold: {
-		price: 70,
+		price: 100,
 		hardness: 7,
 		pieces: 9,
 		requiredTier: 4,
@@ -75,7 +76,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		color: [245, 200, 60],
 	},
 	titanium: {
-		price: 150,
+		price: 300,
 		hardness: 11,
 		pieces: 10,
 		requiredTier: 5,
@@ -86,7 +87,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	},
 	// The jackpot: only in the portal zone at the bottom of layer 5, hard and slow to come back, never drilled.
 	iridium: {
-		price: 400,
+		price: 1_000,
 		hardness: 16,
 		pieces: 12,
 		requiredTier: 5,
