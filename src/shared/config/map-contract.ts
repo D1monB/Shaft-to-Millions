@@ -4,7 +4,7 @@
 export const TAGS = {
 	/** A minable block. Attribute OreId. */
 	OreNode: "OreNode",
-	/** Upgrade shop (pickaxe, bag, shoes). */
+	/** A gear shop stand. Attribute ShopSlot (pickaxe | bag | shoes); without it the stand sells everything. */
 	Shop: "Shop",
 	/** Where the bag is sold. */
 	SellZone: "SellZone",
@@ -22,6 +22,8 @@ export const ATTRIBUTES = {
 	OreId: "OreId",
 	LayerId: "LayerId",
 	ChestId: "ChestId",
+	/** On a Shop stand: which gear it sells (decision 058). */
+	ShopSlot: "ShopSlot",
 	/** On an ore block: true for a rich vein (decision 046). Set by the server only. */
 	Rich: "Rich",
 	/** On an ore block: true for a treasure crate (decision 050). Set by the server only. */

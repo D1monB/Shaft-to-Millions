@@ -22,6 +22,8 @@ export type {
 	GearSlot,
 	GearState,
 } from "./upgrades";
+export { shopSells, shopSlotOf } from "./shops";
+export type { ShopSlot } from "./shops";
 export {
 	BUY_GEAR_REMOTE,
 	EQUIP_GEAR_REMOTE,
