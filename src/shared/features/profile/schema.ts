@@ -5,6 +5,7 @@ import type { DrillState } from "shared/features/drill";
 import type { Equipped } from "shared/features/equipment";
 import { LineState, newLineState } from "shared/features/line";
 import { QuestState, newQuestState } from "shared/features/quests";
+import { BoostState, newBoostState } from "shared/features/boosters";
 import { GearState, createStarterGear } from "shared/features/upgrades";
 
 /**
@@ -30,7 +31,7 @@ export interface ProfileStats {
 export interface ProfileData {
 	schemaVersion: number;
 	money: number;
-	/** Crystals, the second currency (decision 043): rare drop from ore, spent on chests. Never sold for Robux. */
+	/** Crystals, the second currency (decision 043): rare drop from ore, spent on chests and boosters. Also sold for Robux since decision 057 (not to restricted players). */
 	crystals: number;
 	stats: ProfileStats;
 	/** Ore the player carries. Missing id = 0. */
@@ -59,6 +60,8 @@ export interface ProfileData {
 	soundOn: boolean;
 	/** Daily quests, the story chain and the login streak (decision 055). */
 	quests: QuestState;
+	/** Unix end time of each booster (decision 057); 0 = off. */
+	boosts: BoostState;
 	/** Equipped item uids (from `inventory`). */
 	equipped: Equipped;
 }
@@ -83,6 +86,7 @@ export function createDefaultProfileData(): ProfileData {
 		language: "",
 		soundOn: true,
 		quests: newQuestState(),
+		boosts: newBoostState(),
 	};
 }
 
@@ -121,6 +125,7 @@ const profileDataShape = t.interface({
 	lastSeen: t.number,
 	language: t.string,
 	soundOn: t.boolean,
+	boosts: t.interface({ money: t.number, ore: t.number, line: t.number }),
 	quests: t.interface({
 		day: t.integer,
 		daily: t.array(t.interface({ id: t.string, count: t.number, claimed: t.boolean })),

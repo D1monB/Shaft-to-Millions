@@ -26,6 +26,7 @@ import { RateLimiter } from "shared/lib/rate-limiter";
 import { MAX_COUNTER } from "shared/lib/repair";
 import { ProfileData } from "shared/features/profile";
 import { getProfileData, markDirty } from "server/features/profile";
+import { boostOf } from "server/features/boosters";
 import { trackQuest } from "server/features/quests";
 import { notify } from "server/lib/notify";
 import { getInstancePosition, getRootPosition } from "server/lib/proximity";
@@ -170,10 +171,12 @@ function bagChips(
 		return 0;
 	}
 	// A rich vein (decision 046) is marked by the server when it places the block; clients cannot set it.
-	const amount = veinYield(
-		scaleYield(pieces, yieldBonusOf(player), random.NextNumber()),
-		node.GetAttribute(ATTRIBUTES.Rich) === true,
-	);
+	// The ore booster (decision 057) doubles what each hit chips off.
+	const amount =
+		veinYield(
+			scaleYield(pieces, yieldBonusOf(player), random.NextNumber()),
+			node.GetAttribute(ATTRIBUTES.Rich) === true,
+		) * boostOf(player, "ore");
 	const added = addToBag(data.bag, oreId, amount, capacity);
 	data.stats.oresMined = math.min(data.stats.oresMined + added, MAX_COUNTER);
 	trackQuest(player, "mineOre", added, oreId);

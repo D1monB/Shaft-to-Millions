@@ -11,6 +11,7 @@ import {
 	LINE_UPGRADE_TRACKS,
 } from "shared/config/line";
 import { CHAIN_QUESTS, DAILY_COUNT } from "shared/config/quests";
+import { BOOSTER_IDS } from "shared/config/boosters";
 import { isLanguage } from "shared/features/i18n";
 import { findDaily } from "shared/features/quests";
 import { GEAR_SLOTS, findGear, starterOf } from "shared/features/upgrades";
@@ -60,6 +61,10 @@ export function sanitize(data: PlainTable): string[] {
 		repairs.push("soundOn");
 	}
 	repairQuests(data, repairs);
+	const boosts = repairTable(data, "boosts", "boosts", repairs);
+	for (const id of BOOSTER_IDS) {
+		repairNumber(boosts, id, 0, MAX_TIMESTAMP, 0, `boosts.${id}`, repairs);
+	}
 
 	return repairs;
 }

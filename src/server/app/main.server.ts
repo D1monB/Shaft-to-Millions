@@ -15,6 +15,8 @@ import { startMiningService } from "server/features/mining";
 import { startMovementService } from "server/features/movement";
 import { startProfileService } from "server/features/profile";
 import { startQuestsService } from "server/features/quests";
+import { startBoostersService } from "server/features/boosters";
+import { startStoreService } from "server/features/store";
 import { startSellingService } from "server/features/selling";
 import { startSettingsService } from "server/features/settings";
 import { startTravelService } from "server/features/travel";
@@ -52,5 +54,7 @@ startLeaderboardService();
 startLanguageService();
 startSettingsService();
 startQuestsService();
+startBoostersService();
+startStoreService();
 
 startProfileService();

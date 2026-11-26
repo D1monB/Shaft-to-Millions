@@ -6,6 +6,7 @@ import { SALE_MADE_REMOTE, SELL_BAG_REMOTE, SELL_DISTANCE, previewSale } from "s
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { formatMoney } from "shared/lib/format";
 import { getProfileData, markDirty } from "server/features/profile";
+import { boostOf } from "server/features/boosters";
 import { trackQuest } from "server/features/quests";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
@@ -18,9 +19,9 @@ export function setSellMultiplierProvider(provider: (player: Player) => number):
 	sellMultiplierOf = provider;
 }
 
-/** The sell multiplier (pets) for this player. Warehouse sales use the same bonus as the sell zone. */
+/** The sell multiplier (pets x money booster) for this player. Line income uses the same bonus as the sell zone. */
 export function getSellMultiplier(player: Player): number {
-	return sellMultiplierOf(player);
+	return sellMultiplierOf(player) * boostOf(player, "money");
 }
 
 function handleSell(player: Player, args: Array<unknown>): void {
@@ -36,7 +37,7 @@ function handleSell(player: Player, args: Array<unknown>): void {
 		logAbuse(player, "SellBag away from a sell zone");
 		return;
 	}
-	const preview = previewSale(data.bag, ORE_IDS, ORES, sellMultiplierOf(player));
+	const preview = previewSale(data.bag, ORE_IDS, ORES, getSellMultiplier(player));
 	if (preview.itemCount === 0) {
 		notify(player, text("sell.bagEmpty"), "info");
 		return;
