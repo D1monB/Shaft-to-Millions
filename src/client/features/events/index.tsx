@@ -13,7 +13,7 @@ import {
 	weekOf,
 } from "shared/features/events";
 import { formatDuration, formatMoney } from "shared/lib/format";
-import { registerHudButton } from "client/features/hud";
+import { isMenuUnlocked, registerHudButton } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { useServerClock } from "client/lib/hooks";
 import { t } from "client/lib/i18n";
@@ -138,5 +138,6 @@ export function startEventsController(): void {
 		10,
 		"primary",
 		true,
+		() => isMenuUnlocked("raid"),
 	);
 }

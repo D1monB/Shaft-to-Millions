@@ -14,6 +14,7 @@ import {
 } from "shared/config/line";
 import { CHAIN_QUESTS, DAILY_COUNT } from "shared/config/quests";
 import { BOOSTER_IDS } from "shared/config/boosters";
+import { CALENDAR_DAYS, MAX_REBIRTHS } from "shared/config/retention";
 import { MAX_REDEEMED_CODES } from "shared/features/promo";
 import { MAX_FREE_SPINS, PITY_SPINS } from "shared/config/aura-roll";
 import { BUILDINGS, BUILDING_IDS, isBuildingId } from "shared/config/base";
@@ -75,6 +76,18 @@ export function sanitize(data: PlainTable): string[] {
 		repairs.push("devRole");
 	}
 	repairRedeemed(data, repairs);
+	const calendar = repairTable(data, "calendar", "calendar", repairs);
+	repairInteger(calendar, "claimed", 0, CALENDAR_DAYS - 1, 0, "calendar.claimed", repairs);
+	repairInteger(calendar, "lastDay", 0, MAX_DAY, 0, "calendar.lastDay", repairs);
+	repairInteger(data, "rebirths", 0, MAX_REBIRTHS, 0, "rebirths", repairs);
+	if (!typeIs(data.title, "string") || data.title.size() > 32) {
+		data.title = "";
+		repairs.push("title");
+	}
+	if (!typeIs(data.guideClosed, "boolean")) {
+		data.guideClosed = false;
+		repairs.push("guideClosed");
+	}
 	const raid = repairTable(data, "raid", "raid", repairs);
 	repairInteger(raid, "week", 0, MAX_DAY, 0, "raid.week", repairs);
 	repairNumber(raid, "best", 0, MAX_COUNTER, 0, "raid.best", repairs);

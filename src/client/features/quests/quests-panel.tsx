@@ -177,6 +177,17 @@ function QuestsList(props: { view: PlayerView }) {
 				order={13}
 			/>,
 		);
+		// A story step can be skipped (without its reward), e.g. after buying better gear in the store.
+		elements.push(
+			<Button
+				key="chainSkip"
+				text={t("quests.skip")}
+				variant="slate"
+				height={34}
+				onClick={() => sendToServer(CLAIM_QUEST_REMOTE, "skip")}
+				order={14}
+			/>,
+		);
 	}
 	return <>{elements}</>;
 }

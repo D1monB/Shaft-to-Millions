@@ -9,6 +9,7 @@ import { BoostState, newBoostState } from "shared/features/boosters";
 import { BaseState, newBaseState } from "shared/features/base";
 import { AuraRollState, newAuraRollState } from "shared/features/aura-roll";
 import { RaidState, newRaidState } from "shared/features/events";
+import { CalendarState, newCalendarState } from "shared/features/progress";
 import { GearState, createStarterGear } from "shared/features/upgrades";
 
 /**
@@ -63,6 +64,11 @@ export interface ProfileData {
 	soundOn: boolean;
 	/** Daily quests, the story chain and the login streak (decision 055). */
 	quests: QuestState;
+	/** The 30-day calendar, rebirths, the chosen title and the closed newcomer guide (decision 070). */
+	calendar: CalendarState;
+	rebirths: number;
+	title: string;
+	guideClosed: boolean;
 	/** Developer role granted by the owner (decision 068). Only the server writes it. */
 	devRole: boolean;
 	/** Promo codes this player already used (decision 068). */
@@ -104,6 +110,10 @@ export function createDefaultProfileData(): ProfileData {
 		auraRoll: newAuraRollState(),
 		raid: newRaidState(),
 		devRole: false,
+		calendar: newCalendarState(),
+		rebirths: 0,
+		title: "",
+		guideClosed: false,
 		redeemedCodes: [],
 	};
 }
@@ -147,6 +157,10 @@ const profileDataShape = t.interface({
 	soundOn: t.boolean,
 	boosts: t.interface({ money: t.number, ore: t.number, line: t.number }),
 	devRole: t.boolean,
+	calendar: t.interface({ claimed: t.integer, lastDay: t.integer }),
+	rebirths: t.integer,
+	title: t.string,
+	guideClosed: t.boolean,
 	redeemedCodes: t.array(t.string),
 	raid: t.interface({ week: t.integer, best: t.number, startedAt: t.number }),
 	auraRoll: t.interface({ spins: t.integer, spinAt: t.number, pity: t.integer }),

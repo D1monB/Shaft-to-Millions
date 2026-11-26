@@ -14,6 +14,7 @@ export {
 	recordEvent,
 	rollOver,
 	scaledDaily,
+	skipChain,
 	streakReward,
 } from "./quests";
 export type { ClaimResult, DailyEntry, QuestSnapshot, QuestState } from "./quests";

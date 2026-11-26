@@ -3,7 +3,7 @@
 import React from "@rbxts/react";
 import { isItemId } from "shared/config/items";
 import { SPIN_RESULT_REMOTE } from "shared/features/aura-roll";
-import { registerHudButton, registerHudStat } from "client/features/hud";
+import { isMenuUnlocked, registerHudButton, registerHudStat } from "client/features/hud";
 import { t } from "client/lib/i18n";
 import { openPanel } from "client/lib/panels";
 import { onServerMessage } from "client/lib/remotes";
@@ -18,6 +18,7 @@ export function startAuraRollController(): void {
 		9,
 		"success",
 		true,
+		() => isMenuUnlocked("aura"),
 	);
 	registerHudStat(6, (view) =>
 		view.auraRoll.spins > 0
