@@ -35,10 +35,14 @@ export type {
 export {
 	BELT_PATH_VALUE,
 	ITEM_TEMPLATES_FOLDER,
+	LABEL_HEIGHT_ATTRIBUTE,
 	LINE_DISTANCE,
 	LINE_FLOW_REMOTE,
 	UPGRADE_LINE_MACHINE_REMOTE,
+	UPGRADE_POINT_TAG,
 } from "./network";
+export { formatUpgradeValue, machineGauge, upgradeRows } from "./line-view";
+export type { GaugeStatus, MachineGauge, UpgradeRow } from "./line-view";
 export { gapAround, splitStretch } from "./belt-gap";
 export type { Span } from "./belt-gap";
 export type { BeltPiece } from "./belt-path";

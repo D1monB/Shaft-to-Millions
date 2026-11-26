@@ -18,3 +18,12 @@ export const BELT_PATH_VALUE = "BeltPath";
 
 /** Folder in ReplicatedStorage with the map author's item models, copied from ServerStorage at server start. */
 export const ITEM_TEMPLATES_FOLDER = "ItemTemplates";
+
+/**
+ * CollectionService tag of the invisible point at every bought machine (set by the server). Its prompt opens the
+ * upgrade panel on the owner's client and the progress bar hangs above it. Attributes: Stage and LabelHeight.
+ */
+export const UPGRADE_POINT_TAG = "LineUpgradePoint";
+
+/** On an upgrade point: how far above it (studs) the progress bar goes (just over the top of the machine). */
+export const LABEL_HEIGHT_ATTRIBUTE = "LabelHeight";

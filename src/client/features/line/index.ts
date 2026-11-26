@@ -1,3 +1,3 @@
-// line feature (client): items riding the belt of every plot, built from the server's flow messages.
+// line feature (client): belt items, machine progress bars, the upgrade panel and the next-machine goal.
 // Public API of this feature. Other code imports only from this file.
-export { startBeltVisuals } from "./belt-visuals";
+export { startLineController } from "./line-controller";

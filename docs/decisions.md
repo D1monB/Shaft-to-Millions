@@ -420,3 +420,13 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
 - **Why:** the old ordering started at machine 1, walked against the belt and covered only 19 of 89 pieces, so most
   machine places collapsed onto two path points and items could not ride between them. Checked in Play on the
   friend's map: no coverage warning, the 12 machine places follow each other along the path.
+
+## 036. Machine upgrades in the UI, progress bars and the next-machine goal (2026-11-26)
+
+- **What:** every bought machine has an invisible point with a prompt (R, gamepad R1, tap) that opens a panel with
+  the four upgrade tracks; a progress bar and queue counter hang above each machine of the player's own plot; the
+  "what next" banner also offers the next line machine. The server does nothing on the prompt press: a level is still
+  bought only through `UpgradeLineMachine`. Trying it from too far now tells the player to come closer instead of
+  logging abuse.
+- **Why:** upgrades existed on the server but a player had no way to buy them. The bars are drawn on the client from
+  the player's own line state, so they need no extra network traffic; other players do not see them.

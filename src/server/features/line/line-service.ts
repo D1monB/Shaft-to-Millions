@@ -1,16 +1,18 @@
 // The tycoon line on the server (decisions 027): choosing a plot, building it for its owner, buying machines and
 // dropping ore through ProximityPrompts, upgrades through a remote, the production tick and the offline run.
 // Everything that moves value happens here; the client sees the result in its view and in the built plot.
-import { Players, ReplicatedStorage, ServerStorage } from "@rbxts/services";
+import { CollectionService, Players, ReplicatedStorage, ServerStorage } from "@rbxts/services";
 import { LINE_MACHINES } from "shared/config/line";
 import { PLOT_ATTRIBUTES } from "shared/config/map-contract";
 import { ORES, ORE_IDS, OreId, isOreId } from "shared/config/ores";
 import {
 	ITEM_TEMPLATES_FOLDER,
+	LABEL_HEIGHT_ATTRIBUTE,
 	LINE_DISTANCE,
 	LINE_FLOW_REMOTE,
 	LineMove,
 	UPGRADE_LINE_MACHINE_REMOTE,
+	UPGRADE_POINT_TAG,
 	advanceLine,
 	advanceOffline,
 	applyBuyLineMachine,
@@ -132,6 +134,9 @@ function makeAnchor(parent: Instance, name: string, cframe: CFrame): BasePart {
 const DROP_KEYS = { keyboard: Enum.KeyCode.E, gamepad: Enum.KeyCode.ButtonX };
 const BUY_KEYS = { keyboard: Enum.KeyCode.F, gamepad: Enum.KeyCode.ButtonY };
 
+/** Opens the upgrade panel. A third key: machine 1 stands at the start of the belt, next to the drop prompt. */
+const UPGRADE_KEYS = { keyboard: Enum.KeyCode.R, gamepad: Enum.KeyCode.ButtonR1 };
+
 /** Runs a plot action for a player: rate limited, and a failure is logged instead of breaking the connection. */
 function guarded(player: Player, action: (player: Player) => void): void {
 	if (!promptLimiter.tryTake(player.UserId, os.clock())) {
@@ -148,8 +153,8 @@ function makePrompt(
 	action: Text,
 	object: Text,
 	keys: { keyboard: Enum.KeyCode; gamepad: Enum.KeyCode },
-	onTriggered: (player: Player) => void,
-): void {
+	onTriggered?: (player: Player) => void,
+): ProximityPrompt {
 	const prompt = new Instance("ProximityPrompt");
 	localizePrompt(prompt, action, object);
 	prompt.KeyboardKeyCode = keys.keyboard;
@@ -159,7 +164,38 @@ function makePrompt(
 	prompt.HoldDuration = 0;
 	prompt.MaxActivationDistance = LINE_DISTANCE - 4;
 	prompt.Parent = parent;
-	prompt.Triggered.Connect((player) => guarded(player, onTriggered));
+	if (onTriggered !== undefined) {
+		prompt.Triggered.Connect((player) => guarded(player, onTriggered));
+	}
+	return prompt;
+}
+
+const UPGRADE_POINTS_FOLDER = "UpgradePoints";
+
+/**
+ * The point at a bought machine: its prompt opens the upgrade panel and the progress bar hangs above it. The server
+ * does nothing on the press (the client opens the panel); a level is bought through the UpgradeLineMachine remote.
+ */
+function addUpgradePoint(plot: Plot, stage: number, machine: Model): void {
+	const cframe = slotCFrame(plot, stage);
+	const def = LINE_MACHINES[stage - 1];
+	if (plot.built === undefined || cframe === undefined || def === undefined) {
+		return;
+	}
+	let folder = plot.built.FindFirstChild(UPGRADE_POINTS_FOLDER);
+	if (folder === undefined) {
+		folder = new Instance("Folder");
+		folder.Name = UPGRADE_POINTS_FOLDER;
+		folder.Parent = plot.built;
+	}
+	const anchor = makeAnchor(folder, `UpgradePoint_${stage}`, cframe);
+	const [box, size] = machine.GetBoundingBox();
+	anchor.SetAttribute(LABEL_HEIGHT_ATTRIBUTE, math.max(box.Position.Y + size.Y / 2 - cframe.Position.Y, 0) + 1.5);
+	anchor.SetAttribute(PLOT_ATTRIBUTES.Stage, stage);
+	const prompt = makePrompt(anchor, text("line.upgrade"), text(nameKeys.machine(def.id)), UPGRADE_KEYS);
+	// Machines stand close together: show only the nearest upgrade prompt.
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton;
+	CollectionService.AddTag(anchor, UPGRADE_POINT_TAG);
 }
 
 const SIGNS_FOLDER = "BuySigns";
@@ -229,7 +265,10 @@ function refreshSigns(plot: Plot, owned: number): void {
 function buildFor(plot: Plot, data: ProfileData): void {
 	const built = buildBase(plot);
 	for (let stage = 1; stage <= data.line.machines.size(); stage++) {
-		placeMachine(plot, stage);
+		const machine = placeMachine(plot, stage);
+		if (machine !== undefined) {
+			addUpgradePoint(plot, stage, machine);
+		}
 	}
 	// The belt always runs (decisions 027): ore can ride it even before the first machine.
 	for (const part of built.GetDescendants()) {
@@ -278,6 +317,7 @@ function buyNext(player: Player, plot: Plot): void {
 	const machine = placeMachine(plot, data.line.machines.size());
 	if (machine !== undefined) {
 		clearOfMachine(machine);
+		addUpgradePoint(plot, data.line.machines.size(), machine);
 	}
 	refreshSigns(plot, data.line.machines.size());
 	notify(player, text("line.built", { name: ref(nameKeys.machine(result.def.id)) }), "success");
@@ -319,7 +359,8 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 		return;
 	}
 	if (!isNear(player, slotCFrame(plot, index + 1)?.Position, LINE_DISTANCE)) {
-		logAbuse(player, "UpgradeLineMachine away from the machine");
+		// Not logged as abuse: an honest player can walk off while the panel is open.
+		notify(player, text("line.tooFar"), "error");
 		return;
 	}
 	const result = tryLineUpgrade(data.line, index, track, data.money);
