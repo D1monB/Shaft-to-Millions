@@ -1,6 +1,6 @@
 // The always-visible HUD (layout changed after the developer's feedback 2026-11-26: the big capsules at the top centre
 // were in the way):
-//   top left, under Roblox's own buttons: small money and bag capsules, one above the other;
+//   top left, under Roblox's own buttons: small money, crystal and bag capsules, one above the other;
 //   left edge, below them: a column of square stat tiles (hover or tap a tile for its full text);
 //   right edge, vertically centred: the coloured dock of menu buttons;
 //   top centre: the goal (goals feature); bottom centre: the pickaxe hotbar (upgrades feature).
@@ -86,7 +86,7 @@ const BADGE_ROOM = 40;
 /** Below Roblox's own top bar buttons (menu, chat), which take the top-left corner. */
 const TOP_LEFT_Y = 60;
 /** Where the stat tiles start: under both capsules. */
-const STATS_Y = TOP_LEFT_Y + 2 * (CAPSULE_HEIGHT + DEPTH.button + CAPSULE_GAP) + 4;
+const STATS_Y = TOP_LEFT_Y + 3 * (CAPSULE_HEIGHT + DEPTH.button + CAPSULE_GAP) + 4;
 
 function Capsule(props: React.PropsWithChildren<{ order: number; width: number }>) {
 	return (
@@ -133,10 +133,30 @@ function MoneyCapsule(props: { money: number }) {
 	);
 }
 
+function CrystalCapsule(props: { crystals: number }) {
+	return (
+		<Capsule order={2} width={CAPSULE_WIDTH}>
+			<CapsuleBadge icon="💎" ramp={RAMPS.gem} size={36} round={true} rotation={4} />
+			<frame
+				AnchorPoint={new Vector2(0, 0.5)}
+				BackgroundTransparency={1}
+				Position={new UDim2(0, BADGE_ROOM, 0.5, 0)}
+				Size={new UDim2(1, -(BADGE_ROOM + 12), 1, -6)}
+			>
+				<uilistlayout
+					SortOrder={Enum.SortOrder.LayoutOrder}
+					VerticalAlignment={Enum.VerticalAlignment.Center}
+				/>
+				<CurrencyLabel value={props.crystals} size={20} color={COLORS.crystal} plain={true} order={1} />
+			</frame>
+		</Capsule>
+	);
+}
+
 function BagCapsule(props: { used: number; capacity: number }) {
 	const full = props.used >= props.capacity;
 	return (
-		<Capsule order={2} width={CAPSULE_WIDTH}>
+		<Capsule order={3} width={CAPSULE_WIDTH}>
 			<CapsuleBadge icon="🎒" ramp={RAMPS.close} size={36} rotation={3} />
 			<frame
 				AnchorPoint={new Vector2(0, 0.5)}
@@ -165,6 +185,7 @@ function TopLeft(props: { view: PlayerView }) {
 		>
 			<uilistlayout Padding={new UDim(0, CAPSULE_GAP)} SortOrder={Enum.SortOrder.LayoutOrder} />
 			<MoneyCapsule money={props.view.money} />
+			<CrystalCapsule crystals={props.view.crystals} />
 			<BagCapsule used={bagTotal(props.view.bag)} capacity={bagCapacity(props.view.gear.equipped.bag)} />
 		</frame>
 	);

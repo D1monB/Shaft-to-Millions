@@ -29,6 +29,8 @@ export interface ProfileStats {
 export interface ProfileData {
 	schemaVersion: number;
 	money: number;
+	/** Crystals, the second currency (decision 043): rare drop from ore, spent on chests. Never sold for Robux. */
+	crystals: number;
 	stats: ProfileStats;
 	/** Ore the player carries. Missing id = 0. */
 	bag: Partial<Record<OreId, number>>;
@@ -60,6 +62,7 @@ export function createDefaultProfileData(): ProfileData {
 	return {
 		schemaVersion: CURRENT_SCHEMA_VERSION,
 		money: 0,
+		crystals: 0,
 		stats: { totalEarned: 0, oresMined: 0 },
 		bag: {},
 		gear: createStarterGear(),
@@ -83,6 +86,7 @@ export function createDefaultProfileData(): ProfileData {
 const profileDataShape = t.interface({
 	schemaVersion: t.integer,
 	money: t.integer,
+	crystals: t.integer,
 	stats: t.interface({ totalEarned: t.integer, oresMined: t.integer }),
 	bag: t.table,
 	gear: t.interface({

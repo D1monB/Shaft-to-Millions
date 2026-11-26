@@ -19,6 +19,8 @@ export const UK: Strings = {
 	"common.equipped": "✅ НАДІТО",
 	"common.owned": "КУПЛЕНО",
 	"common.notEnoughMoney": "Не вистачає грошей.",
+	"common.notEnoughCrystals": "Не вистачає кристалів.",
+	"mining.crystal": "+{count} 💎 кристал!",
 	"common.buyFor": "{verb} за {price}",
 	"common.short": "{price} · бракує {missing}",
 

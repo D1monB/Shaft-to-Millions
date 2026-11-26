@@ -19,6 +19,8 @@ export const EN = {
 	"common.equipped": "✅ EQUIPPED",
 	"common.owned": "OWNED",
 	"common.notEnoughMoney": "Not enough money.",
+	"common.notEnoughCrystals": "Not enough crystals.",
+	"mining.crystal": "+{count} 💎 crystal!",
 	"common.buyFor": "{verb} for {price}",
 	"common.short": "{price} · need {missing}",
 

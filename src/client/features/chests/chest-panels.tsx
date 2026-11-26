@@ -158,8 +158,9 @@ function ChestFooter(props: { chestId: ChestId }) {
 		<>
 			<StoragePill count={view.inventory.size()} order={4} />
 			<BuyButton
-				price={chest.dollarPrice}
-				money={view.money}
+				price={chest.crystalPrice}
+				money={view.crystals}
+				currency="crystals"
 				verb={t("common.open")}
 				icon="✨"
 				blocked={full}

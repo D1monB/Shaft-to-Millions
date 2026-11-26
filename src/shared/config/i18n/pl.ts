@@ -19,6 +19,8 @@ export const PL: Strings = {
 	"common.equipped": "✅ ZAŁOŻONE",
 	"common.owned": "KUPIONE",
 	"common.notEnoughMoney": "Za mało pieniędzy.",
+	"common.notEnoughCrystals": "Za mało kryształów.",
+	"mining.crystal": "+{count} 💎 kryształ!",
 	"common.buyFor": "{verb} za {price}",
 	"common.short": "{price} · brakuje {missing}",
 

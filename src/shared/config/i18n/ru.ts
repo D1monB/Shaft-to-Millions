@@ -19,6 +19,8 @@ export const RU: Strings = {
 	"common.equipped": "✅ НАДЕТО",
 	"common.owned": "КУПЛЕНО",
 	"common.notEnoughMoney": "Не хватает денег.",
+	"common.notEnoughCrystals": "Не хватает кристаллов.",
+	"mining.crystal": "+{count} 💎 кристалл!",
 	"common.buyFor": "{verb} за {price}",
 	"common.short": "{price} · не хватает {missing}",
 

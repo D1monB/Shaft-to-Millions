@@ -92,3 +92,14 @@ export class MiningSession<K> {
 		this.nodes.delete(node);
 	}
 }
+
+/**
+ * Crystals from one broken block (decision 043): 1 with probability `chance`, else 0. `roll` is the server's
+ * Random:NextNumber() in [0, 1). Bad input gives 0, so a broken config never hands out crystals.
+ */
+export function rollCrystals(chance: number, roll: number): number {
+	if (!(chance > 0) || chance !== chance || !(roll >= 0) || roll !== roll) {
+		return 0;
+	}
+	return roll < math.min(chance, 1) ? 1 : 0;
+}

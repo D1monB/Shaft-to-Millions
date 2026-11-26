@@ -5,7 +5,7 @@ import { PICKAXES } from "shared/config/pickaxes";
 import { SHOES } from "shared/config/shoes";
 import { createDefaultProfileData } from "shared/features/profile";
 import { MAX_COUNTER } from "shared/lib/repair";
-import { DEV_MONEY_AMOUNTS, DEV_ORE_AMOUNT, applyDevCommand, parseDevCommand } from "./devtools";
+import { DEV_CRYSTAL_AMOUNT, DEV_MONEY_AMOUNTS, DEV_ORE_AMOUNT, applyDevCommand, parseDevCommand } from "./devtools";
 
 class DevtoolsTests {
 	// ---- parsing: the only input that comes from the client ----
@@ -139,6 +139,18 @@ class DevtoolsTests {
 		const data = createDefaultProfileData();
 		applyDevCommand(data, { kind: "openLayers" });
 		Assert.equal(data.deepestLayer, LAYER_COUNT);
+	}
+
+	@Test
+	public crystalsCommandAddsCrystals() {
+		const command = parseDevCommand(["crystals"]);
+		Assert.equal(command?.kind, "crystals");
+		Assert.undefined(parseDevCommand(["crystals", 5]));
+		const data = createDefaultProfileData();
+		if (command !== undefined) {
+			applyDevCommand(data, command);
+		}
+		Assert.equal(data.crystals, DEV_CRYSTAL_AMOUNT);
 	}
 }
 

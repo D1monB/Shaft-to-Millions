@@ -487,3 +487,13 @@ Numbered log of game and technical decisions: what we decided and why. Newest at
   longer requires standing near a `Shop`-tagged part (a tagged shop still opens it with E).
 - **Why:** the map author's map has no shop building, so there was no way to buy pickaxes or shoes. Buying away from
   a shop gains nothing: price, materials and tier order are still checked on the server.
+
+## 043. Crystals, the second currency (2026-11-26)
+
+- **What:** `crystals` in the profile (new field with default 0, no schema bump; repaired like money). Breaking a block
+  by hand gives one crystal with the ore's `crystalChance` (2% copper … 6% iridium, `config/ores.ts`). The three
+  chests now cost crystals (pets 15, speed aura 10, pickaxe aura 20) instead of dollars; everything else stays in
+  dollars. HUD capsule under the money; Dev panel "+100 crystals".
+- **Why:** the developer's design. Crystals are NEVER sold for Robux: otherwise every chest becomes a paid random
+  item under Roblox policy. A crystal may come back as at most $50 through chest item resale (`CRYSTAL_RESALE_LIMIT`,
+  tested). Quests that reward crystals come later as their own step.

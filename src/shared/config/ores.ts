@@ -15,6 +15,8 @@ export interface OreDef {
 	readonly requiredTier: number;
 	/** Seconds until a broken node can be mined again by the same player. */
 	readonly respawnSeconds: number;
+	/** Chance (0..1) that breaking a block also gives one crystal (decision 043). Deeper ore drops more often. */
+	readonly crystalChance: number;
 	/** Layer where this ore is found (see layers.ts). */
 	readonly layer: number;
 	/** False: auto drills never mine it (iridium grows only in the portal zone, it must be mined by hand). */
@@ -31,6 +33,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		hardness: 3,
 		requiredTier: 1,
 		respawnSeconds: 8,
+		crystalChance: 0.02,
 		layer: 1,
 		color: [214, 120, 52],
 	},
@@ -39,6 +42,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		hardness: 6,
 		requiredTier: 2,
 		respawnSeconds: 10,
+		crystalChance: 0.025,
 		layer: 2,
 		color: [150, 152, 158],
 	},
@@ -47,6 +51,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		hardness: 9,
 		requiredTier: 3,
 		respawnSeconds: 14,
+		crystalChance: 0.03,
 		layer: 3,
 		color: [222, 226, 236],
 	},
@@ -56,6 +61,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		hardness: 13,
 		requiredTier: 4,
 		respawnSeconds: 18,
+		crystalChance: 0.035,
 		layer: 4,
 		color: [245, 200, 60],
 	},
@@ -64,6 +70,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		hardness: 18,
 		requiredTier: 5,
 		respawnSeconds: 22,
+		crystalChance: 0.04,
 		layer: 5,
 		color: [110, 190, 240],
 	},
@@ -73,6 +80,7 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 		hardness: 24,
 		requiredTier: 5,
 		respawnSeconds: 45,
+		crystalChance: 0.06,
 		layer: 5,
 		drillable: false,
 		nearPortal: true,

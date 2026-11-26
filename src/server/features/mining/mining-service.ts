@@ -13,6 +13,7 @@ import {
 	MiningSession,
 	NODE_BROKEN_REMOTE,
 	getPickaxe,
+	rollCrystals,
 	rollYield,
 } from "shared/features/mining";
 import { isLayerOpen } from "shared/features/layers";
@@ -99,6 +100,12 @@ function handleHit(player: Player, node: Instance, oreId: OreId): void {
 		const amount = rollYield(yieldBonusOf(player), random.NextNumber());
 		const added = addToBag(data.bag, oreId, amount, capacity);
 		data.stats.oresMined += added;
+		// A rare crystal (decision 043), rolled here with the server Random like the yield.
+		const crystals = added > 0 ? rollCrystals(ore.crystalChance, random.NextNumber()) : 0;
+		if (crystals > 0) {
+			data.crystals += crystals;
+			notify(player, text("mining.crystal", { count: crystals }), "success");
+		}
 		markDirty(player);
 		fireClient(NODE_BROKEN_REMOTE, player, node, result.respawnSeconds, oreId, added);
 	}

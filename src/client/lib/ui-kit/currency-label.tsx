@@ -1,6 +1,6 @@
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
-import { formatMoney } from "shared/lib/format";
+import { formatCompact, formatMoney } from "shared/lib/format";
 import { COLORS, FONTS, TEXT_SIZES } from "./theme";
 
 export interface CurrencyLabelProps {
@@ -9,6 +9,8 @@ export interface CurrencyLabelProps {
 	readonly color?: Color3;
 	readonly order?: number;
 	readonly align?: Enum.TextXAlignment;
+	/** Formats as a plain count (crystals) instead of dollars. */
+	readonly plain?: boolean;
 }
 
 /**
@@ -27,7 +29,10 @@ export function CurrencyLabel(props: CurrencyLabelProps) {
 			BackgroundTransparency={1}
 			Size={new UDim2(1, 0, 0, (props.size ?? TEXT_SIZES.large) + 6)}
 			Font={FONTS.display}
-			Text={shown.map((value) => formatMoney(math.floor(value + 0.5)))}
+			Text={shown.map((value) => {
+				const whole = math.floor(value + 0.5);
+				return props.plain === true ? formatCompact(whole) : formatMoney(whole);
+			})}
 			TextColor3={props.color ?? COLORS.gold}
 			TextSize={props.size ?? TEXT_SIZES.large}
 			TextXAlignment={props.align ?? Enum.TextXAlignment.Left}

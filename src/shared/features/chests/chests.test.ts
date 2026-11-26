@@ -5,7 +5,7 @@ import {
 	MAX_REMEMBERED_PURCHASES,
 	OwnedItem,
 	addItem,
-	canOpenWithDollars,
+	canOpenWithCrystals,
 	chestOdds,
 	rememberPurchase,
 	removeItem,
@@ -87,11 +87,11 @@ class ChestsTests {
 
 	@Test
 	public dollarOpeningNeedsMoneyAndSpace() {
-		const price = CHESTS.pet_chest.dollarPrice;
-		Assert.true(canOpenWithDollars("pet_chest", price, 0).ok);
-		Assert.false(canOpenWithDollars("pet_chest", price - 1, 0).ok);
-		Assert.false(canOpenWithDollars("pet_chest", 0 / 0, 0).ok);
-		const full = canOpenWithDollars("pet_chest", 1e9, INVENTORY_LIMIT);
+		const price = CHESTS.pet_chest.crystalPrice;
+		Assert.true(canOpenWithCrystals("pet_chest", price, 0).ok);
+		Assert.false(canOpenWithCrystals("pet_chest", price - 1, 0).ok);
+		Assert.false(canOpenWithCrystals("pet_chest", 0 / 0, 0).ok);
+		const full = canOpenWithCrystals("pet_chest", 1e9, INVENTORY_LIMIT);
 		Assert.false(full.ok);
 		if (!full.ok) {
 			Assert.equal(full.reason, "inventory-full");

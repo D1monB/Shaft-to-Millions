@@ -150,6 +150,8 @@ export const RAMPS = {
 	/** HUD capsules (money, bag, goal): darker than tiles so the coloured badges pop. */
 	capsule: { top: rgb(38, 42, 56), mid: rgb(28, 31, 42), bottom: rgb(20, 22, 30) },
 	coin: { top: rgb(253, 224, 71), mid: rgb(251, 191, 36), bottom: rgb(249, 115, 22) },
+	/** Crystals, the second currency (decision 043). */
+	gem: { top: rgb(165, 243, 252), mid: rgb(80, 220, 235), bottom: rgb(24, 140, 170) },
 } satisfies Record<string, Ramp>;
 
 export type ButtonVariant = "primary" | "secondary" | "success" | "danger" | "crystal" | "slate";

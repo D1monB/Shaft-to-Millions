@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 import React from "@rbxts/react";
-import { formatMoney } from "shared/lib/format";
+import { formatCompact, formatMoney } from "shared/lib/format";
 import { Button } from "./button";
 
 export interface BuyButtonProps {
@@ -17,6 +17,12 @@ export interface BuyButtonProps {
 	readonly textSize?: number;
 	/** Shown before the verb, e.g. "✨". */
 	readonly icon?: string;
+	/** What `price` and `money` count: dollars (default) or crystals (decision 043). */
+	readonly currency?: "money" | "crystals";
+}
+
+function formatPrice(value: number, currency: "money" | "crystals" | undefined): string {
+	return currency === "crystals" ? `💎 ${formatCompact(value)}` : formatMoney(value);
 }
 
 /**
@@ -26,8 +32,11 @@ export interface BuyButtonProps {
 export function BuyButton(props: BuyButtonProps) {
 	const affordable = props.money >= props.price;
 	const text = affordable
-		? `${props.icon !== undefined ? `${props.icon}  ` : ""}${t("common.buyFor", { verb: props.verb, price: formatMoney(props.price) })}`
-		: t("common.short", { price: formatMoney(props.price), missing: formatMoney(props.price - props.money) });
+		? `${props.icon !== undefined ? `${props.icon}  ` : ""}${t("common.buyFor", { verb: props.verb, price: formatPrice(props.price, props.currency) })}`
+		: t("common.short", {
+				price: formatPrice(props.price, props.currency),
+				missing: formatPrice(props.price - props.money, props.currency),
+			});
 	return (
 		<Button
 			text={text}

@@ -4,8 +4,9 @@
 // Roblox policy (paid random items, checked 2026-11-24, policy page updated 2026-10-15):
 // - show every possible item and its numerical odds BEFORE the player pays (Robux or Robux-bought currency);
 // - players with PolicyService ArePaidRandomItemsRestricted must not open paid chests at all.
-// Dollars are earned in game and are NEVER sold for Robux, so opening with dollars is not a paid random item.
-// Keep it that way: selling dollars for Robux would put every chest under the policy.
+// Crystals (decision 043) are earned in game and are NEVER sold for Robux, so opening with them is not a paid random
+// item.
+// Keep it that way: selling crystals (or dollars) for Robux would put every chest under the policy.
 import { ItemId } from "./items";
 
 export type ChestId = "pet_chest" | "speed_chest" | "pickaxe_chest";
@@ -16,7 +17,8 @@ export interface RewardEntry {
 }
 
 export interface ChestDef {
-	readonly dollarPrice: number;
+	/** Price in crystals (decision 043). Crystals are never sold for Robux, so opening with them is not a paid random item. */
+	readonly crystalPrice: number;
 	/**
 	 * Developer Product id for opening with Robux. Create the product on the Creator Dashboard and paste its
 	 * id here. While undefined, the Robux button is hidden.
@@ -29,7 +31,7 @@ export interface ChestDef {
 
 export const CHESTS: { readonly [K in ChestId]: ChestDef } = {
 	pet_chest: {
-		dollarPrice: 1_500,
+		crystalPrice: 15,
 		robuxProductId: undefined,
 		robuxPrice: 49,
 		rewards: [
@@ -41,7 +43,7 @@ export const CHESTS: { readonly [K in ChestId]: ChestDef } = {
 		],
 	},
 	speed_chest: {
-		dollarPrice: 1_000,
+		crystalPrice: 10,
 		robuxProductId: undefined,
 		robuxPrice: 35,
 		rewards: [
@@ -53,7 +55,7 @@ export const CHESTS: { readonly [K in ChestId]: ChestDef } = {
 		],
 	},
 	pickaxe_chest: {
-		dollarPrice: 2_000,
+		crystalPrice: 20,
 		robuxProductId: undefined,
 		robuxPrice: 59,
 		rewards: [
@@ -71,3 +73,9 @@ export const CHEST_IDS: ReadonlyArray<ChestId> = ["pet_chest", "speed_chest", "p
 export function isChestId(value: unknown): value is ChestId {
 	return typeIs(value, "string") && (CHESTS as Record<string, ChestDef | undefined>)[value] !== undefined;
 }
+
+/**
+ * Most dollars one crystal may come back as through a chest item's resale. Above it, crystals would turn into a money
+ * printer (tested in equipment.test.ts).
+ */
+export const CRYSTAL_RESALE_LIMIT = 50;
