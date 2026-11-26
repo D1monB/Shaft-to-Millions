@@ -12,6 +12,8 @@ import { BuyButton, Card, CardStrip, Label, StripSlot, TEXT_SIZES } from "client
 
 const CARD_WIDTH = 182;
 const CARD_HEIGHT = 224;
+/** Room for a two-line hint at the small text size. */
+const HINT_HEIGHT = 40;
 
 function TrackCard(props: { index: number; row: UpgradeRow; money: number }) {
 	const row = props.row;
@@ -41,13 +43,15 @@ function TrackCard(props: { index: number; row: UpgradeRow; money: number }) {
 				align="center"
 				order={3}
 			/>
-			<Label
-				text={t(`line.track.${row.track}.hint` as StringKey)}
-				tone="muted"
-				size={TEXT_SIZES.small}
-				align="center"
-				order={4}
-			/>
+			{/* Always two lines tall, so every card is the same height and the buttons line up (feedback 2026-11-26). */}
+			<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, HINT_HEIGHT)} LayoutOrder={4}>
+				<Label
+					text={t(`line.track.${row.track}.hint` as StringKey)}
+					tone="muted"
+					size={TEXT_SIZES.small}
+					align="center"
+				/>
+			</frame>
 			{next_ !== undefined ? (
 				<BuyButton
 					price={next_.price}

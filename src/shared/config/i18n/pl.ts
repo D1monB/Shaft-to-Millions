@@ -78,6 +78,7 @@ export const PL: Strings = {
 
 	// ---- gear shop
 	"shop.title": "Sklep ze sprzętem",
+	"menu.shop": "Sklep",
 	"shop.tab.pickaxe": "⛏️ Kilofy",
 	"shop.tab.bag": "🎒 Torby",
 	"shop.tab.shoes": "👟 Buty",

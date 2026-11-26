@@ -1,5 +1,5 @@
 import { useMotion } from "@rbxts/pretty-react-hooks";
-import React, { useEffect } from "@rbxts/react";
+import React, { useEffect, useRef, useState } from "@rbxts/react";
 import {
 	ACCENTS,
 	Accent,
@@ -29,6 +29,8 @@ export interface PanelProps extends React.PropsWithChildren {
 const MAX_SIZE = new Vector2(820, 520);
 const HEADER_HEIGHT = 46;
 const PADDING = 14;
+/** The board never gets shorter than this share of the space (a loading panel with one line). */
+const MIN_FRACTION = 0.3;
 
 /**
  * A translucent graphite panel in the middle of the screen with a thin neon outline, a compact title on the left and
@@ -45,6 +47,35 @@ export function Panel(props: PanelProps) {
 	}, [scaleMotion, fadeMotion]);
 
 	const title = props.icon !== undefined ? `${props.icon}  ${props.title}` : props.title;
+
+	// The board shrinks to its content (feedback 2026-11-26: short panels had a big empty bottom). Measured in absolute
+	// pixels on both sides, so the UI scale does not matter: wanted = board - visible list + whole list.
+	const boxRef = useRef<Frame>();
+	const boardRef = useRef<Frame>();
+	const listRef = useRef<ScrollingFrame>();
+	const [fraction, setFraction] = useState(1);
+	useEffect(() => {
+		const box = boxRef.current;
+		const board = boardRef.current;
+		const list = listRef.current;
+		if (box === undefined || board === undefined || list === undefined) {
+			return;
+		}
+		const measure = () => {
+			const boxHeight = box.AbsoluteSize.Y;
+			if (boxHeight <= 0) {
+				return;
+			}
+			const wanted = board.AbsoluteSize.Y - list.AbsoluteSize.Y + list.AbsoluteCanvasSize.Y;
+			setFraction(math.clamp(wanted / boxHeight, MIN_FRACTION, 1));
+		};
+		const connections = [
+			list.GetPropertyChangedSignal("AbsoluteCanvasSize").Connect(measure),
+			box.GetPropertyChangedSignal("AbsoluteSize").Connect(measure),
+		];
+		measure();
+		return () => connections.forEach((connection) => connection.Disconnect());
+	}, []);
 	return (
 		<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 1, 0)} ZIndex={10}>
 			<textbutton
@@ -60,73 +91,83 @@ export function Panel(props: PanelProps) {
 				Position={new UDim2(0.5, 0, 0.5, 0)}
 				Size={new UDim2(0.92, 0, 0.86, 0)}
 				BackgroundTransparency={1}
+				ref={boxRef}
 			>
 				<uiscale Scale={scale} />
 				<uisizeconstraint MaxSize={MAX_SIZE} />
-				{/* A faint halo of the accent around the board: reads as a neon glow without images. */}
 				<frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={new UDim2(0.5, 0, 0.5, 0)}
-					Size={new UDim2(1, 10, 1, 10)}
-					BackgroundColor3={accent}
-					BackgroundTransparency={0.85}
-					BorderSizePixel={0}
+					Size={new UDim2(1, 0, fraction, 0)}
+					BackgroundTransparency={1}
+					ref={boardRef}
 				>
-					<uicorner CornerRadius={new UDim(0, 22)} />
-				</frame>
-				{/* The glass. Separate from the outlined frame: a UIGradient also tints a sibling UIStroke. */}
-				<frame
-					BackgroundColor3={COLORS.white}
-					BackgroundTransparency={GLASS_TRANSPARENCY}
-					BorderSizePixel={0}
-					Size={new UDim2(1, 0, 1, 0)}
-				>
-					<uicorner CornerRadius={RADIUS.xlarge} />
-					<uigradient Rotation={90} Color={rampSequence(RAMPS.panel)} />
-				</frame>
-				<frame BackgroundTransparency={1} BorderSizePixel={0} Size={new UDim2(1, 0, 1, 0)}>
-					<uicorner CornerRadius={RADIUS.xlarge} />
-					<uistroke Color={accent} Thickness={STROKE.thick} Transparency={0.15} />
-					<uipadding
-						PaddingTop={new UDim(0, 8)}
-						PaddingBottom={new UDim(0, PADDING)}
-						PaddingLeft={new UDim(0, PADDING)}
-						PaddingRight={new UDim(0, PADDING)}
-					/>
-					<uilistlayout
-						FillDirection={Enum.FillDirection.Vertical}
-						Padding={new UDim(0, 8)}
-						SortOrder={Enum.SortOrder.LayoutOrder}
-					/>
-					<Header title={title} accent={accent} onClose={props.onClose} />
-					<scrollingframe
-						BackgroundTransparency={1}
+					{/* A faint halo of the accent around the board: reads as a neon glow without images. */}
+					<frame
+						AnchorPoint={new Vector2(0.5, 0.5)}
+						Position={new UDim2(0.5, 0, 0.5, 0)}
+						Size={new UDim2(1, 10, 1, 10)}
+						BackgroundColor3={accent}
+						BackgroundTransparency={0.85}
 						BorderSizePixel={0}
-						Size={new UDim2(1, 0, 0, 0)}
-						CanvasSize={new UDim2(0, 0, 0, 0)}
-						AutomaticCanvasSize={Enum.AutomaticSize.Y}
-						ScrollingDirection={Enum.ScrollingDirection.Y}
-						ScrollBarThickness={4}
-						ScrollBarImageColor3={accent}
-						LayoutOrder={2}
 					>
-						{/* Takes all the height the header and the footer leave. */}
-						<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />
-						<uipadding PaddingRight={new UDim(0, 8)} PaddingBottom={new UDim(0, 4)} />
-						<uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
-						{props.children}
-					</scrollingframe>
-					{props.footer !== undefined && (
-						<frame
+						<uicorner CornerRadius={new UDim(0, 22)} />
+					</frame>
+					{/* The glass. Separate from the outlined frame: a UIGradient also tints a sibling UIStroke. */}
+					<frame
+						BackgroundColor3={COLORS.white}
+						BackgroundTransparency={GLASS_TRANSPARENCY}
+						BorderSizePixel={0}
+						Size={new UDim2(1, 0, 1, 0)}
+					>
+						<uicorner CornerRadius={RADIUS.xlarge} />
+						<uigradient Rotation={90} Color={rampSequence(RAMPS.panel)} />
+					</frame>
+					<frame BackgroundTransparency={1} BorderSizePixel={0} Size={new UDim2(1, 0, 1, 0)}>
+						<uicorner CornerRadius={RADIUS.xlarge} />
+						<uistroke Color={accent} Thickness={STROKE.thick} Transparency={0.15} />
+						<uipadding
+							PaddingTop={new UDim(0, 8)}
+							PaddingBottom={new UDim(0, PADDING)}
+							PaddingLeft={new UDim(0, PADDING)}
+							PaddingRight={new UDim(0, PADDING)}
+						/>
+						<uilistlayout
+							FillDirection={Enum.FillDirection.Vertical}
+							Padding={new UDim(0, 8)}
+							SortOrder={Enum.SortOrder.LayoutOrder}
+						/>
+						<Header title={title} accent={accent} onClose={props.onClose} />
+						<scrollingframe
 							BackgroundTransparency={1}
+							BorderSizePixel={0}
 							Size={new UDim2(1, 0, 0, 0)}
-							AutomaticSize={Enum.AutomaticSize.Y}
-							LayoutOrder={3}
+							CanvasSize={new UDim2(0, 0, 0, 0)}
+							AutomaticCanvasSize={Enum.AutomaticSize.Y}
+							ScrollingDirection={Enum.ScrollingDirection.Y}
+							ScrollBarThickness={4}
+							ScrollBarImageColor3={accent}
+							LayoutOrder={2}
+							ref={listRef}
 						>
-							<uilistlayout Padding={new UDim(0, 6)} SortOrder={Enum.SortOrder.LayoutOrder} />
-							{props.footer}
-						</frame>
-					)}
+							{/* Takes all the height the header and the footer leave. */}
+							<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />
+							<uipadding PaddingRight={new UDim(0, 8)} PaddingBottom={new UDim(0, 4)} />
+							<uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
+							{props.children}
+						</scrollingframe>
+						{props.footer !== undefined && (
+							<frame
+								BackgroundTransparency={1}
+								Size={new UDim2(1, 0, 0, 0)}
+								AutomaticSize={Enum.AutomaticSize.Y}
+								LayoutOrder={3}
+							>
+								<uilistlayout Padding={new UDim(0, 6)} SortOrder={Enum.SortOrder.LayoutOrder} />
+								{props.footer}
+							</frame>
+						)}
+					</frame>
 				</frame>
 			</frame>
 		</frame>

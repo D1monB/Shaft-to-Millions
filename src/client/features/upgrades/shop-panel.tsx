@@ -223,5 +223,5 @@ export function startShopController(): void {
 	const open = () => openPanel({ key: "shop", title: t("shop.title"), icon: "🛒", render: () => <ShopPanel /> });
 	onPromptForTag(TAGS.Shop, open);
 	// The map author's map has no shop building: the dock button opens it anywhere (decision 042).
-	registerHudButton("🛒", () => t("shop.title"), open, 5, "primary");
+	registerHudButton("🛒", () => t("menu.shop"), open, 5, "primary");
 }
