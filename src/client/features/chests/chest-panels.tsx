@@ -19,6 +19,7 @@ import { registerHudStat } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { ITEM_CARD_HEIGHT, ITEM_CARD_WIDTH, ItemCard } from "client/lib/item-card";
 import { KIND_ICONS, RARITY_LIGHT, RARITY_RAMPS, effectText, rarityColor } from "client/lib/item-display";
+import { playTerminalBurst } from "./terminal-fx";
 import { closePanel, openPanel } from "client/lib/panels";
 import { onPromptForTag } from "client/lib/prompts";
 import { onServerMessage, sendToServer } from "client/lib/remotes";
@@ -279,6 +280,7 @@ export function startChestsController(): void {
 	onServerMessage(CHEST_RESULT_REMOTE, (item, chestId) => {
 		if (isItemId(item) && isChestId(chestId)) {
 			playSound("chestOpen");
+			playTerminalBurst(chestId);
 			const rarity = ITEMS[item].rarity;
 			if (rarity === "rare" || rarity === "epic" || rarity === "legendary") {
 				playSound("chestRare");

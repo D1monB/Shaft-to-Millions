@@ -49,6 +49,8 @@ export const CHEST_TERMINALS = {
 	FallbackPoint: "RollButton",
 	/** The name sign of a terminal (a Part with a SurfaceGui). */
 	Title: "TitleText",
+	/** ParticleEmitter (Rate 0) that bursts when a roll comes out. */
+	Burst: "RollBurst",
 	/** Terminal model name -> chest id (config/chests.ts). */
 	Chests: {
 		Terminal_Pets: "pet_chest",
