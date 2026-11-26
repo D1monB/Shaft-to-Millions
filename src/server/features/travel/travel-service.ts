@@ -3,7 +3,14 @@
 import { text } from "shared/features/i18n";
 import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
-import { HOME, SURFACE, TRAVEL_REMOTE, canTravelTo, isTravelDestination, travelCooldownLeft } from "shared/features/travel";
+import {
+	HOME,
+	SURFACE,
+	TRAVEL_REMOTE,
+	canTravelTo,
+	isTravelDestination,
+	travelCooldownLeft,
+} from "shared/features/travel";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { homePositionOf } from "server/features/line";
 import { teleportCharacter } from "server/features/movement";

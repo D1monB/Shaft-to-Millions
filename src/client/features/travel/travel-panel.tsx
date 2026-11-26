@@ -55,7 +55,13 @@ function TravelPanel() {
 
 export function startTravelController(): void {
 	// One tap home (the developer's request, decision 053): the server checks the pause and finds the plot.
-	registerHudButton("🏭", () => t("menu.home"), () => sendToServer(TRAVEL_REMOTE, HOME), 19, "success");
+	registerHudButton(
+		"🏭",
+		() => t("menu.home"),
+		() => sendToServer(TRAVEL_REMOTE, HOME),
+		19,
+		"success",
+	);
 	registerHudButton(
 		"🧭",
 		() => t("menu.travel"),
