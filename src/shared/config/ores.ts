@@ -9,8 +9,13 @@ export type OreId = "copper" | "iron" | "silver" | "gold" | "titanium" | "iridiu
 export interface OreDef {
 	/** Sell price of one piece of raw ore, in dollars. */
 	readonly price: number;
-	/** Damage needed to break one node. Hits = ceil(hardness / pickaxe power). */
+	/**
+	 * Damage for one piece of ore (decision 052: every hit chips ore off a block). The first pickaxe of the ore's tier
+	 * has power = hardness, so it chips one piece per hit; stronger pickaxes chip more.
+	 */
 	readonly hardness: number;
+	/** Pieces one block holds before it is gone (for this player) until it respawns. */
+	readonly pieces: number;
 	/** Minimum pickaxe tier that can mine this ore at all. */
 	readonly requiredTier: number;
 	/** Seconds until a broken node can be mined again by the same player. */
@@ -30,7 +35,8 @@ export interface OreDef {
 export const ORES: { readonly [K in OreId]: OreDef } = {
 	copper: {
 		price: 5,
-		hardness: 3,
+		hardness: 1,
+		pieces: 6,
 		requiredTier: 1,
 		respawnSeconds: 8,
 		crystalChance: 0.02,
@@ -39,7 +45,8 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	},
 	iron: {
 		price: 12,
-		hardness: 6,
+		hardness: 2,
+		pieces: 7,
 		requiredTier: 2,
 		respawnSeconds: 10,
 		crystalChance: 0.025,
@@ -48,7 +55,8 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	},
 	silver: {
 		price: 30,
-		hardness: 9,
+		hardness: 4,
+		pieces: 8,
 		requiredTier: 3,
 		respawnSeconds: 14,
 		crystalChance: 0.03,
@@ -58,7 +66,8 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	// Gold and titanium keep their ids; their layer and price moved (decisions 031), so old drills follow sanitize.
 	gold: {
 		price: 70,
-		hardness: 13,
+		hardness: 7,
+		pieces: 9,
 		requiredTier: 4,
 		respawnSeconds: 18,
 		crystalChance: 0.035,
@@ -67,7 +76,8 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	},
 	titanium: {
 		price: 150,
-		hardness: 18,
+		hardness: 11,
+		pieces: 10,
 		requiredTier: 5,
 		respawnSeconds: 22,
 		crystalChance: 0.04,
@@ -77,7 +87,8 @@ export const ORES: { readonly [K in OreId]: OreDef } = {
 	// The jackpot: only in the portal zone at the bottom of layer 5, hard and slow to come back, never drilled.
 	iridium: {
 		price: 400,
-		hardness: 24,
+		hardness: 16,
+		pieces: 12,
 		requiredTier: 5,
 		respawnSeconds: 45,
 		crystalChance: 0.06,

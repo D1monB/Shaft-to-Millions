@@ -11,6 +11,7 @@ import {
 	LINE_DISTANCE,
 	LINE_FLOW_REMOTE,
 	LineMove,
+	UPGRADE_BELT_REMOTE,
 	UPGRADE_LINE_MACHINE_REMOTE,
 	UPGRADE_POINT_TAG,
 	advanceLine,
@@ -20,6 +21,7 @@ import {
 	depositOre,
 	isLineIdle,
 	lineIncome,
+	tryBeltUpgrade,
 	tryBuyLineMachine,
 	tryLineUpgrade,
 } from "shared/features/line";
@@ -437,6 +439,45 @@ function handleUpgrade(player: Player, args: Array<unknown>): void {
 	notify(player, text("line.upgraded", { level: result.upgrade.level }), "success");
 }
 
+/** True when the player stands near any machine they own (the conveyor card sits in every machine's panel). */
+function isNearOwnMachine(player: Player, plot: Plot, owned: number): boolean {
+	for (let stage = 1; stage <= owned; stage++) {
+		if (isNear(player, slotCFrame(plot, stage)?.Position, LINE_DISTANCE)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function handleBeltUpgrade(player: Player, args: Array<unknown>): void {
+	if (args.size() !== 0) {
+		logAbuse(player, "bad UpgradeBelt arguments");
+		return;
+	}
+	const plot = plotOf.get(player);
+	const data = getProfileData(player);
+	if (plot === undefined || data === undefined) {
+		return;
+	}
+	if (!isNearOwnMachine(player, plot, data.line.machines.size())) {
+		// Not logged as abuse: an honest player can walk off while the panel is open.
+		notify(player, text("line.tooFar"), "error");
+		return;
+	}
+	const result = tryBeltUpgrade(data.line, data.money);
+	if (!result.ok) {
+		if (result.reason === "not-enough-money") {
+			notify(player, text("common.notEnoughMoney"), "error");
+		}
+		return;
+	}
+	// Money and level change together, with no yield in between.
+	data.money = result.money;
+	data.line.beltLevel = result.level;
+	markDirty(player);
+	notify(player, text("line.beltUpgraded", { level: result.level }), "success");
+}
+
 // ---- plots: claim, release, spawn ----
 
 /**
@@ -534,6 +575,12 @@ function releasePlot(player: Player): void {
 	clearBase(plot);
 	setClaimPromptEnabled(plot, true);
 	refreshPlotSign(plot, undefined);
+}
+
+/** The spawn point of the player's own plot, or undefined while they have none. */
+export function homePositionOf(player: Player): Vector3 | undefined {
+	const own = plotOf.get(player);
+	return own !== undefined ? spawnPosition(own) : undefined;
 }
 
 /** Where the player appears: their own plot, or else the first free one (to take it or walk to another). */
@@ -667,6 +714,7 @@ export function startLineService(): void {
 		refreshPlotSign(plot, undefined);
 	}
 	onClientRequest(UPGRADE_LINE_MACHINE_REMOTE, new RateLimiter(6, 3), handleUpgrade);
+	onClientRequest(UPGRADE_BELT_REMOTE, new RateLimiter(4, 2), handleBeltUpgrade);
 	onProfileLoaded(onLoaded);
 	onProfileReleasing((player) => {
 		const data = getProfileData(player);

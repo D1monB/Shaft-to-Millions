@@ -2,13 +2,13 @@ import { text } from "shared/features/i18n";
 import { CollectionService } from "@rbxts/services";
 import { TAGS } from "shared/config/map-contract";
 import { ORES, ORE_IDS } from "shared/config/ores";
-import { SELL_BAG_REMOTE, SELL_DISTANCE, previewSale } from "shared/features/selling";
+import { SALE_MADE_REMOTE, SELL_BAG_REMOTE, SELL_DISTANCE, previewSale } from "shared/features/selling";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { formatMoney } from "shared/lib/format";
 import { getProfileData, markDirty } from "server/features/profile";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
-import { logAbuse, onClientRequest } from "server/lib/remotes";
+import { declareClientEvent, fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
 
 let sellMultiplierOf: (player: Player) => number = () => 1;
 
@@ -48,9 +48,11 @@ function handleSell(player: Player, args: Array<unknown>): void {
 	data.stats.totalEarned += preview.total;
 	markDirty(player);
 	notify(player, text("sell.sold", { count: preview.itemCount, money: formatMoney(preview.total) }), "success");
+	fireClient(SALE_MADE_REMOTE, player, preview.total);
 }
 
 export function startSellingService(): void {
+	declareClientEvent(SALE_MADE_REMOTE);
 	onClientRequest(SELL_BAG_REMOTE, new RateLimiter(3, 1), handleSell);
 	const addPrompt = (zone: Instance) => ensurePrompt(zone, text("common.sell"), text("sell.title"));
 	CollectionService.GetTagged(TAGS.SellZone).forEach(addPrompt);

@@ -4,7 +4,9 @@
 // 0..i-1). What leaves the last bought machine falls into the SellStation; with no machine the raw ore rides the belt
 // to the SellStation at BELT_SECONDS_PER_ITEM each.
 import {
+	BELT_LEVELS,
 	BELT_SECONDS_PER_ITEM,
+	BeltLevel,
 	HOPPER_CAPACITY,
 	LINE_MACHINES,
 	LINE_MAX_STEP,
@@ -36,6 +38,8 @@ export interface LineState {
 	beltProgress: number;
 	/** Machines bought so far, in line order. Their number is the next machine to buy. */
 	machines: LineMachineState[];
+	/** Conveyor level, 1-based (decision 054): speeds up the whole line. */
+	beltLevel: number;
 }
 
 /** Base value of a raw ore, or undefined for an unknown id (that item is dropped, never sold). */
@@ -45,7 +49,7 @@ export type OreValueOf = (ore: string) => number | undefined;
 export type RandomFn = () => number;
 
 export function newLineState(): LineState {
-	return { intake: [], beltProgress: 0, machines: [] };
+	return { intake: [], beltProgress: 0, machines: [], beltLevel: 1 };
 }
 
 function newMachine(): LineMachineState {
@@ -141,6 +145,37 @@ export function applyLineUpgrade(state: LineState, index: number, track: LineUpg
 	if (machine !== undefined && machine[track] < LINE_UPGRADES[track].size()) {
 		machine[track] += 1;
 	}
+}
+
+// ---- conveyor ----
+
+/** How many times faster the whole line runs at this conveyor level; broken levels are clamped to the table. */
+export function beltSpeed(level: number): number {
+	const index = math.clamp(isFiniteNumber(level) ? math.floor(level) : 1, 1, BELT_LEVELS.size()) - 1;
+	return BELT_LEVELS[index].speed;
+}
+
+/** The next conveyor level and its price, or undefined at the top. */
+export function nextBeltLevel(state: LineState): (BeltLevel & { readonly level: number }) | undefined {
+	const current = isFiniteNumber(state.beltLevel) ? math.max(math.floor(state.beltLevel), 1) : 1;
+	const step = BELT_LEVELS[current];
+	return step === undefined ? undefined : { level: current + 1, price: step.price, speed: step.speed };
+}
+
+export type BeltUpgradeResult =
+	| { readonly ok: true; readonly level: number; readonly money: number }
+	| { readonly ok: false; readonly reason: "maxed" | "not-enough-money" };
+
+/** Decides a conveyor upgrade. Does not change anything; the caller sets the level and the money together. */
+export function tryBeltUpgrade(state: LineState, money: number): BeltUpgradeResult {
+	const step = nextBeltLevel(state);
+	if (step === undefined) {
+		return { ok: false, reason: "maxed" };
+	}
+	if (!(money >= step.price)) {
+		return { ok: false, reason: "not-enough-money" };
+	}
+	return { ok: true, level: step.level, money: money - step.price };
 }
 
 // ---- queues ----
@@ -249,7 +284,8 @@ export function advanceLine(
 	random: RandomFn,
 	moves?: LineMove[],
 ): LineTickResult {
-	const dt = isFiniteNumber(seconds) ? math.clamp(seconds, 0, LINE_MAX_STEP) : 0;
+	// The conveyor level speeds up everything on the line: the belt and every machine.
+	const dt = (isFiniteNumber(seconds) ? math.clamp(seconds, 0, LINE_MAX_STEP) : 0) * beltSpeed(state.beltLevel);
 	// The intake first: ore just dropped on the belt reaches the first machine in the same step.
 	const raw = feedFromIntake(state, dt, valueOf, moves);
 	const last = state.machines.size() - 1;

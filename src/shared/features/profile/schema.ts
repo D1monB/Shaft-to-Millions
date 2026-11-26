@@ -54,6 +54,8 @@ export interface ProfileData {
 	purchaseIds: string[];
 	/** The language chosen in the game menu (decision 033), "" = automatic (Roblox language, then country). */
 	language: string;
+	/** False after the player switched the game's sounds off in the menu (decision 053). */
+	soundOn: boolean;
 	/** Equipped item uids (from `inventory`). */
 	equipped: Equipped;
 }
@@ -76,6 +78,7 @@ export function createDefaultProfileData(): ProfileData {
 		line: newLineState(),
 		lastSeen: 0,
 		language: "",
+		soundOn: true,
 	};
 }
 
@@ -99,6 +102,7 @@ const profileDataShape = t.interface({
 	line: t.interface({
 		intake: t.array(t.string),
 		beltProgress: t.number,
+		beltLevel: t.integer,
 		machines: t.array(
 			t.interface({
 				speed: t.integer,
@@ -112,6 +116,7 @@ const profileDataShape = t.interface({
 	}),
 	lastSeen: t.number,
 	language: t.string,
+	soundOn: t.boolean,
 	inventory: t.array(t.interface({ uid: t.string, item: t.string })),
 	nextUid: t.integer,
 	purchaseIds: t.array(t.string),

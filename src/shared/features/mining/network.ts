@@ -4,8 +4,11 @@
 /** Client -> server: (node: Instance) the ore node under the cursor when the pickaxe Tool was swung. */
 export const MINE_HIT_REMOTE = "MineHit";
 
-/** Server -> client: (node: Instance, damage: number, hardness: number, crit: boolean) after a counted hit. */
+/**
+ * Server -> client: (node: Instance, taken: number, total: number, crit: boolean, oreId: string, amount: number)
+ * after a counted hit that did not empty the block. `amount` pieces went into the bag (0 for a treasure crate).
+ */
 export const MINE_PROGRESS_REMOTE = "MineProgress";
 
-/** Server -> client: (node, respawnSeconds: number, oreId: string, amount: number, crit: boolean) after a break. */
+/** Server -> client: (node, respawnSeconds: number, oreId: string, amount: number, crit: boolean) after the last chip. */
 export const NODE_BROKEN_REMOTE = "NodeBroken";

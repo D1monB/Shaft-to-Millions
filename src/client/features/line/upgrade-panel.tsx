@@ -1,10 +1,19 @@
-// The upgrade panel of one bought machine: four cards (speed, double output, quality, queue). The button only sends
+// The upgrade panel of one bought machine: four cards (speed, double output, quality, queue) and the conveyor. The button only sends
 // the intent; the server checks the owner, the distance and the price.
 import React from "@rbxts/react";
-import { LINE_MACHINES } from "shared/config/line";
+import { BELT_LEVELS, LINE_MACHINES } from "shared/config/line";
 import { StringKey } from "shared/config/i18n";
 import { nameKeys } from "shared/features/i18n";
-import { UPGRADE_LINE_MACHINE_REMOTE, UpgradeRow, formatUpgradeValue, upgradeRows } from "shared/features/line";
+import {
+	LineState,
+	UPGRADE_BELT_REMOTE,
+	UPGRADE_LINE_MACHINE_REMOTE,
+	UpgradeRow,
+	beltSpeed,
+	formatUpgradeValue,
+	nextBeltLevel,
+	upgradeRows,
+} from "shared/features/line";
 import { useView } from "client/features/profile";
 import { t } from "client/lib/i18n";
 import { sendToServer } from "client/lib/remotes";
@@ -68,6 +77,47 @@ function TrackCard(props: { index: number; row: UpgradeRow; money: number }) {
 	);
 }
 
+/** The conveyor card (decision 054): one level for the whole line, shown in every machine's panel. */
+function BeltCard(props: { line: LineState; money: number }) {
+	const current = beltSpeed(props.line.beltLevel);
+	const step = nextBeltLevel(props.line);
+	return (
+		<Card gap={6}>
+			<Label text={t("line.track.belt")} display={true} size={TEXT_SIZES.body} align="center" order={1} />
+			<Label
+				text={t("line.level", { level: props.line.beltLevel, max: BELT_LEVELS.size() })}
+				tone="muted"
+				size={TEXT_SIZES.small}
+				align="center"
+				order={2}
+			/>
+			<Label
+				text={step !== undefined ? `×${current} → ×${step.speed}` : `×${current}`}
+				tone="gold"
+				display={true}
+				size={TEXT_SIZES.large}
+				align="center"
+				order={3}
+			/>
+			<frame BackgroundTransparency={1} Size={new UDim2(1, 0, 0, HINT_HEIGHT)} LayoutOrder={4}>
+				<Label text={t("line.track.belt.hint")} tone="muted" size={TEXT_SIZES.small} align="center" />
+			</frame>
+			{step !== undefined ? (
+				<BuyButton
+					price={step.price}
+					money={props.money}
+					verb={t("line.upgrade")}
+					onClick={() => sendToServer(UPGRADE_BELT_REMOTE)}
+					textSize={TEXT_SIZES.small}
+					order={5}
+				/>
+			) : (
+				<Label text={t("line.maxed")} tone="success" display={true} align="center" order={5} />
+			)}
+		</Card>
+	);
+}
+
 export function UpgradePanel(props: { index: number }) {
 	const view = useView();
 	const def = LINE_MACHINES[props.index];
@@ -85,6 +135,9 @@ export function UpgradePanel(props: { index: number }) {
 						<TrackCard index={props.index} row={row} money={view.money} />
 					</StripSlot>
 				))}
+				<StripSlot key="belt" width={CARD_WIDTH} height={CARD_HEIGHT} order={10}>
+					<BeltCard line={view.line} money={view.money} />
+				</StripSlot>
 			</CardStrip>
 		</>
 	);

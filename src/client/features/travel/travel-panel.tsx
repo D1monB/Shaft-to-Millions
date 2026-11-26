@@ -4,7 +4,7 @@ import React from "@rbxts/react";
 import { nameKeys } from "shared/features/i18n";
 import { t } from "client/lib/i18n";
 import { PlayerView } from "shared/features/profile";
-import { SURFACE, TRAVEL_COOLDOWN, TRAVEL_REMOTE, travelDestinations } from "shared/features/travel";
+import { HOME, SURFACE, TRAVEL_COOLDOWN, TRAVEL_REMOTE, travelDestinations } from "shared/features/travel";
 import { registerHudButton } from "client/features/hud";
 import { useView } from "client/features/profile";
 import { closePanel, openPanel } from "client/lib/panels";
@@ -12,6 +12,9 @@ import { sendToServer } from "client/lib/remotes";
 import { Button, Label } from "client/lib/ui-kit";
 
 function destinationName(destination: number): string {
+	if (destination === HOME) {
+		return t("travel.home");
+	}
 	if (destination === SURFACE) {
 		return t("travel.surface");
 	}
@@ -27,7 +30,7 @@ function TravelList(props: { view: PlayerView }) {
 				<Button
 					key={destination}
 					text={destinationName(destination)}
-					variant={destination === SURFACE ? "primary" : "secondary"}
+					variant={destination === HOME ? "success" : destination === SURFACE ? "primary" : "secondary"}
 					onClick={() => {
 						sendToServer(TRAVEL_REMOTE, destination);
 						closePanel();
@@ -35,7 +38,7 @@ function TravelList(props: { view: PlayerView }) {
 					order={index + 2}
 				/>
 			))}
-			{destinations.size() === 1 && (
+			{destinations.size() <= 2 && (
 				<Label text={t("travel.campsHint")} tone="muted" order={destinations.size() + 2} />
 			)}
 		</>
@@ -51,6 +54,14 @@ function TravelPanel() {
 }
 
 export function startTravelController(): void {
+	// One tap home (the developer's request, decision 053): the server checks the pause and finds the plot.
+	registerHudButton(
+		"🏭",
+		() => t("menu.home"),
+		() => sendToServer(TRAVEL_REMOTE, HOME),
+		19,
+		"success",
+	);
 	registerHudButton(
 		"🧭",
 		() => t("menu.travel"),

@@ -1,10 +1,18 @@
-// Fast travel: the player picks the surface or an opened camp, the SERVER checks everything and moves the character.
+// Fast travel: the player picks their base, the surface or an opened camp, the SERVER checks everything and moves the character.
 // The client only sends the destination number. Going up is free; a pause between trips keeps the descent meaningful.
 import { text } from "shared/features/i18n";
 import { CollectionService, Players } from "@rbxts/services";
 import { ATTRIBUTES, TAGS } from "shared/config/map-contract";
-import { SURFACE, TRAVEL_REMOTE, canTravelTo, isTravelDestination, travelCooldownLeft } from "shared/features/travel";
+import {
+	HOME,
+	SURFACE,
+	TRAVEL_REMOTE,
+	canTravelTo,
+	isTravelDestination,
+	travelCooldownLeft,
+} from "shared/features/travel";
 import { RateLimiter } from "shared/lib/rate-limiter";
+import { homePositionOf } from "server/features/line";
 import { teleportCharacter } from "server/features/movement";
 import { getProfileData } from "server/features/profile";
 import { notify } from "server/lib/notify";
@@ -27,6 +35,15 @@ function findDestinationPoint(destination: number): Instance | undefined {
 		}
 	}
 	return undefined;
+}
+
+/** Where a destination leads: the player's own plot for HOME, otherwise a tagged map point. */
+function destinationPosition(player: Player, destination: number): Vector3 | undefined {
+	if (destination === HOME) {
+		return homePositionOf(player);
+	}
+	const point = findDestinationPoint(destination);
+	return point === undefined ? undefined : getInstancePosition(point);
 }
 
 function handleTravel(player: Player, args: Array<unknown>): void {
@@ -53,10 +70,9 @@ function handleTravel(player: Player, args: Array<unknown>): void {
 		notify(player, text("travel.notReady", { seconds: math.ceil(wait) }), "info");
 		return;
 	}
-	const point = findDestinationPoint(destination);
-	const position = point === undefined ? undefined : getInstancePosition(point);
+	const position = destinationPosition(player, destination);
 	if (position === undefined) {
-		notify(player, text("travel.placeMissing"), "error");
+		notify(player, text(destination === HOME ? "travel.noBase" : "travel.placeMissing"), "error");
 		return;
 	}
 

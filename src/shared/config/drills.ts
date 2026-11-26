@@ -4,18 +4,19 @@
 
 export interface DrillDef {
 	readonly price: number;
-	/** Seconds of drilling per point of ore hardness: copper (3) takes 3x this, iron (6) takes 6x. */
+	/** Seconds of drilling per point of ore hardness: copper (1) takes 1x this, iron (2) takes 2x. */
 	readonly secondsPerHardness: number;
 	/** Pieces the drill holds while the start of the belt is full. */
 	readonly bufferCapacity: number;
 }
 
 export const DRILLS: { readonly [layer: number]: DrillDef | undefined } = {
-	1: { price: 2_000, secondsPerHardness: 6, bufferCapacity: 40 },
-	2: { price: 20_000, secondsPerHardness: 5, bufferCapacity: 60 },
-	3: { price: 150_000, secondsPerHardness: 4, bufferCapacity: 80 },
-	4: { price: 600_000, secondsPerHardness: 2, bufferCapacity: 100 },
-	5: { price: 2_000_000, secondsPerHardness: 1.5, bufferCapacity: 120 },
+	// Hardness became "damage per piece" (decision 052); these keep the old seconds per piece (18, 30, 36, 26, 27).
+	1: { price: 2_000, secondsPerHardness: 18, bufferCapacity: 40 },
+	2: { price: 20_000, secondsPerHardness: 15, bufferCapacity: 60 },
+	3: { price: 150_000, secondsPerHardness: 9, bufferCapacity: 80 },
+	4: { price: 600_000, secondsPerHardness: 3.7, bufferCapacity: 100 },
+	5: { price: 2_000_000, secondsPerHardness: 2.5, bufferCapacity: 120 },
 };
 
 /** Offline production is counted for at most this long, so a drill bought once does not print money forever. */

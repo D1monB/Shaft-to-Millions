@@ -77,6 +77,24 @@ export const LINE_UPGRADES: { readonly [K in LineUpgradeTrack]: ReadonlyArray<Li
 	],
 };
 
+/**
+ * Conveyor levels (decision 054): the whole line (belt and every machine) runs `speed` times faster. Level 1 is the
+ * base and is free; `price` buys that level.
+ */
+export interface BeltLevel {
+	readonly price: number;
+	readonly speed: number;
+}
+
+export const BELT_LEVELS: ReadonlyArray<BeltLevel> = [
+	{ price: 0, speed: 1 },
+	{ price: 1_500, speed: 1.15 },
+	{ price: 12_000, speed: 1.3 },
+	{ price: 90_000, speed: 1.5 },
+	{ price: 600_000, speed: 1.75 },
+	{ price: 4_000_000, speed: 2 },
+];
+
 /** Items the start of the belt (intake) holds: a full bag fits. */
 export const HOPPER_CAPACITY = 500;
 
