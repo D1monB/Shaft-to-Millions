@@ -10,7 +10,9 @@ import {
 	LINE_UPGRADES,
 	LINE_UPGRADE_TRACKS,
 } from "shared/config/line";
+import { CHAIN_QUESTS, DAILY_COUNT } from "shared/config/quests";
 import { isLanguage } from "shared/features/i18n";
+import { findDaily } from "shared/features/quests";
 import { GEAR_SLOTS, findGear, starterOf } from "shared/features/upgrades";
 import { MAX_COUNTER, repairCountMap, repairInteger, repairNumber, repairTable } from "shared/lib/repair";
 import { PlainTable } from "shared/lib/tables";
@@ -57,6 +59,7 @@ export function sanitize(data: PlainTable): string[] {
 		data.soundOn = true;
 		repairs.push("soundOn");
 	}
+	repairQuests(data, repairs);
 
 	return repairs;
 }
@@ -143,6 +146,47 @@ function repairLine(data: PlainTable, repairs: string[]): void {
 		const limit = LINE_UPGRADES.capacity[(machine.capacity as number) - 1].value;
 		machine.queue = repairOreList(machine.queue, limit, `${path}.queue`, repairs);
 	});
+}
+
+/** A day number far in the future (year ~2300); only stops a broken save from blocking quests for ever. */
+const MAX_DAY = 120_000;
+
+/** Quests (decision 055): known daily ids only, counters in range, the chain index inside the chain. */
+function repairQuests(data: PlainTable, repairs: string[]): void {
+	const quests = repairTable(data, "quests", "quests", repairs);
+	for (const key of ["day", "loginDay", "streakClaimedDay"]) {
+		repairInteger(quests, key, 0, MAX_DAY, 0, `quests.${key}`, repairs);
+	}
+	repairInteger(quests, "streak", 0, MAX_DAY, 0, "quests.streak", repairs);
+	repairInteger(quests, "chain", 0, CHAIN_QUESTS.size(), 0, "quests.chain", repairs);
+	repairNumber(quests, "chainCount", 0, MAX_COUNTER, 0, "quests.chainCount", repairs);
+	if (!typeIs(quests.allDoneClaimed, "boolean")) {
+		quests.allDoneClaimed = false;
+		repairs.push("quests.allDoneClaimed");
+	}
+	const raw = quests.daily;
+	const clean: PlainTable[] = [];
+	if (typeIs(raw, "table")) {
+		for (const entry of raw as unknown[]) {
+			if (clean.size() >= DAILY_COUNT || !typeIs(entry, "table")) {
+				continue;
+			}
+			const row = entry as PlainTable;
+			if (!typeIs(row.id, "string") || findDaily(row.id) === undefined) {
+				continue;
+			}
+			repairNumber(row, "count", 0, MAX_COUNTER, 0, "quests.daily.count", repairs);
+			if (!typeIs(row.claimed, "boolean")) {
+				row.claimed = false;
+				repairs.push("quests.daily.claimed");
+			}
+			clean.push(row);
+		}
+	}
+	if (!typeIs(raw, "table") || clean.size() !== (raw as unknown[]).size()) {
+		repairs.push("quests.daily");
+	}
+	quests.daily = clean;
 }
 
 /** A list of known ore ids, cut to `limit` entries. */

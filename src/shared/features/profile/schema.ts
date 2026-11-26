@@ -4,6 +4,7 @@ import type { OwnedItem } from "shared/features/chests";
 import type { DrillState } from "shared/features/drill";
 import type { Equipped } from "shared/features/equipment";
 import { LineState, newLineState } from "shared/features/line";
+import { QuestState, newQuestState } from "shared/features/quests";
 import { GearState, createStarterGear } from "shared/features/upgrades";
 
 /**
@@ -56,6 +57,8 @@ export interface ProfileData {
 	language: string;
 	/** False after the player switched the game's sounds off in the menu (decision 053). */
 	soundOn: boolean;
+	/** Daily quests, the story chain and the login streak (decision 055). */
+	quests: QuestState;
 	/** Equipped item uids (from `inventory`). */
 	equipped: Equipped;
 }
@@ -79,6 +82,7 @@ export function createDefaultProfileData(): ProfileData {
 		lastSeen: 0,
 		language: "",
 		soundOn: true,
+		quests: newQuestState(),
 	};
 }
 
@@ -117,6 +121,16 @@ const profileDataShape = t.interface({
 	lastSeen: t.number,
 	language: t.string,
 	soundOn: t.boolean,
+	quests: t.interface({
+		day: t.integer,
+		daily: t.array(t.interface({ id: t.string, count: t.number, claimed: t.boolean })),
+		allDoneClaimed: t.boolean,
+		chain: t.integer,
+		chainCount: t.number,
+		streak: t.integer,
+		loginDay: t.integer,
+		streakClaimedDay: t.integer,
+	}),
 	inventory: t.array(t.interface({ uid: t.string, item: t.string })),
 	nextUid: t.integer,
 	purchaseIds: t.array(t.string),

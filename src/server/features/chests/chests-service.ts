@@ -17,6 +17,7 @@ import {
 import { ProfileData } from "shared/features/profile";
 import { RateLimiter } from "shared/lib/rate-limiter";
 import { getProfileData, markDirty, onProfileLoaded, saveProfileNow } from "server/features/profile";
+import { trackQuest } from "server/features/quests";
 import { notify } from "server/lib/notify";
 import { ensurePrompt, findNearbyTagged } from "server/lib/proximity";
 import { declareClientEvent, fireClient, logAbuse, onClientRequest } from "server/lib/remotes";
@@ -66,6 +67,7 @@ function grantRoll(player: Player, data: ProfileData, chestId: ChestId): ItemId 
 	}
 	data.nextUid += 1;
 	markDirty(player);
+	trackQuest(player, "openChest", 1);
 	fireClient(CHEST_RESULT_REMOTE, player, item, chestId);
 	return item;
 }
